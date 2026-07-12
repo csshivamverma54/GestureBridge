@@ -1,6 +1,66 @@
-backend/venv/
-backend/.env
+﻿# ── Python ───────────────────────────────────────────────────────────
 __pycache__/
-*.pyc
-.vscode/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# ── Virtual environments ─────────────────────────────────────────────
+backend/venv/
+venv/
+.venv/
+env/
+
+# ── Environment / secrets ────────────────────────────────────────────
+backend/.env
+.env
+*.env
+
+# ── ML artefacts (large binary files — not tracked in git) ───────────
+backend/ml/gesture_model.pt
+backend/ml/normalizer.npz
+backend/ml/hand_landmarker.task
+backend/ml/training_history.json
+backend/ml/model_meta.json
+backend/ml/labels.json
+backend/ml/processed/
+backend/ml/plots/
+backend/ml/__pycache__/
+backend/ml/utils/__pycache__/
+
+# ── WLASL dataset (videos + large JSON files) ────────────────────────
+backend/data/WLASL/videos/
+backend/data/WLASL/WLASL_v0.3.json
+backend/data/WLASL/nslt_100.json
+backend/data/WLASL/nslt_300.json
+backend/data/WLASL/nslt_1000.json
+backend/data/WLASL/nslt_2000.json
+backend/data/WLASL/per_class_stats.json
+backend/data/WLASL/dataset_report.txt
+backend/data/WLASL/missing.txt
+backend/data/WLASL/all_classes.txt
+backend/data/WLASL/wlasl_class_list.txt
+
+# ── Frontend build & deps ────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── OS / editor ──────────────────────────────────────────────────────
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Misc ─────────────────────────────────────────────────────────────
+*.log
+*.tmp
+.bob/
