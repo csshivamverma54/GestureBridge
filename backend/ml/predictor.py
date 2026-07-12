@@ -64,8 +64,8 @@ _NORMALIZER_PATH = _ML_DIR / "normalizer.npz"
 _model = None
 _labels: dict = {}        # {int_index: word_string}
 _num_classes: int = 0
-_feat_mean: np.ndarray = None   # per-feature training mean (63,)
-_feat_std:  np.ndarray = None   # per-feature training std  (63,)
+_feat_mean: np.ndarray = None   # per-feature training mean (182,)
+_feat_std:  np.ndarray = None   # per-feature training std  (182,)
 
 
 def _load_labels(labels_path: Path) -> dict:
@@ -154,9 +154,10 @@ def predict_gesture(landmark_sequence: Union[np.ndarray, list]) -> dict:
     Parameters
     ----------
     landmark_sequence : np.ndarray or list
-        Shape (T, 126) — T variable-length frames, each with 126 floats
-        (left-hand: 21 landmarks × 3 coords, right-hand: same, normalized
-        by landmarks.py with per-hand wrist-relative scaling).
+        Shape (T, 182) — T variable-length frames, each with 182 floats.
+        Feature layout per frame (produced by landmarks.py):
+          left_hand(63) | right_hand(63) | pose(24) | face(27)
+          | velocity(3) | interaction_dist(2)
 
     Returns
     -------
@@ -182,11 +183,11 @@ def predict_gesture(landmark_sequence: Union[np.ndarray, list]) -> dict:
         # Single flat vector: reshape to (1, 63) — treated as a 1-frame sequence
         landmark_sequence = landmark_sequence.reshape(1, -1)
 
-    # ── Preprocess: pad/truncate + z-score standardize → (1, 30, 63) ─
+    # ── Preprocess: pad/truncate + z-score standardize → (1, 30, 182) ─
     X = preprocess_landmark_sequence(landmark_sequence, mean=_feat_mean, std=_feat_std)
 
     # ── Inference ──────────────────────────────────────────────────
-    tensor = torch.from_numpy(X.astype(np.float32))       # (1, 30, 63)
+    tensor = torch.from_numpy(X.astype(np.float32))       # (1, 30, 182)
     with torch.no_grad():
         logits = _model(tensor)                            # (1, num_classes)
         probs  = F.softmax(logits, dim=-1)[0].numpy()     # (num_classes,)

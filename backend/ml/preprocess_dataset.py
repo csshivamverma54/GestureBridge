@@ -9,13 +9,16 @@ What it does:
   3. Skips video files that do not exist on disk.
   4. For each usable video:
        a. Opens the video with OpenCV.
-       b. Extracts 21 MediaPipe hand landmarks for BOTH hands per frame.
-          Each frame → 126 floats (left-hand 63 + right-hand 63).
+       b. Extracts the full 182-dim multi-modal feature vector per frame
+          via MediaPipe Holistic (hands + pose + face + velocity + distances).
+          Feature layout per frame:
+            [left_hand(63) | right_hand(63) | pose(24) | face(27)
+             | velocity(3) | interaction_dist(2)]  = 182 dims
        c. Handles frames with no detection (carry-forward + zero-pad).
        d. Pads or truncates to exactly SEQUENCE_LENGTH frames.
        e. Produces N_AUGMENTATIONS augmented copies per original sequence.
   5. Saves:
-       - processed/X.npy          → float32 array (N, 30, 126)
+       - processed/X.npy          → float32 array (N, 30, 182)
        - processed/y.npy          → int32  array  (N,)
        - processed/labels.json    → {int: gloss_string} mapping
        - processed/meta.json      → run metadata
@@ -67,6 +70,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from ml.utils.landmarks import (
     LANDMARK_VECTOR_SIZE,
     SINGLE_HAND_SIZE,
+    HANDS_SIZE,          # = SINGLE_HAND_SIZE * 2 = 126 (both hands boundary)
     build_hands_solution,
     extract_sequence_from_video,
 )
@@ -165,13 +169,15 @@ def _augment_sequence(seq: np.ndarray, rng: np.random.Generator) -> list[np.ndar
     augmented.append(crop)
 
     # ── 4. Mirror: swap left-hand and right-hand slots ────────────────
-    #    This teaches the model to recognise both dominant-hand variants
-    #    and captures signs that differ by which hand leads.
+    #    Only the first HANDS_SIZE (=126) bytes are the hand landmarks.
+    #    The remaining dims (pose, face, velocity, interaction) are kept
+    #    as-is; velocity and interaction distances are hand-agnostic
+    #    scalars so they remain valid for both signing directions.
     mirror = seq.copy()
-    left_slot  = mirror[:, :SINGLE_HAND_SIZE].copy()
-    right_slot = mirror[:, SINGLE_HAND_SIZE:].copy()
-    mirror[:, :SINGLE_HAND_SIZE] = right_slot
-    mirror[:, SINGLE_HAND_SIZE:] = left_slot
+    left_slot  = mirror[:, :SINGLE_HAND_SIZE].copy()          # cols 0–62
+    right_slot = mirror[:, SINGLE_HAND_SIZE:HANDS_SIZE].copy() # cols 63–125
+    mirror[:, :SINGLE_HAND_SIZE]         = right_slot
+    mirror[:, SINGLE_HAND_SIZE:HANDS_SIZE] = left_slot
     augmented.append(mirror)
 
     # ── 5. Time warp (signing speed variation) ────────────────────────

@@ -24,7 +24,7 @@ import cv2
 # Constants (mirror ml/utils/landmarks.py to avoid circular imports)
 # ------------------------------------------------------------------
 SEQUENCE_LENGTH = 30
-LANDMARK_VECTOR_SIZE = 126   # 21 landmarks × 3 coords × 2 hands
+LANDMARK_VECTOR_SIZE = 182   # hands(126) + pose(24) + face(27) + vel(3) + dist(2)
 
 
 # ------------------------------------------------------------------
@@ -101,7 +101,7 @@ def preprocess_landmark_sequence(
     seq = pad_or_truncate(sequence, SEQUENCE_LENGTH)
     if mean is not None and std is not None:
         seq = (seq - mean) / (std + 1e-8)
-    return np.expand_dims(seq, axis=0).astype(np.float32)   # (1, 30, 63)
+    return np.expand_dims(seq, axis=0).astype(np.float32)   # (1, 30, 182)
 
 
 # ------------------------------------------------------------------

@@ -3,8 +3,9 @@ model.py  (backend/ml/model.py)
 ---------------------------------
 PyTorch LSTM model for sign language word recognition.
 
-Architecture (right-sized for ~200 classes, dual-hand 126-dim input):
-    Input  (batch, 30, 126)
+Architecture (~200 classes, 182-dim multi-modal input):
+    Input  (batch, 30, 182)
+      │   [left_hand(63)|right_hand(63)|pose(24)|face(27)|vel(3)|dist(2)]
       │
       ├─ Bidirectional LSTM 128 units (→ 256 per step), return_sequences=True
       ├─ Dropout 0.4
@@ -14,38 +15,43 @@ Architecture (right-sized for ~200 classes, dual-hand 126-dim input):
       │
       ├─ Temporal attention → weighted sum over time steps (batch, 128)
       │
-      ├─ Dense 256 units, ReLU + BatchNorm + Dropout 0.4
+      ├─ Dense 256, ReLU + BatchNorm + Dropout 0.4
       │
       └─ Dense num_classes (logits)
 
-Why this architecture:
------------------------
-INPUT — both hands (126 features):
-  The full 126-dim vector captures BOTH hands simultaneously. Real sign
-  language uses both hands; tracking only one loses the co-articulation
-  patterns that distinguish many signs.
-  Layout: left_hand(63 floats) | right_hand(63 floats)
-  Both slots are filled by landmarks.py — missing hand = zero vector.
-
-BIDIRECTIONAL LSTM:
-  Reads the 30-frame window forward AND backward. The end of a gesture
-  is often as diagnostic as its start. BiLSTM doubles contextual
-  information without adding extra depth.
+INPUT — 182-dim multi-modal feature vector (from landmarks.py):
+  left_hand(63) + right_hand(63)
+    BOTH hands, wrist-normalised. Two-handed signs (help, open, clap)
+    are only distinguishable when both hand shapes are present.
+  pose(24)  — 8 upper-body joints, shoulder-width normalised.
+    Captures arm arc and body-relative hand location. Resolves signs
+    like "mother" (chin) vs "father" (forehead) — same hand shape,
+    different body-space location.
+  face(27)  — 9 lip/chin/nose landmarks, nose-bridge anchored.
+    Spatial target for contact signs: "good", "thank you", "eat",
+    "drink", "kiss". The face coordinates reveal WHERE the hand is
+    relative to the face regardless of camera distance.
+  velocity(3)  — Δ(x,y,z) of dominant (right) wrist per frame.
+    Encodes signing speed and trajectory direction. Signs with
+    identical end-poses but different movements are disambiguated.
+  interaction(2) — [fingertips→lips dist, fingertips→palm dist].
+    Explicit contact-boundary features that spike near 0 on contact
+    signs. The temporal attention naturally up-weights frames where
+    these distances are minimised (the "hold" of a sign).
 
 TEMPORAL ATTENTION:
-  Learns which frames carry the most discriminative information and
-  up-weights them. Signing gestures typically occupy only the middle
-  10–20 frames of a 30-frame window; uniform averaging dilutes the signal.
+  Learns a scalar weight per time step. Peaks at frames where
+  velocity is near zero (the "hold") and interaction distances are
+  smallest — the most diagnostically rich moments of each sign.
 
-HIDDEN SIZE 128 (→256 bidirectional):
-  Matched to ~200 classes. Larger would overfit on ~63 samples/class.
-  With 200 classes and heavy augmentation (×9 total samples per video),
-  this size provides good generalisation without memorisation.
+BIDIRECTIONAL LSTM:
+  Reads the sequence forward AND backward. The release trajectory
+  after the hold is as informative as the approach.
 
-AUGMENTATION (in preprocess_dataset.py, --augmentations 8):
-  8 variants per original video → 7 originals × 9 = 63 samples/class.
-  Variants: noise, scale, crop, mirror, time-warp, rotation,
-            noise+mirror, scale+time-warp.
+AUGMENTATION (preprocess_dataset.py --augmentations 8):
+  noise | scale | crop | mirror(L↔R) | time-warp |
+  rotation | noise+mirror | scale+warp
+  → 7 originals × 9 = 63 samples/class for ~200 classes.
 """
 
 import torch
@@ -54,10 +60,10 @@ import torch.nn.functional as F
 
 
 # ------------------------------------------------------------------
-# Constants (must match preprocessing)
+# Constants (must match landmarks.py and preprocess.py)
 # ------------------------------------------------------------------
 SEQUENCE_LENGTH = 30
-LANDMARK_VECTOR_SIZE = 126   # 21 landmarks × 3 (x, y, z) × 2 hands
+LANDMARK_VECTOR_SIZE = 182   # hands(126) + pose(24) + face(27) + vel(3) + dist(2)
 
 
 # ------------------------------------------------------------------
@@ -192,6 +198,7 @@ if __name__ == "__main__":
     print(model)
     total = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"\nTrainable parameters: {total:,}")
+    print(f"Input: (batch, {SEQUENCE_LENGTH}, {LANDMARK_VECTOR_SIZE})")
 
     dummy = torch.zeros(4, SEQUENCE_LENGTH, LANDMARK_VECTOR_SIZE)
     model.eval()
