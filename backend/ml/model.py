@@ -3,42 +3,54 @@ model.py  (backend/ml/model.py)
 ---------------------------------
 PyTorch LSTM model for sign language word recognition.
 
-Architecture (dual-hand input: 126 features per frame):
+Architecture (right-sized for ~200 classes, dual-hand 126-dim input):
     Input  (batch, 30, 126)
       │
-      ├─ LSTM 256 units, return_sequences=True
-      ├─ BatchNorm + Dropout 0.3
+      ├─ Bidirectional LSTM 128 units (→ 256 per step), return_sequences=True
+      ├─ Dropout 0.4
       │
-      ├─ LSTM 256 units, return_sequences=True
-      ├─ BatchNorm + Dropout 0.3
-      │
-      ├─ LSTM 128 units, return_sequences=False
-      ├─ BatchNorm + Dropout 0.3
-      │
-      ├─ Dense 512 units, ReLU
-      ├─ BatchNorm + Dropout 0.4
-      │
-      ├─ Dense 256 units, ReLU
+      ├─ Bidirectional LSTM 64 units (→ 128 per step), return_sequences=True
       ├─ Dropout 0.3
       │
-      └─ Dense num_classes, Softmax
+      ├─ Temporal attention → weighted sum over time steps (batch, 128)
+      │
+      ├─ Dense 256 units, ReLU + BatchNorm + Dropout 0.4
+      │
+      └─ Dense num_classes (logits)
 
-Design decisions:
-  - Input size doubled to 126 (left-hand 63 + right-hand 63) to capture
-    bilateral sign language gestures accurately.
-  - Three LSTM layers for richer temporal modelling over the 30-frame window.
-  - Wider hidden states (256) to handle the larger vocabulary (~800 classes).
-  - Deeper classifier head (512 → 256 → num_classes).
-  - BatchNorm after every LSTM and the first Dense for training stability.
-  - Dropout rates tuned for regularisation at this scale.
-  - L2 weight decay via the optimizer weight_decay parameter.
+Why this architecture:
+-----------------------
+INPUT — both hands (126 features):
+  The full 126-dim vector captures BOTH hands simultaneously. Real sign
+  language uses both hands; tracking only one loses the co-articulation
+  patterns that distinguish many signs.
+  Layout: left_hand(63 floats) | right_hand(63 floats)
+  Both slots are filled by landmarks.py — missing hand = zero vector.
 
-This file only defines the model.
-Training, callbacks, and persistence live in ml/train.py.
+BIDIRECTIONAL LSTM:
+  Reads the 30-frame window forward AND backward. The end of a gesture
+  is often as diagnostic as its start. BiLSTM doubles contextual
+  information without adding extra depth.
+
+TEMPORAL ATTENTION:
+  Learns which frames carry the most discriminative information and
+  up-weights them. Signing gestures typically occupy only the middle
+  10–20 frames of a 30-frame window; uniform averaging dilutes the signal.
+
+HIDDEN SIZE 128 (→256 bidirectional):
+  Matched to ~200 classes. Larger would overfit on ~63 samples/class.
+  With 200 classes and heavy augmentation (×9 total samples per video),
+  this size provides good generalisation without memorisation.
+
+AUGMENTATION (in preprocess_dataset.py, --augmentations 8):
+  8 variants per original video → 7 originals × 9 = 63 samples/class.
+  Variants: noise, scale, crop, mirror, time-warp, rotation,
+            noise+mirror, scale+time-warp.
 """
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 # ------------------------------------------------------------------
@@ -49,80 +61,93 @@ LANDMARK_VECTOR_SIZE = 126   # 21 landmarks × 3 (x, y, z) × 2 hands
 
 
 # ------------------------------------------------------------------
-# Model definition
+# Temporal attention module
+# ------------------------------------------------------------------
+class TemporalAttention(nn.Module):
+    """
+    Soft attention over the time axis.
+    Given a sequence (batch, T, H), learns a scalar weight per time step
+    and returns the weighted sum (batch, H).
+
+    Why: sign gestures don't fill all 30 frames equally — the peak of
+    the motion is the most diagnostic part. Attention lets the model
+    focus on those frames rather than averaging over blank/transition frames.
+    """
+
+    def __init__(self, hidden_size: int):
+        super().__init__()
+        self.attn = nn.Linear(hidden_size, 1, bias=False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: (batch, T, H)
+        scores  = self.attn(x).squeeze(-1)        # (batch, T)
+        weights = F.softmax(scores, dim=-1)        # (batch, T)  — sum=1 over T
+        context = (weights.unsqueeze(-1) * x).sum(dim=1)   # (batch, H)
+        return context
+
+
+# ------------------------------------------------------------------
+# Main model
 # ------------------------------------------------------------------
 class GestureBridgeLSTM(nn.Module):
-    """Three-layer stacked LSTM classifier for two-hand gesture sequences."""
+    """
+    Two-layer Bidirectional LSTM + temporal attention for ~200-class
+    sign language recognition using BOTH hands (126-dim input).
+
+    Input shape  : (batch, 30, 126)   — left_hand(63) | right_hand(63)
+    Output shape : (batch, num_classes)  — raw logits (no softmax)
+    """
 
     def __init__(self, num_classes: int):
         super().__init__()
 
-        # ── First LSTM block (returns full sequence) ──────────────
+        # ── BiLSTM layer 1: 126 → 128*2 = 256 per step ──────────────
         self.lstm1 = nn.LSTM(
             input_size=LANDMARK_VECTOR_SIZE,
-            hidden_size=256,
+            hidden_size=128,
+            num_layers=1,
             batch_first=True,
+            bidirectional=True,
         )
-        self.bn1   = nn.BatchNorm1d(256)
-        self.drop1 = nn.Dropout(0.3)
+        self.drop1 = nn.Dropout(0.4)
 
-        # ── Second LSTM block (returns full sequence) ─────────────
+        # ── BiLSTM layer 2: 256 → 64*2 = 128 per step ───────────────
         self.lstm2 = nn.LSTM(
             input_size=256,
-            hidden_size=256,
+            hidden_size=64,
+            num_layers=1,
             batch_first=True,
+            bidirectional=True,
         )
-        self.bn2   = nn.BatchNorm1d(256)
         self.drop2 = nn.Dropout(0.3)
 
-        # ── Third LSTM block (returns last step only) ─────────────
-        self.lstm3 = nn.LSTM(
-            input_size=256,
-            hidden_size=128,
-            batch_first=True,
-        )
-        self.bn3   = nn.BatchNorm1d(128)
-        self.drop3 = nn.Dropout(0.3)
+        # ── Temporal attention → (batch, 128) ────────────────────────
+        self.attention = TemporalAttention(hidden_size=128)
 
-        # ── Dense classifier head ─────────────────────────────────
-        self.dense1 = nn.Linear(128, 512)
-        self.bn4    = nn.BatchNorm1d(512)
-        self.relu1  = nn.ReLU()
-        self.drop4  = nn.Dropout(0.4)
-
-        self.dense2 = nn.Linear(512, 256)
-        self.relu2  = nn.ReLU()
-        self.drop5  = nn.Dropout(0.3)
-
+        # ── Classifier head ──────────────────────────────────────────
+        self.fc1    = nn.Linear(128, 256)
+        self.bn1    = nn.BatchNorm1d(256)
+        self.drop3  = nn.Dropout(0.4)
         self.out    = nn.Linear(256, num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (batch, seq_len, 126)
+        # x: (batch, 30, 126)
 
-        # ── LSTM 1 ──
-        x, _ = self.lstm1(x)                           # (batch, seq_len, 256)
-        B, T, H = x.shape
-        x = self.bn1(x.reshape(B * T, H)).reshape(B, T, H)
+        # ── BiLSTM 1 ──
+        x, _ = self.lstm1(x)     # (batch, 30, 256)
         x = self.drop1(x)
 
-        # ── LSTM 2 ──
-        x, _ = self.lstm2(x)                           # (batch, seq_len, 256)
-        B, T, H = x.shape
-        x = self.bn2(x.reshape(B * T, H)).reshape(B, T, H)
+        # ── BiLSTM 2 ──
+        x, _ = self.lstm2(x)     # (batch, 30, 128)
         x = self.drop2(x)
 
-        # ── LSTM 3 (take last time-step) ──
-        x, _ = self.lstm3(x)                           # (batch, seq_len, 128)
-        x = x[:, -1, :]                                # → (batch, 128)
-        x = self.bn3(x)
-        x = self.drop3(x)
+        # ── Temporal attention ──
+        x = self.attention(x)    # (batch, 128)
 
-        # ── Classifier head ──
-        x = self.relu1(self.bn4(self.dense1(x)))       # (batch, 512)
-        x = self.drop4(x)
-        x = self.relu2(self.dense2(x))                 # (batch, 256)
-        x = self.drop5(x)
-        x = self.out(x)                                # (batch, num_classes) — logits
+        # ── Classifier ──
+        x = F.relu(self.bn1(self.fc1(x)))   # (batch, 256)
+        x = self.drop3(x)
+        x = self.out(x)                     # (batch, num_classes) — logits
         return x
 
 
@@ -131,12 +156,7 @@ class GestureBridgeLSTM(nn.Module):
 # ------------------------------------------------------------------
 def build_model(num_classes: int, learning_rate: float = 1e-3):
     """
-    Build the GestureBridge LSTM model and its Adam optimizer.
-
-    Parameters
-    ----------
-    num_classes   : int   — number of unique sign language words (glosses)
-    learning_rate : float — initial learning rate for Adam (default 1e-3)
+    Build the GestureBridge model and Adam optimizer.
 
     Returns
     -------
@@ -148,25 +168,14 @@ def build_model(num_classes: int, learning_rate: float = 1e-3):
     optimizer = torch.optim.Adam(
         model.parameters(),
         lr=learning_rate,
-        weight_decay=1e-5,
+        weight_decay=1e-4,
     )
     criterion = nn.CrossEntropyLoss()
     return model, optimizer, criterion
 
 
 def load_saved_model(model_path: str, num_classes: int) -> "GestureBridgeLSTM":
-    """
-    Load a previously saved GestureBridge model from a .pt file.
-
-    Parameters
-    ----------
-    model_path  : str — path to the saved state-dict file (.pt)
-    num_classes : int — must match the num_classes used during training
-
-    Returns
-    -------
-    GestureBridgeLSTM in eval mode
-    """
+    """Load a previously saved GestureBridge model from a .pt file."""
     model = GestureBridgeLSTM(num_classes=num_classes)
     state = torch.load(model_path, map_location="cpu", weights_only=True)
     model.load_state_dict(state)
@@ -178,15 +187,15 @@ def load_saved_model(model_path: str, num_classes: int) -> "GestureBridgeLSTM":
 # Quick self-test
 # ------------------------------------------------------------------
 if __name__ == "__main__":
-    import numpy as np
-
-    NUM_CLASSES = 800
+    NUM_CLASSES = 200
     model, optimizer, criterion = build_model(num_classes=NUM_CLASSES)
     print(model)
+    total = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"\nTrainable parameters: {total:,}")
 
     dummy = torch.zeros(4, SEQUENCE_LENGTH, LANDMARK_VECTOR_SIZE)
     model.eval()
     with torch.no_grad():
         logits = model(dummy)
     assert logits.shape == (4, NUM_CLASSES), f"Unexpected shape: {logits.shape}"
-    print(f"\nSmoke test passed — output shape: {tuple(logits.shape)}")
+    print(f"Smoke test passed — output shape: {tuple(logits.shape)}")

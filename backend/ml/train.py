@@ -9,7 +9,8 @@ What it does:
   3. Stratified train / validation / test split (70 / 15 / 15).
   4. Builds the LSTM model (ml/model.py).
   5. Trains with:
-       - EarlyStopping (patience 15, restore best weights)
+       - Class-weight balanced CrossEntropyLoss (handles per-class imbalance)
+       - EarlyStopping (patience 20, restore best weights)
        - ReduceLROnPlateau (factor 0.5, patience 7)
        - Best-model checkpoint (saves gesture_model.pt)
        - CSV training log (training_history.json)
@@ -27,7 +28,7 @@ Usage (from backend/):
     python -m ml.train \\
         --processed_dir ml/processed \\
         --output_dir    ml \\
-        --epochs        100 \\
+        --epochs        150 \\
         --batch_size    32 \\
         --learning_rate 0.001
 """
@@ -217,6 +218,29 @@ def _eval_epoch(model, loader, criterion, device):
 # ------------------------------------------------------------------
 # Main training function
 # ------------------------------------------------------------------
+def _compute_class_weights(y_train: np.ndarray, num_classes: int, device) -> torch.Tensor:
+    """
+    Compute inverse-frequency class weights for CrossEntropyLoss.
+
+    Classes with fewer training samples get a higher weight so the
+    loss gradient is not dominated by the most-frequent classes.
+
+    Weights are clipped to [0.1, 10.0] to avoid extreme values from
+    very rare classes, then L1-normalised to sum to num_classes so the
+    overall loss magnitude stays roughly constant regardless of imbalance.
+    """
+    counts = np.bincount(y_train, minlength=num_classes).astype(np.float32)
+    counts = np.where(counts == 0, 1.0, counts)      # avoid /0 for missing classes
+    weights = 1.0 / counts
+    weights = np.clip(weights, 0.1 / counts.max(), 10.0 / counts.max())
+    weights = (weights / weights.sum()) * num_classes  # normalise → mean weight ≈ 1
+    log.info(
+        "Class weights — min: %.4f  max: %.4f  mean: %.4f",
+        weights.min(), weights.max(), weights.mean(),
+    )
+    return torch.tensor(weights, dtype=torch.float32, device=device)
+
+
 def run_training(
     processed_dir: Path,
     output_dir: Path,
@@ -231,11 +255,11 @@ def run_training(
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = split_data(X, y)
 
     # ── Z-score standardization using TRAINING-SET statistics only ─
-    # X shape: (N, 30, 63).  Compute mean/std over (N, T) → shape (63,).
+    # X shape: (N, 30, 126).  Compute mean/std over (N, T) → shape (126,).
     # This preserves inter-sample differences that global per-sequence
     # min-max normalization was destroying.
-    feat_mean = X_train.reshape(-1, X_train.shape[-1]).mean(axis=0)   # (63,)
-    feat_std  = X_train.reshape(-1, X_train.shape[-1]).std(axis=0)    # (63,)
+    feat_mean = X_train.reshape(-1, X_train.shape[-1]).mean(axis=0)   # (126,)
+    feat_std  = X_train.reshape(-1, X_train.shape[-1]).std(axis=0)    # (126,)
     feat_std  = np.where(feat_std < 1e-8, 1.0, feat_std)             # avoid /0
 
     X_train = ((X_train - feat_mean) / feat_std).astype(np.float32)
@@ -262,8 +286,14 @@ def run_training(
     model, optimizer, _ = build_model(
         num_classes=num_classes, learning_rate=learning_rate
     )
-    # Label smoothing reduces overconfidence and helps when per-class samples are few
-    criterion = torch.nn.CrossEntropyLoss(label_smoothing=0.1)
+    # Class-weighted loss: up-weights rare classes so the model does not
+    # collapse to predicting only the most frequent signs.
+    # Label smoothing (0.1) additionally prevents overconfident predictions.
+    class_weights = _compute_class_weights(y_train, num_classes, device)
+    criterion = torch.nn.CrossEntropyLoss(
+        weight=class_weights,
+        label_smoothing=0.1,
+    )
     model.to(device)
     log.info("Model:\n%s", model)
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
