@@ -42,7 +42,7 @@ app.config.from_object(Config)
 # In production the React bundle is served by Flask itself, so no CORS needed.
 CORS(
     app,
-    resources={r"/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}},
+    resources={r"/*": {"origins": "*"}},
     supports_credentials=True,
 )
 
