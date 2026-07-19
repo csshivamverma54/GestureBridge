@@ -9,16 +9,19 @@ What it does:
   3. Skips video files that do not exist on disk.
   4. For each usable video:
        a. Opens the video with OpenCV.
-       b. Extracts the full 182-dim multi-modal feature vector per frame
-          via MediaPipe Holistic (hands + pose + face + velocity + distances).
+       b. Extracts the full 218-dim multi-modal feature vector per frame
+          via MediaPipe Holistic (hands + pose + face + velocity +
+          interaction + acceleration + NMM + finger angles + wrist
+          orientation + body distances).
           Feature layout per frame:
             [left_hand(63) | right_hand(63) | pose(24) | face(27)
-             | velocity(3) | interaction_dist(2)]  = 182 dims
+             | velocity(3) | interaction(2) | accel(3) | nmm(10)
+             | finger_angles(15) | wrist_quat(4) | body_dist(4)]  = 218 dims
        c. Handles frames with no detection (carry-forward + zero-pad).
        d. Pads or truncates to exactly SEQUENCE_LENGTH frames.
        e. Produces N_AUGMENTATIONS augmented copies per original sequence.
   5. Saves:
-       - processed/X.npy          → float32 array (N, 30, 182)
+       - processed/X.npy          → float32 array (N, 45, 218)
        - processed/y.npy          → int32  array  (N,)
        - processed/labels.json    → {int: gloss_string} mapping
        - processed/meta.json      → run metadata
@@ -138,12 +141,12 @@ def _rotate_2d(seq: np.ndarray, rng: np.random.Generator) -> np.ndarray:
 
 def _augment_sequence(seq: np.ndarray, rng: np.random.Generator) -> list[np.ndarray]:
     """
-    Produce 6 augmented variants of a (T, 126) dual-hand sequence.
+    Produce up to 8 augmented variants of a full 218-dim landmark sequence.
     Each augmentation preserves the temporal structure (crucial for LSTM)
-    and keeps BOTH hand slots intact.
+    and keeps ALL feature slots intact; only hand coordinates are rotated.
 
-    seq: np.ndarray shape (T=30, 126)  — [left_hand(63) | right_hand(63)]
-    Returns: list of 6 np.ndarray each shape (T=30, 126)
+    seq: np.ndarray shape (T=45, 218)
+    Returns: list of up to 8 np.ndarray each shape (T=45, 218)
     """
     T = seq.shape[0]
     augmented = []
@@ -428,7 +431,8 @@ def main():
     parser.add_argument("--dataset_dir", type=str, required=True)
     parser.add_argument("--json_path",   type=str, default=None)
     parser.add_argument("--output_dir",  type=str, default="ml/processed")
-    parser.add_argument("--sequence_length", type=int, default=30)
+    parser.add_argument("--sequence_length", type=int, default=45,
+                        help="Frames per sequence (default 45 ≈ 1.5 s at 30 FPS).")
     parser.add_argument("--min_samples",     type=int, default=3,
                         help="Min original videos per gloss (default 3)")
     parser.add_argument("--workers",         type=int, default=4)

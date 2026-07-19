@@ -33,7 +33,8 @@ export default defineConfig({
     },
   },
 
-  // Production build: emit into backend/static/dist so Flask can serve it
+  // Production build: emit into backend/static/dist
+  // (also deployable as a standalone static site pointing at the Render backend)
   build: {
     outDir: '../backend/static/dist',
     emptyOutDir: true,

@@ -1,11 +1,12 @@
 """
 model.py  (backend/ml/model.py)
 ---------------------------------
-PyTorch LSTM model for sign language word recognition.
+PyTorch LSTM model for continuous sign language recognition (CSLR).
 
-Architecture (~200 classes, 182-dim multi-modal input):
-    Input  (batch, 30, 182)
-      │   [left_hand(63)|right_hand(63)|pose(24)|face(27)|vel(3)|dist(2)]
+Architecture (~350 classes, 218-dim multi-modal input, 45-frame sequences):
+    Input  (batch, 45, 218)
+      │   [left_hand(63)|right_hand(63)|pose(24)|face(27)|vel(3)|dist(2)|
+      │    accel(3)|nmm(10)|finger_angles(15)|wrist_quat(4)|body_dist(4)]
       │
       ├─ Bidirectional LSTM 128 units (→ 256 per step), return_sequences=True
       ├─ Dropout 0.4
@@ -19,7 +20,7 @@ Architecture (~200 classes, 182-dim multi-modal input):
       │
       └─ Dense num_classes (logits)
 
-INPUT — 182-dim multi-modal feature vector (from landmarks.py):
+INPUT — 218-dim multi-modal feature vector (from landmarks.py):
   left_hand(63) + right_hand(63)
     BOTH hands, wrist-normalised. Two-handed signs (help, open, clap)
     are only distinguishable when both hand shapes are present.
@@ -48,10 +49,16 @@ BIDIRECTIONAL LSTM:
   Reads the sequence forward AND backward. The release trajectory
   after the hold is as informative as the approach.
 
+SEQUENCE LENGTH:
+  45 frames at 30 FPS ≈ 1.5 seconds per window — long enough to
+  capture the full motion arc of most ASL signs including approach,
+  hold, and release phases. Training uses a 45-frame FIFO window;
+  inference passes the last 45 frames of the live capture buffer.
+
 AUGMENTATION (preprocess_dataset.py --augmentations 8):
   noise | scale | crop | mirror(L↔R) | time-warp |
   rotation | noise+mirror | scale+warp
-  → 7 originals × 9 = 63 samples/class for ~200 classes.
+  → 7 originals × 9 = 63 samples/class for ~350 classes.
 """
 
 import torch
@@ -62,8 +69,8 @@ import torch.nn.functional as F
 # ------------------------------------------------------------------
 # Constants (must match landmarks.py and preprocess.py)
 # ------------------------------------------------------------------
-SEQUENCE_LENGTH = 30
-LANDMARK_VECTOR_SIZE = 182   # hands(126) + pose(24) + face(27) + vel(3) + dist(2)
+SEQUENCE_LENGTH = 45   # 45 frames at 30 FPS ≈ 1.5 s — full approach+hold+release
+LANDMARK_VECTOR_SIZE = 218   # v2: 182 + accel(3)+nmm(10)+finger_ang(15)+wrist_orient(4)+body_dist(4)
 
 
 # ------------------------------------------------------------------
@@ -97,10 +104,10 @@ class TemporalAttention(nn.Module):
 # ------------------------------------------------------------------
 class GestureBridgeLSTM(nn.Module):
     """
-    Two-layer Bidirectional LSTM + temporal attention for ~200-class
-    sign language recognition using BOTH hands (126-dim input).
+    Two-layer Bidirectional LSTM + temporal attention for continuous
+    sign language recognition with full multi-modal 218-dim input.
 
-    Input shape  : (batch, 30, 126)   — left_hand(63) | right_hand(63)
+    Input shape  : (batch, 45, 218)   — multi-modal feature vector
     Output shape : (batch, num_classes)  — raw logits (no softmax)
     """
 
@@ -137,7 +144,7 @@ class GestureBridgeLSTM(nn.Module):
         self.out    = nn.Linear(256, num_classes)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (batch, 30, 126)
+        # x: (batch, 45, 218)
 
         # ── BiLSTM 1 ──
         x, _ = self.lstm1(x)     # (batch, 30, 256)
@@ -193,7 +200,7 @@ def load_saved_model(model_path: str, num_classes: int) -> "GestureBridgeLSTM":
 # Quick self-test
 # ------------------------------------------------------------------
 if __name__ == "__main__":
-    NUM_CLASSES = 200
+    NUM_CLASSES = 350
     model, optimizer, criterion = build_model(num_classes=NUM_CLASSES)
     print(model)
     total = sum(p.numel() for p in model.parameters() if p.requires_grad)

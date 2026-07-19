@@ -17,14 +17,13 @@ note) so that any code that imported it does not hard-crash immediately.
 """
 
 import numpy as np
-import cv2
 
 
 # ------------------------------------------------------------------
 # Constants (mirror ml/utils/landmarks.py to avoid circular imports)
 # ------------------------------------------------------------------
-SEQUENCE_LENGTH = 30
-LANDMARK_VECTOR_SIZE = 182   # hands(126) + pose(24) + face(27) + vel(3) + dist(2)
+SEQUENCE_LENGTH = 45   # matches model.py — 45 frames ≈ 1.5 s full-sign window
+LANDMARK_VECTOR_SIZE = 218   # v2: 182 + accel(3)+nmm(10)+finger_ang(15)+wrist_orient(4)+body_dist(4)
 
 
 # ------------------------------------------------------------------
@@ -40,12 +39,12 @@ def pad_or_truncate(sequence: np.ndarray, length: int = SEQUENCE_LENGTH) -> np.n
 
     Parameters
     ----------
-    sequence : np.ndarray, shape (T, 63)
+    sequence : np.ndarray, shape (T, 218)
     length   : int
 
     Returns
     -------
-    np.ndarray, shape (length, 63), dtype float32
+    np.ndarray, shape (length, 218), dtype float32
     """
     sequence = np.array(sequence, dtype=np.float32)
     T = sequence.shape[0]
@@ -83,25 +82,25 @@ def preprocess_landmark_sequence(
     Full inference-time preprocessing for a raw landmark sequence.
 
     Applies:
-      1. pad_or_truncate         → fixed (30, 126) shape
+      1. pad_or_truncate         → fixed (45, 218) shape
       2. z-score standardization → (seq - mean) / std  using training-set
          statistics loaded from ml/normalizer.npz (if provided)
-      3. np.expand_dims          → batch dim → (1, 30, 126)
+      3. np.expand_dims          → batch dim → (1, 45, 218)
 
     Parameters
     ----------
-    sequence : np.ndarray, shape (T, 126)  — T may differ from 30
-    mean     : np.ndarray shape (126,) or None — per-feature training mean
-    std      : np.ndarray shape (126,) or None — per-feature training std
+    sequence : np.ndarray, shape (T, 218)  — T may differ from 45
+    mean     : np.ndarray shape (218,) or None — per-feature training mean
+    std      : np.ndarray shape (218,) or None — per-feature training std
 
     Returns
     -------
-    np.ndarray, shape (1, 30, 126), dtype float32
+    np.ndarray, shape (1, 45, 218), dtype float32
     """
     seq = pad_or_truncate(sequence, SEQUENCE_LENGTH)
     if mean is not None and std is not None:
         seq = (seq - mean) / (std + 1e-8)
-    return np.expand_dims(seq, axis=0).astype(np.float32)   # (1, 30, 182)
+    return np.expand_dims(seq, axis=0).astype(np.float32)   # (1, 45, 218)
 
 
 # ------------------------------------------------------------------
@@ -113,6 +112,7 @@ def preprocess_frame(frame: np.ndarray) -> np.ndarray:
     The project now uses MediaPipe landmark sequences.
     This function is kept so that old imports do not break immediately.
     """
+    import cv2  # lazy import — only needed by this deprecated function
     frame = cv2.resize(frame, (224, 224))
     frame = frame / 255.0
     frame = np.expand_dims(frame, axis=0)

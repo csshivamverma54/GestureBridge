@@ -7,12 +7,19 @@ Routes
 ------
 POST /predict
     Accepts a MediaPipe landmark sequence and returns the predicted sign
-    word, confidence score, and top-5 predictions.
+    word, confidence score, top-5 predictions, and detected NMM state.
 
     Request body (JSON):
     {
         "user_id"  : "abc123",
-        "gesture"  : [[x1,y1,z1,…, x21,y21,z21, …, x21r,y21r,z21r], …]   ← (T × 126) 2-D list
+        "gesture"  : [[...], ...]   ← (T × 218) 2-D list
+        "nmm"      : {              ← optional non-manual marker summary
+            "eyebrow_raise"  : 0.0,
+            "eyebrow_furrow" : 0.0,
+            "head_nod"       : 0.0,
+            "head_shake"     : 0.0,
+            "mouth_open"     : 0.0
+        }
     }
 
     Response body (JSON):
@@ -20,11 +27,31 @@ POST /predict
         "message"       : "Prediction successful",
         "predicted_text": "Hello",
         "confidence"    : 0.9231,
-        "top5"          : [
-            {"word": "Hello",    "confidence": 0.9231},
-            {"word": "Thank You","confidence": 0.0512},
-            …
-        ]
+        "top5"          : [...],
+        "nmm"           : { ... }   ← echoed back for UI display
+    }
+
+POST /generate-sentence
+    Converts an ordered ASL gloss sequence + NMM summary into a natural
+    English sentence using the rule-based sentence_generator module.
+
+    Request body (JSON):
+    {
+        "glosses" : ["STORE", "YOU", "GO"],
+        "nmm"     : {
+            "eyebrow_raise"  : 0.72,
+            "eyebrow_furrow" : 0.0,
+            "head_shake"     : 0.05,
+            "head_nod"       : 0.02,
+            "mouth_open"     : 0.1
+        }
+    }
+
+    Response body (JSON):
+    {
+        "sentence" : "Are you going to the store?",
+        "glosses"  : ["STORE", "YOU", "GO"],   ← echoed
+        "nmm"      : { ... }                   ← echoed
     }
 
 GET /model/status
@@ -40,6 +67,7 @@ from datetime import datetime
 from flask import Blueprint, jsonify, request
 
 from ml.predictor import predict_gesture, reload_model
+from ml.sentence_generator import generate_sentence
 
 gesture = Blueprint("gesture", __name__)
 
@@ -60,8 +88,9 @@ def predict():
     if not data:
         return jsonify({"error": "Request body must be JSON"}), 400
 
-    user_id = data.get("user_id")
+    user_id       = data.get("user_id")
     gesture_input = data.get("gesture")
+    nmm_payload   = data.get("nmm", {})   # optional NMM summary from frontend
 
     if not user_id or gesture_input is None:
         return jsonify({"error": "Missing required fields: user_id, gesture"}), 400
@@ -69,34 +98,67 @@ def predict():
     # Run ML inference
     result = predict_gesture(gesture_input)
 
-    # If model is not ready, still return 200 with the error field so the
-    # client can display a meaningful message.
     predicted_text = result.get("predicted_word", "unknown")
-    confidence = result.get("confidence", 0.0)
-    top5 = result.get("top5", [])
+    confidence     = result.get("confidence", 0.0)
+    top5           = result.get("top5", [])
 
     # Persist to MongoDB history (only when model is ready)
     if mongo and "error" not in result:
         record = {
-            "user_id": user_id,
-            "gesture_input": gesture_input,
+            "user_id":        user_id,
+            "gesture_input":  gesture_input,
             "predicted_text": predicted_text,
-            "confidence": confidence,
-            "top5": top5,
-            "timestamp": datetime.utcnow(),
+            "confidence":     confidence,
+            "top5":           top5,
+            "nmm":            nmm_payload,
+            "timestamp":      datetime.utcnow(),
         }
         mongo.db.gesture_history.insert_one(record)
 
     response = {
-        "message": "Prediction successful",
+        "message":        "Prediction successful",
         "predicted_text": predicted_text,
-        "confidence": confidence,
-        "top5": top5,
+        "confidence":     confidence,
+        "top5":           top5,
+        "nmm":            nmm_payload,   # echoed for UI
     }
     if "error" in result:
-        response["warning"] = result["error"]
+        response["warning"]       = result["error"]
+        response["needs_retrain"] = result.get("needs_retrain", False)
 
     return jsonify(response), 200
+
+
+# ------------------------------------------------------------------
+# POST /generate-sentence
+# ------------------------------------------------------------------
+@gesture.route("/generate-sentence", methods=["POST"])
+def generate_sentence_route():
+    """
+    Convert an ASL gloss sequence + NMM summary into an English sentence.
+
+    Body: { "glosses": [...], "nmm": {...} }
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "Request body must be JSON"}), 400
+
+    glosses     = data.get("glosses", [])
+    nmm_payload = data.get("nmm", {})
+
+    if not isinstance(glosses, list) or not glosses:
+        return jsonify({"error": "Field 'glosses' must be a non-empty list"}), 400
+
+    try:
+        sentence = generate_sentence(glosses, nmm_payload)
+    except Exception as exc:  # noqa: BLE001
+        return jsonify({"error": f"Sentence generation failed: {str(exc)}"}), 500
+
+    return jsonify({
+        "sentence": sentence,
+        "glosses":  glosses,
+        "nmm":      nmm_payload,
+    }), 200
 
 
 # ------------------------------------------------------------------

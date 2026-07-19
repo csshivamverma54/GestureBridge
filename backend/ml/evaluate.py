@@ -11,7 +11,7 @@ What it produces (all saved to <output_dir>/evaluation/):
 
 Usage (from backend/):
     python -m ml.evaluate \\
-        --model_path   ml/gesture_model.keras \\
+        --model_path   ml/gesture_model.pt \\
         --test_dir     ml/processed/test \\
         --labels_path  ml/labels.json \\
         --output_dir   ml
@@ -28,6 +28,8 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import torch
+import torch.nn.functional as F
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -87,7 +89,6 @@ def plot_confusion_matrix(
     """
     n = cm.shape[0]
     if n > max_classes:
-        # Select the max_classes with the highest row-sum (most true samples)
         row_sums = cm.sum(axis=1)
         top_indices = np.argsort(row_sums)[-max_classes:][::-1]
         cm = cm[np.ix_(top_indices, top_indices)]
@@ -111,7 +112,6 @@ def plot_confusion_matrix(
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", fontsize=7)
     plt.setp(ax.get_yticklabels(), fontsize=7)
 
-    # Annotate cells only when num_classes is small enough
     if n <= 20:
         thresh = cm.max() / 2.0
         for i in range(n):
@@ -137,29 +137,66 @@ def run_evaluation(
     test_dir: Path,
     labels_path: Path,
     output_dir: Path,
+    meta_path: Path = None,
+    batch_size: int = 64,
 ):
-    import tensorflow as tf
     from sklearn.metrics import (
         classification_report,
         confusion_matrix,
         precision_recall_fscore_support,
     )
+    from ml.model import GestureBridgeLSTM
+    from ml.utils.preprocess import pad_or_truncate
 
     eval_dir = output_dir / "evaluation"
     eval_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── Load everything ────────────────────────────────────────────
-    log.info("Loading model from %s …", model_path)
-    model = tf.keras.models.load_model(str(model_path))
+    # ── Load metadata ──────────────────────────────────────────────
+    num_classes    = 0
+    sequence_length = 45
+    if meta_path is None:
+        meta_path = model_path.parent / "model_meta.json"
+    if meta_path.exists():
+        with open(meta_path, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+        num_classes     = meta.get("num_classes", 0)
+        sequence_length = meta.get("sequence_length", sequence_length)
+        log.info("model_meta.json: num_classes=%d  sequence_length=%d",
+                 num_classes, sequence_length)
 
-    X_test, y_test = load_test_data(test_dir)
+    # ── Load labels ────────────────────────────────────────────────
     idx_to_label = load_labels(labels_path)
-    class_names = [idx_to_label[i] for i in range(len(idx_to_label))]
+    if num_classes == 0:
+        num_classes = len(idx_to_label)
+    class_names = [idx_to_label[i] for i in range(num_classes)]
 
-    log.info("Test set: %d samples  |  Classes: %d", len(X_test), len(class_names))
+    # ── Load model ─────────────────────────────────────────────────
+    log.info("Loading model from %s …", model_path)
+    model = GestureBridgeLSTM(num_classes=num_classes)
+    state = torch.load(str(model_path), map_location="cpu", weights_only=True)
+    model.load_state_dict(state)
+    model.eval()
 
-    # ── Inference ──────────────────────────────────────────────────
-    y_prob = model.predict(X_test, batch_size=64, verbose=1)   # (N, num_classes)
+    # ── Load test data ─────────────────────────────────────────────
+    X_test, y_test = load_test_data(test_dir)
+
+    # Ensure sequence length matches what the model was trained on
+    if X_test.shape[1] != sequence_length:
+        log.info("Re-padding test sequences from %d → %d frames", X_test.shape[1], sequence_length)
+        X_test = np.stack([pad_or_truncate(x, sequence_length) for x in X_test])
+
+    log.info("Test set: %d samples  |  Classes: %d  |  Seq len: %d",
+             len(X_test), num_classes, X_test.shape[1])
+
+    # ── Inference in batches ───────────────────────────────────────
+    all_probs = []
+    with torch.no_grad():
+        for i in range(0, len(X_test), batch_size):
+            batch = torch.from_numpy(X_test[i:i + batch_size])
+            logits = model(batch)
+            probs  = F.softmax(logits, dim=-1).numpy()
+            all_probs.append(probs)
+    y_prob = np.concatenate(all_probs, axis=0)   # (N, num_classes)
     y_pred = np.argmax(y_prob, axis=1)
 
     # ── Top-1 / Top-5 accuracy ─────────────────────────────────────
@@ -175,33 +212,27 @@ def run_evaluation(
     precision, recall, f1, _ = precision_recall_fscore_support(
         y_test, y_pred, average="weighted", zero_division=0
     )
-    log.info(
-        "Weighted — Precision: %.4f  Recall: %.4f  F1: %.4f",
-        precision, recall, f1,
-    )
+    log.info("Weighted — Precision: %.4f  Recall: %.4f  F1: %.4f", precision, recall, f1)
 
     metrics_summary = {
-        "top1_accuracy": round(top1, 4),
-        "top5_accuracy": round(top5, 4),
-        "weighted_precision": round(float(precision), 4),
-        "weighted_recall": round(float(recall), 4),
-        "weighted_f1": round(float(f1), 4),
-        "num_test_samples": int(len(X_test)),
-        "num_classes": len(class_names),
+        "top1_accuracy":       round(top1, 4),
+        "top5_accuracy":       round(top5, 4),
+        "weighted_precision":  round(float(precision), 4),
+        "weighted_recall":     round(float(recall), 4),
+        "weighted_f1":         round(float(f1), 4),
+        "num_test_samples":    int(len(X_test)),
+        "num_classes":         num_classes,
+        "sequence_length":     sequence_length,
     }
     with open(eval_dir / "metrics_summary.json", "w") as f:
         json.dump(metrics_summary, f, indent=2)
     log.info("Metrics summary → %s", eval_dir / "metrics_summary.json")
 
     # ── Classification report ──────────────────────────────────────
-    # Only include labels actually present in the test set to avoid sklearn
-    # warnings when some glosses have no test samples.
     present_labels = sorted(set(y_test.tolist()))
-    present_names = [idx_to_label.get(i, str(i)) for i in present_labels]
-
+    present_names  = [idx_to_label.get(i, str(i)) for i in present_labels]
     report_str = classification_report(
-        y_test,
-        y_pred,
+        y_test, y_pred,
         labels=present_labels,
         target_names=present_names,
         zero_division=0,
@@ -210,7 +241,6 @@ def run_evaluation(
     print("Classification Report")
     print("=" * 60)
     print(report_str)
-
     with open(eval_dir / "classification_report.txt", "w") as f:
         f.write(report_str)
     log.info("Classification report → %s", eval_dir / "classification_report.txt")
@@ -232,13 +262,13 @@ def run_evaluation(
 # ------------------------------------------------------------------
 def main():
     parser = argparse.ArgumentParser(
-        description="Evaluate the trained GestureBridge LSTM model."
+        description="Evaluate the trained GestureBridge LSTM model (PyTorch)."
     )
     parser.add_argument(
         "--model_path",
         type=str,
-        default="ml/gesture_model.keras",
-        help="Path to the saved .keras or .h5 model file.",
+        default="ml/gesture_model.pt",
+        help="Path to the saved gesture_model.pt file.",
     )
     parser.add_argument(
         "--test_dir",
@@ -258,6 +288,12 @@ def main():
         default="ml",
         help="Root output directory; evaluation/ sub-folder is created here.",
     )
+    parser.add_argument(
+        "--batch_size",
+        type=int,
+        default=64,
+        help="Inference batch size (default 64).",
+    )
     args = parser.parse_args()
 
     run_evaluation(
@@ -265,6 +301,7 @@ def main():
         test_dir=Path(args.test_dir).resolve(),
         labels_path=Path(args.labels_path).resolve(),
         output_dir=Path(args.output_dir).resolve(),
+        batch_size=args.batch_size,
     )
 
 

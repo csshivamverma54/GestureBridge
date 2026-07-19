@@ -67,11 +67,16 @@ export default function TextToSign() {
   const [loop,        setLoop]        = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(true);
 
-  const videoRef   = useRef(null);
-  const autoRef    = useRef(autoAdvance);
-  const loopRef    = useRef(loop);
-  useEffect(() => { autoRef.current  = autoAdvance; }, [autoAdvance]);
-  useEffect(() => { loopRef.current  = loop; }, [loop]);
+  const videoRef      = useRef(null);
+  const autoRef       = useRef(autoAdvance);
+  const loopRef       = useRef(loop);
+  const currentIdxRef = useRef(currentIdx);       // always-current idx for callbacks
+  const playingRef    = useRef(playing);
+  const playableRef   = useRef([]);               // always-current playable list
+  useEffect(() => { autoRef.current    = autoAdvance; }, [autoAdvance]);
+  useEffect(() => { loopRef.current    = loop; }, [loop]);
+  useEffect(() => { currentIdxRef.current = currentIdx; }, [currentIdx]);
+  useEffect(() => { playingRef.current = playing; }, [playing]);
 
   /* ── Load vocabulary hints on mount ──────────────────────────────── */
   useEffect(() => {
@@ -83,6 +88,8 @@ export default function TextToSign() {
   /* ── Playable words only (skip "not found") ───────────────────────── */
   const playableWords = words.filter((w) => w.found && w.video_url);
   const currentWord   = playableWords[currentIdx] ?? null;
+  // Keep playableRef in sync so the onEnded callback reads the latest list
+  playableRef.current = playableWords;
 
   /* ── Submit ───────────────────────────────────────────────────────── */
   const handleGenerate = async () => {
@@ -92,7 +99,9 @@ export default function TextToSign() {
     setWords([]);
     setCoverage(null);
     setCurrentIdx(0);
+    currentIdxRef.current = 0;
     setPlaying(false);
+    playingRef.current = false;
     setLoading(true);
     try {
       const { data } = await api.post('/text-to-sign', { text: trimmed, language });
@@ -106,56 +115,67 @@ export default function TextToSign() {
   };
 
   /* ── Video event handlers ─────────────────────────────────────────── */
+  // Use refs so this callback never goes stale and always sees the latest idx/list
   const handleVideoEnded = useCallback(() => {
-    if (!autoRef.current) { setPlaying(false); return; }
-    const nextIdx = currentIdx + 1;
-    if (nextIdx < playableWords.length) {
+    if (!autoRef.current) { setPlaying(false); playingRef.current = false; return; }
+    const nextIdx = currentIdxRef.current + 1;
+    if (nextIdx < playableRef.current.length) {
+      currentIdxRef.current = nextIdx;
       setCurrentIdx(nextIdx);
-      // Video src will change → useEffect below triggers play
+      // key prop changes → video remounts → onCanPlay fires → play() called
     } else if (loopRef.current) {
+      currentIdxRef.current = 0;
       setCurrentIdx(0);
     } else {
       setPlaying(false);
+      playingRef.current = false;
     }
-  }, [currentIdx, playableWords.length]);
+  }, []); // no deps — reads everything from refs
 
-  /* Auto-play when currentIdx changes (and we were already playing) */
+  /* Auto-play: handled by onCanPlay on the video element (see JSX below).
+     Keep a speed-sync effect so playbackRate updates while a video is playing. */
   useEffect(() => {
-    if (playing && videoRef.current && currentWord) {
-      videoRef.current.load();
-      videoRef.current.playbackRate = speed;
-      videoRef.current.play().catch(() => {});
-    }
-  }, [currentIdx, currentWord]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (videoRef.current) videoRef.current.playbackRate = speed;
+  }, [speed]);
 
   /* ── Controls ─────────────────────────────────────────────────────── */
   const play = () => {
     if (!currentWord) return;
-    videoRef.current?.play();
+    playingRef.current = true;
     setPlaying(true);
+    videoRef.current?.play();
   };
   const pause = () => {
     videoRef.current?.pause();
+    playingRef.current = false;
     setPlaying(false);
   };
   const stop = () => {
     videoRef.current?.pause();
     if (videoRef.current) videoRef.current.currentTime = 0;
+    currentIdxRef.current = 0;
     setCurrentIdx(0);
+    playingRef.current = false;
     setPlaying(false);
   };
   const prev = () => {
     const idx = Math.max(0, currentIdx - 1);
+    currentIdxRef.current = idx;
     setCurrentIdx(idx);
+    playingRef.current = false;
     setPlaying(false);
   };
   const next = () => {
     const idx = Math.min(playableWords.length - 1, currentIdx + 1);
+    currentIdxRef.current = idx;
     setCurrentIdx(idx);
+    playingRef.current = false;
     setPlaying(false);
   };
   const jumpTo = (idx) => {
+    currentIdxRef.current = idx;
     setCurrentIdx(idx);
+    playingRef.current = false;
     setPlaying(false);
   };
   const changeSpeed = (s) => {
@@ -287,6 +307,14 @@ export default function TextToSign() {
                       onEnded={handleVideoEnded}
                       onPlay={() => setPlaying(true)}
                       onPause={() => setPlaying(false)}
+                      onCanPlay={(e) => {
+                        /* Fire as soon as the browser can play — no RAF delay.
+                           Only auto-start if we're in the middle of a sequence. */
+                        if (playingRef.current) {
+                          e.target.playbackRate = speed;
+                          e.target.play().catch(() => {});
+                        }
+                      }}
                       playsInline
                     />
                   )}

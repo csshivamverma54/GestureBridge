@@ -1,804 +1,349 @@
 idx	word	category	usable_count
-0	after	Adverbs & Degree Words	7
-1	again	Adverbs & Degree Words	8
-2	already	Adverbs & Degree Words	8
-3	always	Adverbs & Degree Words	7
-4	before	Adverbs & Degree Words	16
-5	here	Adverbs & Degree Words	7
-6	later	Adverbs & Degree Words	12
-7	maybe	Adverbs & Degree Words	6
-8	never	Adverbs & Degree Words	7
-9	now	Adverbs & Degree Words	9
-10	often	Adverbs & Degree Words	6
-11	really	Adverbs & Degree Words	7
-12	soon	Adverbs & Degree Words	11
-13	still	Adverbs & Degree Words	5
-14	there	Adverbs & Degree Words	6
-15	today	Adverbs & Degree Words	9
-16	tomorrow	Adverbs & Degree Words	7
-17	very	Adverbs & Degree Words	6
-18	yesterday	Adverbs & Degree Words	10
-19	bear	Animals	7
-20	bee	Animals	6
-21	bird	Animals	10
-22	butterfly	Animals	5
-23	cat	Animals	9
-24	cow	Animals	9
-25	deer	Animals	7
-26	dinosaur	Animals	7
-27	dog	Animals	11
-28	duck	Animals	6
-29	eagle	Animals	7
-30	elephant	Animals	7
-31	frog	Animals	7
-32	giraffe	Animals	7
-33	lion	Animals	5
-34	monkey	Animals	7
-35	pig	Animals	7
-36	rabbit	Animals	8
-37	snake	Animals	7
-38	spider	Animals	6
-39	tiger	Animals	9
-40	turtle	Animals	5
-41	whale	Animals	6
-42	wolf	Animals	6
-43	agree	Auxiliary & Modal Verbs	5
-44	allow	Auxiliary & Modal Verbs	8
-45	become	Auxiliary & Modal Verbs	5
-46	can	Auxiliary & Modal Verbs	9
-47	continue	Auxiliary & Modal Verbs	6
-48	done	Auxiliary & Modal Verbs	5
-49	finish	Auxiliary & Modal Verbs	9
-50	get	Auxiliary & Modal Verbs	7
-51	happen	Auxiliary & Modal Verbs	6
-52	have	Auxiliary & Modal Verbs	6
-53	keep	Auxiliary & Modal Verbs	6
-54	must	Auxiliary & Modal Verbs	7
-55	need	Auxiliary & Modal Verbs	6
-56	require	Auxiliary & Modal Verbs	6
-57	seem	Auxiliary & Modal Verbs	6
-58	stay	Auxiliary & Modal Verbs	9
-59	use	Auxiliary & Modal Verbs	5
-60	want	Auxiliary & Modal Verbs	9
-61	backpack	Clothing	8
-62	belt	Clothing	7
-63	bracelet	Clothing	7
-64	clothes	Clothing	5
-65	coat	Clothing	5
-66	dress	Clothing	8
-67	earring	Clothing	6
-68	glasses	Clothing	9
-69	hat	Clothing	9
-70	helmet	Clothing	5
-71	jacket	Clothing	7
-72	jewelry	Clothing	6
-73	necklace	Clothing	9
-74	pants	Clothing	8
-75	ring	Clothing	5
-76	shirt	Clothing	12
-77	shoes	Clothing	6
-78	skirt	Clothing	6
-79	socks	Clothing	6
-80	sweater	Clothing	6
-81	swimsuit	Clothing	5
-82	tie	Clothing	7
-83	underwear	Clothing	8
-84	black	Colors	10
-85	blue	Colors	8
-86	brown	Colors	8
-87	gray	Colors	6
-88	green	Colors	7
-89	orange	Colors	10
-90	pink	Colors	9
-91	purple	Colors	8
-92	red	Colors	7
-93	silver	Colors	6
-94	tan	Colors	5
-95	white	Colors	10
-96	yellow	Colors	8
-97	amazing	Common Adjectives	5
-98	awful	Common Adjectives	8
-99	bad	Common Adjectives	10
-100	beautiful	Common Adjectives	7
-101	big	Common Adjectives	9
-102	bright	Common Adjectives	6
-103	busy	Common Adjectives	5
-104	cheap	Common Adjectives	7
-105	clean	Common Adjectives	7
-106	cold	Common Adjectives	12
-107	cool	Common Adjectives	16
-108	dangerous	Common Adjectives	6
-109	dark	Common Adjectives	12
-110	different	Common Adjectives	8
-111	dirty	Common Adjectives	9
-112	dry	Common Adjectives	9
-113	early	Common Adjectives	6
-114	easy	Common Adjectives	6
-115	empty	Common Adjectives	5
-116	expensive	Common Adjectives	8
-117	fast	Common Adjectives	9
-118	fat	Common Adjectives	10
-119	final	Common Adjectives	5
-120	first	Common Adjectives	9
-121	full	Common Adjectives	10
-122	funny	Common Adjectives	5
-123	general	Common Adjectives	6
-124	great	Common Adjectives	9
-125	hard	Common Adjectives	6
-126	heavy	Common Adjectives	5
-127	hot	Common Adjectives	10
-128	important	Common Adjectives	8
-129	last	Common Adjectives	12
-130	late	Common Adjectives	8
-131	light	Common Adjectives	8
-132	loud	Common Adjectives	6
-133	new	Common Adjectives	9
-134	next	Common Adjectives	5
-135	nice	Common Adjectives	6
-136	old	Common Adjectives	7
-137	perfect	Common Adjectives	7
-138	possible	Common Adjectives	8
-139	pretty	Common Adjectives	5
-140	quiet	Common Adjectives	7
-141	ready	Common Adjectives	10
-142	recent	Common Adjectives	7
-143	rough	Common Adjectives	7
-144	safe	Common Adjectives	5
-145	same	Common Adjectives	9
-146	short	Common Adjectives	13
-147	sick	Common Adjectives	8
-148	slow	Common Adjectives	8
-149	small	Common Adjectives	8
-150	smart	Common Adjectives	8
-151	smooth	Common Adjectives	5
-152	soft	Common Adjectives	8
-153	special	Common Adjectives	8
-154	specific	Common Adjectives	6
-155	strange	Common Adjectives	7
-156	strong	Common Adjectives	8
-157	stupid	Common Adjectives	5
-158	tall	Common Adjectives	13
-159	terrible	Common Adjectives	6
-160	thin	Common Adjectives	16
-161	ugly	Common Adjectives	9
-162	weak	Common Adjectives	7
-163	wet	Common Adjectives	9
-164	wonderful	Common Adjectives	6
-165	art	Common Nouns	7
-166	birthday	Common Nouns	6
-167	camera	Common Nouns	5
-168	card	Common Nouns	8
-169	city	Common Nouns	9
-170	clock	Common Nouns	5
-171	community	Common Nouns	6
-172	computer	Common Nouns	14
-173	country	Common Nouns	9
-174	day	Common Nouns	9
-175	document	Common Nouns	7
-176	event	Common Nouns	7
-177	example	Common Nouns	11
-178	experience	Common Nouns	7
-179	fact	Common Nouns	6
-180	form	Common Nouns	9
-181	game	Common Nouns	6
-182	government	Common Nouns	10
-183	history	Common Nouns	8
-184	idea	Common Nouns	8
-185	image	Common Nouns	5
-186	information	Common Nouns	7
-187	internet	Common Nouns	8
-188	key	Common Nouns	6
-189	language	Common Nouns	10
-190	law	Common Nouns	7
-191	letter	Common Nouns	11
-192	list	Common Nouns	9
-193	math	Common Nouns	7
-194	message	Common Nouns	5
-195	mirror	Common Nouns	8
-196	money	Common Nouns	6
-197	music	Common Nouns	8
-198	name	Common Nouns	6
-199	number	Common Nouns	5
-200	party	Common Nouns	9
-201	phone	Common Nouns	5
-202	picture	Common Nouns	6
-203	place	Common Nouns	5
-204	point	Common Nouns	9
-205	problem	Common Nouns	9
-206	radio	Common Nouns	6
-207	reason	Common Nouns	7
-208	result	Common Nouns	7
-209	science	Common Nouns	7
-210	sentence	Common Nouns	7
-211	song	Common Nouns	5
-212	story	Common Nouns	7
-213	team	Common Nouns	6
-214	technology	Common Nouns	5
-215	television	Common Nouns	6
-216	thing	Common Nouns	6
-217	ticket	Common Nouns	6
-218	time	Common Nouns	8
-219	topic	Common Nouns	7
-220	town	Common Nouns	9
-221	trip	Common Nouns	5
-222	vacation	Common Nouns	6
-223	way	Common Nouns	5
-224	wedding	Common Nouns	7
-225	word	Common Nouns	8
-226	world	Common Nouns	6
-227	answer	Common Verbs	7
-228	approve	Common Verbs	8
-229	argue	Common Verbs	10
-230	ask	Common Verbs	7
-231	break	Common Verbs	5
-232	bring	Common Verbs	8
-233	build	Common Verbs	6
-234	buy	Common Verbs	9
-235	call	Common Verbs	12
-236	carry	Common Verbs	7
-237	catch	Common Verbs	9
-238	check	Common Verbs	11
-239	climb	Common Verbs	5
-240	close	Common Verbs	8
-241	come	Common Verbs	6
-242	copy	Common Verbs	8
-243	cut	Common Verbs	8
-244	dance	Common Verbs	7
-245	decide	Common Verbs	9
-246	describe	Common Verbs	7
-247	develop	Common Verbs	8
-248	discuss	Common Verbs	8
-249	draw	Common Verbs	6
-250	drink	Common Verbs	15
-251	drive	Common Verbs	7
-252	drop	Common Verbs	9
-253	eat	Common Verbs	7
-254	explain	Common Verbs	7
-255	fight	Common Verbs	7
-256	find	Common Verbs	8
-257	fix	Common Verbs	6
-258	fly	Common Verbs	8
-259	follow	Common Verbs	9
-260	forget	Common Verbs	7
-261	give	Common Verbs	10
-262	go	Common Verbs	15
-263	hear	Common Verbs	9
-264	hit	Common Verbs	6
-265	hurry	Common Verbs	7
-266	improve	Common Verbs	9
-267	introduce	Common Verbs	6
-268	invite	Common Verbs	5
-269	jump	Common Verbs	6
-270	know	Common Verbs	8
-271	learn	Common Verbs	8
-272	leave	Common Verbs	11
-273	like	Common Verbs	10
-274	listen	Common Verbs	7
-275	lose	Common Verbs	9
-276	make	Common Verbs	9
-277	meet	Common Verbs	9
-278	move	Common Verbs	10
-279	open	Common Verbs	7
-280	order	Common Verbs	10
-281	organize	Common Verbs	5
-282	paint	Common Verbs	7
-283	pass	Common Verbs	7
-284	pay	Common Verbs	7
-285	plan	Common Verbs	7
-286	practice	Common Verbs	9
-287	prepare	Common Verbs	7
-288	pull	Common Verbs	9
-289	push	Common Verbs	6
-290	put	Common Verbs	6
-291	receive	Common Verbs	5
-292	refuse	Common Verbs	6
-293	remember	Common Verbs	7
-294	ride	Common Verbs	8
-295	rise	Common Verbs	7
-296	run	Common Verbs	7
-297	save	Common Verbs	8
-298	say	Common Verbs	6
-299	search	Common Verbs	5
-300	see	Common Verbs	5
-301	sell	Common Verbs	7
-302	send	Common Verbs	5
-303	share	Common Verbs	7
-304	show	Common Verbs	9
-305	sing	Common Verbs	5
-306	sit	Common Verbs	6
-307	sleep	Common Verbs	6
-308	stand	Common Verbs	5
-309	steal	Common Verbs	7
-310	stop	Common Verbs	5
-311	suggest	Common Verbs	6
-312	take	Common Verbs	11
-313	talk	Common Verbs	7
-314	tell	Common Verbs	10
-315	think	Common Verbs	7
-316	throw	Common Verbs	7
-317	trust	Common Verbs	6
-318	visit	Common Verbs	9
-319	wait	Common Verbs	10
-320	walk	Common Verbs	11
-321	warn	Common Verbs	5
-322	win	Common Verbs	7
-323	work	Common Verbs	10
-324	announce	Communication Verbs	5
-325	convince	Communication Verbs	10
-326	disagree	Communication Verbs	5
-327	inform	Communication Verbs	9
-328	promise	Communication Verbs	5
-329	sign language	Communication Verbs	5
-330	translate	Communication Verbs	7
-331	about	Conjunctions & Connectors	7
-332	against	Conjunctions & Connectors	5
-333	also	Conjunctions & Connectors	7
-334	and	Conjunctions & Connectors	5
-335	another	Conjunctions & Connectors	5
-336	any	Conjunctions & Connectors	5
-337	around	Conjunctions & Connectors	5
-338	because	Conjunctions & Connectors	10
-339	between	Conjunctions & Connectors	6
-340	but	Conjunctions & Connectors	7
-341	during	Conjunctions & Connectors	5
-342	every	Conjunctions & Connectors	5
-343	for	Conjunctions & Connectors	5
-344	from	Conjunctions & Connectors	7
-345	if	Conjunctions & Connectors	6
-346	in	Conjunctions & Connectors	7
-347	instead	Conjunctions & Connectors	5
-348	not	Conjunctions & Connectors	7
-349	on	Conjunctions & Connectors	5
-350	out	Conjunctions & Connectors	5
-351	some	Conjunctions & Connectors	7
-352	then	Conjunctions & Connectors	5
-353	through	Conjunctions & Connectors	5
-354	to	Conjunctions & Connectors	7
-355	until	Conjunctions & Connectors	7
-356	with	Conjunctions & Connectors	8
-357	without	Conjunctions & Connectors	7
-358	brush	Daily Activities	7
-359	comb	Daily Activities	6
-360	cook	Daily Activities	8
-361	exercise	Daily Activities	5
-362	get up	Daily Activities	6
-363	play	Daily Activities	11
-364	read	Daily Activities	6
-365	rest	Daily Activities	6
-366	teach	Daily Activities	7
-367	wake up	Daily Activities	5
-368	wash	Daily Activities	6
-369	watch	Daily Activities	8
-370	write	Daily Activities	10
-371	above	Directions	5
-372	across	Directions	6
-373	back	Directions	7
-374	behind	Directions	5
-375	below	Directions	6
-376	bottom	Directions	8
-377	center	Directions	7
-378	down	Directions	8
-379	east	Directions	8
-380	far	Directions	11
-381	front	Directions	8
-382	inside	Directions	6
-383	left	Directions	5
-384	middle	Directions	7
-385	near	Directions	9
-386	north	Directions	7
-387	outside	Directions	9
-388	side	Directions	5
-389	south	Directions	7
-390	top	Directions	6
-391	up	Directions	7
-392	west	Directions	8
-393	beer	Drinks	8
-394	coffee	Drinks	7
-395	milk	Drinks	5
-396	soda	Drinks	6
-397	tea	Drinks	7
-398	water	Drinks	9
-399	wine	Drinks	5
-400	accident	Emergency	13
-401	arrest	Emergency	6
-402	crash	Emergency	9
-403	danger	Emergency	5
-404	escape	Emergency	8
-405	police	Emergency	8
-406	rob	Emergency	8
-407	shock	Emergency	9
-408	siren	Emergency	6
-409	war	Emergency	7
-410	afraid	Emotions	5
-411	angry	Emotions	7
-412	bored	Emotions	7
-413	calm	Emotions	7
-414	confused	Emotions	6
-415	cry	Emotions	10
-416	curious	Emotions	6
-417	depressed	Emotions	5
-418	embarrass	Emotions	6
-419	excited	Emotions	6
-420	guilty	Emotions	7
-421	happy	Emotions	8
-422	hope	Emotions	9
-423	jealous	Emotions	8
-424	joy	Emotions	5
-425	laugh	Emotions	11
-426	lonely	Emotions	6
-427	love	Emotions	7
-428	nervous	Emotions	7
-429	pity	Emotions	5
-430	proud	Emotions	5
-431	sad	Emotions	8
-432	shame	Emotions	5
-433	smile	Emotions	7
-434	tired	Emotions	7
-435	worry	Emotions	5
-436	aunt	Family	7
-437	brother	Family	11
-438	cousin	Family	14
-439	dad	Family	7
-440	daughter	Family	10
-441	family	Family	11
-442	father	Family	7
-443	grandfather	Family	7
-444	grandmother	Family	7
-445	husband	Family	7
-446	mom	Family	7
-447	mother	Family	11
-448	nephew	Family	6
-449	niece	Family	7
-450	sister	Family	7
-451	son	Family	10
-452	uncle	Family	6
-453	wife	Family	8
-454	apple	Food	11
-455	bacon	Food	7
-456	banana	Food	9
-457	bread	Food	7
-458	breakfast	Food	5
-459	butter	Food	6
-460	cake	Food	8
-461	candy	Food	13
-462	carrot	Food	9
-463	cereal	Food	8
-464	cheese	Food	7
-465	chicken	Food	5
-466	cookie	Food	8
-467	corn	Food	12
-468	dessert	Food	8
-469	dinner	Food	7
-470	egg	Food	7
-471	fish	Food	10
-472	food	Food	7
-473	french fries	Food	6
-474	fruit	Food	7
-475	grapes	Food	7
-476	hot dog	Food	5
-477	ice cream	Food	7
-478	lemon	Food	8
-479	lettuce	Food	7
-480	lunch	Food	6
-481	meat	Food	8
-482	mushroom	Food	5
-483	onion	Food	8
-484	peach	Food	6
-485	peanut butter	Food	5
-486	pepper	Food	7
-487	pizza	Food	12
-488	potato	Food	8
-489	salad	Food	6
-490	salt	Food	8
-491	sandwich	Food	10
-492	shrimp	Food	6
-493	soup	Food	6
-494	strawberry	Food	8
-495	sugar	Food	7
-496	toast	Food	10
-497	tomato	Food	8
-498	vegetable	Food	5
-499	bye	Greetings	5
-500	good	Greetings	10
-501	goodbye	Greetings	5
-502	please	Greetings	7
-503	sign	Greetings	9
-504	sorry	Greetings	7
-505	thank you	Greetings	7
-506	welcome	Greetings	5
-507	basement	Home	6
-508	bathroom	Home	7
-509	bed	Home	13
-510	bedroom	Home	6
-511	blanket	Home	10
-512	cabinet	Home	5
-513	ceiling	Home	6
-514	chair	Home	7
-515	closet	Home	5
-516	couch	Home	5
-517	dining room	Home	5
-518	door	Home	7
-519	drawer	Home	7
-520	floor	Home	6
-521	home	Home	7
-522	house	Home	7
-523	kitchen	Home	7
-524	pillow	Home	7
-525	room	Home	11
-526	shelf	Home	5
-527	shower	Home	5
-528	soap	Home	7
-529	stairs	Home	6
-530	table	Home	5
-531	toilet	Home	5
-532	towel	Home	5
-533	wall	Home	5
-534	window	Home	6
-535	allergy	Medical	8
-536	appointment	Medical	10
-537	arm	Medical	7
-538	blind	Medical	8
-539	blood	Medical	5
-540	cough	Medical	6
-541	deaf	Medical	11
-542	dentist	Medical	8
-543	diabetes	Medical	5
-544	doctor	Medical	10
-545	ear	Medical	8
-546	eye	Medical	6
-547	headache	Medical	9
-548	health	Medical	6
-549	hearing	Medical	8
-550	hearing aid	Medical	5
-551	heart	Medical	8
-552	hospital	Medical	7
-553	hurt	Medical	5
-554	infection	Medical	6
-555	medicine	Medical	8
-556	mouth	Medical	5
-557	muscle	Medical	5
-558	neck	Medical	6
-559	nose	Medical	6
-560	nurse	Medical	6
-561	pain	Medical	5
-562	patient	Medical	7
-563	recover	Medical	6
-564	skin	Medical	6
-565	sore throat	Medical	6
-566	stomach	Medical	7
-567	surgery	Medical	7
-568	temperature	Medical	8
-569	therapy	Medical	6
-570	thermometer	Medical	5
-571	tongue	Medical	5
-572	tooth	Medical	6
-573	vomit	Medical	9
-574	cloud	Nature & Weather	8
-575	flower	Nature & Weather	7
-576	grass	Nature & Weather	5
-577	leaf	Nature & Weather	6
-578	lightning	Nature & Weather	6
-579	moon	Nature & Weather	7
-580	rain	Nature & Weather	7
-581	sky	Nature & Weather	8
-582	snow	Nature & Weather	10
-583	star	Nature & Weather	7
-584	sun	Nature & Weather	6
-585	tree	Nature & Weather	6
-586	warm	Nature & Weather	5
-587	wind	Nature & Weather	8
-588	double	Numbers	6
-589	eight	Numbers	6
-590	eighteen	Numbers	6
-591	five	Numbers	5
-592	four	Numbers	5
-593	half	Numbers	5
-594	nine	Numbers	5
-595	nineteen	Numbers	6
-596	one	Numbers	8
-597	quarter	Numbers	5
-598	seven	Numbers	6
-599	six	Numbers	6
-600	sixteen	Numbers	6
-601	ten	Numbers	5
-602	thousand	Numbers	6
-603	three	Numbers	7
-604	two	Numbers	6
-605	adult	People	7
-606	baby	People	9
-607	boy	People	8
-608	child	People	9
-609	children	People	7
-610	friend	People	7
-611	girl	People	9
-612	man	People	12
-613	member	People	5
-614	neighbor	People	7
-615	people	People	6
-616	person	People	7
-617	visitor	People	5
-618	woman	People	11
-619	apartment	Places	6
-620	church	Places	6
-621	earth	Places	6
-622	farm	Places	8
-623	forest	Places	7
-624	island	Places	6
-625	mountain	Places	5
-626	museum	Places	5
-627	ocean	Places	5
-628	prison	Places	6
-629	restaurant	Places	7
-630	river	Places	5
-631	stadium	Places	6
-632	fine	Polite Expressions	9
-633	help	Polite Expressions	14
-634	honest	Polite Expressions	5
-635	no	Polite Expressions	11
-636	ok	Polite Expressions	7
-637	right	Polite Expressions	9
-638	true	Polite Expressions	5
-639	wrong	Polite Expressions	8
-640	yes	Polite Expressions	12
-641	her	Pronouns	8
-642	herself	Pronouns	7
-643	my	Pronouns	6
-644	myself	Pronouns	6
-645	she	Pronouns	6
-646	their	Pronouns	5
-647	themselves	Pronouns	7
-648	they	Pronouns	5
-649	we	Pronouns	7
-650	you	Pronouns	8
-651	your	Pronouns	6
-652	yourself	Pronouns	5
-653	all	Quantifiers & Determiners	8
-654	almost	Quantifiers & Determiners	5
-655	both	Quantifiers & Determiners	6
-656	enough	Quantifiers & Determiners	5
-657	few	Quantifiers & Determiners	5
-658	less	Quantifiers & Determiners	5
-659	many	Quantifiers & Determiners	10
-660	more	Quantifiers & Determiners	8
-661	most	Quantifiers & Determiners	7
-662	much	Quantifiers & Determiners	6
-663	none	Quantifiers & Determiners	7
-664	only	Quantifiers & Determiners	6
-665	other	Quantifiers & Determiners	5
-666	together	Quantifiers & Determiners	6
-667	how	Questions	9
-668	question	Questions	5
-669	what	Questions	12
-670	when	Questions	8
-671	where	Questions	7
-672	which	Questions	6
-673	who	Questions	14
-674	why	Questions	11
-675	celebrate	Religion & Culture	6
-676	christmas	Religion & Culture	8
-677	easter	Religion & Culture	7
-678	funeral	Religion & Culture	5
-679	god	Religion & Culture	7
-680	parade	Religion & Culture	6
-681	pray	Religion & Culture	6
-682	religion	Religion & Culture	7
-683	spirit	Religion & Culture	7
-684	thanksgiving	Religion & Culture	13
-685	tradition	Religion & Culture	5
-686	algebra	School	5
-687	biology	School	6
-688	book	School	6
-689	calculator	School	5
-690	calculus	School	5
-691	chemistry	School	6
-692	class	School	9
-693	college	School	7
-694	curriculum	School	6
-695	diploma	School	5
-696	eraser	School	5
-697	geography	School	7
-698	graduate	School	10
-699	grammar	School	9
-700	homework	School	5
-701	keyboard	School	6
-702	lecture	School	7
-703	lesson	School	6
-704	library	School	5
-705	linguistics	School	7
-706	paper	School	8
-707	pencil	School	5
-708	physics	School	6
-709	principal	School	5
-710	professor	School	5
-711	project	School	7
-712	research	School	7
-713	school	School	9
-714	score	School	11
-715	student	School	8
-716	study	School	10
-717	teacher	School	8
-718	test	School	8
-719	university	School	7
-720	auction	Shopping	5
-721	cent	Shopping	6
-722	dollar	Shopping	8
-723	price	Shopping	6
-724	shop	Shopping	6
-725	store	Shopping	7
-726	trade	Shopping	13
-727	baseball	Sports	6
-728	basketball	Sports	12
-729	champion	Sports	11
-730	football	Sports	9
-731	golf	Sports	7
-732	race	Sports	6
-733	soccer	Sports	5
-734	swimming	Sports	6
-735	tennis	Sports	6
-736	tournament	Sports	7
-737	trophy	Sports	5
-738	volleyball	Sports	5
-739	laptop	Technology	6
-740	microphone	Technology	5
-741	network	Technology	6
-742	printer	Technology	6
-743	afternoon	Time	7
-744	ago	Time	9
-745	anniversary	Time	5
-746	april	Time	5
-747	august	Time	6
-748	autumn	Time	7
-749	date	Time	5
-750	december	Time	5
-751	friday	Time	6
-752	hour	Time	7
-753	january	Time	5
-754	june	Time	5
-755	march	Time	7
-756	minute	Time	9
-757	monday	Time	6
-758	month	Time	7
-759	morning	Time	6
-760	night	Time	5
-761	november	Time	5
-762	october	Time	5
-763	saturday	Time	7
-764	second	Time	6
-765	september	Time	5
-766	since	Time	8
-767	spring	Time	6
-768	summer	Time	7
-769	sunday	Time	8
-770	thursday	Time	11
-771	tuesday	Time	7
-772	wednesday	Time	8
-773	week	Time	9
-774	winter	Time	6
-775	year	Time	10
-776	airplane	Transportation	7
-777	arrive	Transportation	8
-778	bicycle	Transportation	6
-779	boat	Transportation	8
-780	bus	Transportation	5
-781	car	Transportation	7
-782	highway	Transportation	7
-783	motorcycle	Transportation	7
-784	street	Transportation	6
-785	subway	Transportation	5
-786	traffic	Transportation	6
-787	train	Transportation	9
-788	travel	Transportation	9
-789	truck	Transportation	6
-790	boss	Workplace	7
-791	business	Workplace	7
-792	email	Workplace	6
-793	interview	Workplace	5
-794	manager	Workplace	5
-795	meeting	Workplace	6
-796	office	Workplace	9
-797	presentation	Workplace	8
-798	resign	Workplace	5
-799	retire	Workplace	7
-800	salary	Workplace	5
-801	schedule	Workplace	5
-802	worker	Workplace	5
+0	accident	Emergency	13
+1	afraid	Emotions	5
+2	after	Auxiliaries & Connectors	7
+3	afternoon	Time	7
+4	again	Auxiliaries & Connectors	8
+5	agree	Core Verbs	5
+6	airplane	Transport	7
+7	all	Auxiliaries & Connectors	8
+8	also	Auxiliaries & Connectors	7
+9	always	Auxiliaries & Connectors	7
+10	and	Auxiliaries & Connectors	5
+11	angry	Emotions	7
+12	any	Auxiliaries & Connectors	5
+13	apple	Food & Drink	11
+14	ask	Core Verbs	7
+15	baby	Family	9
+16	bad	Adjectives	10
+17	bear	Animals	7
+18	beautiful	Adjectives	7
+19	because	Auxiliaries & Connectors	10
+20	bed	Household	13
+21	before	Auxiliaries & Connectors	16
+22	bicycle	Transport	6
+23	big	Adjectives	9
+24	bird	Animals	10
+25	birthday	Time	6
+26	black	Colors	10
+27	blood	Health	5
+28	blue	Colors	8
+29	book	School & Work	6
+30	both	Auxiliaries & Connectors	6
+31	bottle	Household	7
+32	box	Household	7
+33	boy	Family	8
+34	bread	Food & Drink	7
+35	break	Core Verbs	5
+36	bring	Core Verbs	8
+37	brother	Family	11
+38	brown	Colors	8
+39	bus	Transport	5
+40	business	School & Work	7
+41	busy	Adjectives	5
+42	but	Auxiliaries & Connectors	7
+43	buy	Core Verbs	9
+44	cake	Food & Drink	8
+45	call	Emergency	12
+46	can	Auxiliaries & Connectors	9
+47	candy	Food & Drink	13
+48	car	Transport	7
+49	carry	Core Verbs	7
+50	cat	Animals	9
+51	catch	Core Verbs	9
+52	chair	Household	7
+53	check	Core Verbs	11
+54	chicken	Food & Drink	5
+55	chocolate	Food & Drink	6
+56	choose	Core Verbs	8
+57	church	Places	6
+58	city	Places	9
+59	class	School & Work	9
+60	clean	Core Verbs	7
+61	clock	Household	5
+62	close	Core Verbs	8
+63	coffee	Food & Drink	7
+64	cold	Adjectives	12
+65	come	Core Verbs	6
+66	computer	School & Work	14
+67	continue	Core Verbs	6
+68	cook	Core Verbs	8
+69	cow	Animals	9
+70	cry	Emotions	10
+71	cup	Household	6
+72	cut	Core Verbs	8
+73	dance	Core Verbs	7
+74	danger	Emergency	5
+75	daughter	Family	10
+76	day	Time	9
+77	decide	Core Verbs	9
+78	different	Adjectives	8
+79	dirty	Adjectives	9
+80	doctor	Health	10
+81	dog	Animals	11
+82	door	Household	7
+83	down	Directions	8
+84	draw	Core Verbs	6
+85	drink	Core Verbs	15
+86	drive	Core Verbs	7
+87	duck	Animals	6
+88	ear	Health	8
+89	early	Time	6
+90	east	Directions	8
+91	easy	Adjectives	6
+92	eat	Core Verbs	7
+93	egg	Food & Drink	7
+94	eight	Numbers	6
+95	elephant	Animals	7
+96	email	School & Work	6
+97	every	Auxiliaries & Connectors	5
+98	excited	Emotions	6
+99	eye	Health	6
+100	family	Family	11
+101	far	Directions	11
+102	fast	Adjectives	9
+103	father	Family	7
+104	feel	Core Verbs	7
+105	find	Core Verbs	8
+106	fine	Polite Words	9
+107	finish	Core Verbs	9
+108	fire	Emergency	3
+109	fish	Food & Drink	10
+110	five	Numbers	5
+111	food	Food & Drink	7
+112	for	Auxiliaries & Connectors	5
+113	forget	Core Verbs	7
+114	four	Numbers	5
+115	free	Adjectives	4
+116	friend	Family	7
+117	from	Auxiliaries & Connectors	7
+118	fruit	Food & Drink	7
+119	funny	Adjectives	5
+120	get	Core Verbs	7
+121	girl	Family	9
+122	give	Core Verbs	10
+123	go	Core Verbs	15
+124	good	Adjectives	10
+125	goodbye	Polite Words	5
+126	green	Colors	7
+127	grow	Core Verbs	6
+128	happen	Core Verbs	6
+129	happy	Emotions	8
+130	hard	Adjectives	6
+131	hate	Emotions	4
+132	have	Core Verbs	6
+133	head	Health	6
+134	headache	Health	9
+135	heart	Health	8
+136	hello	Polite Words	4
+137	help	Core Verbs	14
+138	her	Pronouns	8
+139	here	Directions	7
+140	his	Pronouns	4
+141	hit	Core Verbs	6
+142	hold	Core Verbs	5
+143	home	Places	7
+144	hope	Core Verbs	9
+145	horse	Animals	4
+146	hospital	Places	7
+147	hot	Adjectives	10
+148	hour	Time	7
+149	house	Places	7
+150	how	Questions	9
+151	hungry	Food & Drink	6
+152	hurt	Emotions	5
+153	husband	Family	7
+154	i	Pronouns	4
+155	if	Auxiliaries & Connectors	6
+156	important	Adjectives	8
+157	jump	Core Verbs	6
+158	keep	Core Verbs	6
+159	key	Household	6
+160	know	Core Verbs	8
+161	late	Time	8
+162	laugh	Emotions	11
+163	learn	Core Verbs	8
+164	leave	Core Verbs	11
+165	left	Directions	5
+166	library	Places	5
+167	like	Core Verbs	10
+168	lion	Animals	5
+169	listen	Core Verbs	7
+170	lose	Core Verbs	9
+171	love	Emotions	7
+172	make	Core Verbs	9
+173	man	Family	12
+174	many	Auxiliaries & Connectors	10
+175	math	School & Work	7
+176	me	Pronouns	4
+177	meat	Food & Drink	8
+178	medicine	Health	8
+179	meet	Core Verbs	9
+180	meeting	School & Work	6
+181	milk	Food & Drink	5
+182	money	School & Work	6
+183	monkey	Animals	7
+184	month	Time	7
+185	more	Auxiliaries & Connectors	8
+186	morning	Time	6
+187	mother	Family	11
+188	mouth	Health	5
+189	music	School & Work	8
+190	my	Pronouns	6
+191	name	School & Work	6
+192	near	Directions	9
+193	need	Core Verbs	6
+194	nervous	Emotions	7
+195	never	Auxiliaries & Connectors	7
+196	new	Adjectives	9
+197	night	Time	5
+198	nine	Numbers	5
+199	no	Polite Words	11
+200	north	Directions	7
+201	nose	Health	6
+202	not	Auxiliaries & Connectors	7
+203	now	Time	9
+204	nurse	Health	6
+205	office	Places	9
+206	ok	Polite Words	7
+207	old	Adjectives	7
+208	one	Numbers	8
+209	open	Core Verbs	7
+210	or	Auxiliaries & Connectors	3
+211	orange	Colors	10
+212	our	Pronouns	4
+213	pain	Health	5
+214	paper	School & Work	8
+215	pencil	Household	5
+216	person	Family	7
+217	phone	School & Work	5
+218	pink	Colors	9
+219	pizza	Food & Drink	12
+220	plan	Core Verbs	7
+221	play	Core Verbs	11
+222	please	Polite Words	7
+223	police	Emergency	8
+224	promise	Core Verbs	5
+225	protect	Core Verbs	6
+226	proud	Emotions	5
+227	pull	Core Verbs	9
+228	purple	Colors	8
+229	push	Core Verbs	6
+230	put	Core Verbs	6
+231	rabbit	Animals	8
+232	read	Core Verbs	6
+233	ready	Adjectives	10
+234	red	Colors	7
+235	remember	Core Verbs	7
+236	restaurant	Places	7
+237	right	Adjectives	9
+238	run	Core Verbs	7
+239	sad	Emotions	8
+240	safe	Emergency	5
+241	same	Adjectives	9
+242	save	Core Verbs	8
+243	say	Core Verbs	6
+244	school	Places	9
+245	science	School & Work	7
+246	see	Core Verbs	5
+247	send	Core Verbs	5
+248	seven	Numbers	6
+249	share	Core Verbs	7
+250	she	Pronouns	6
+251	should	Auxiliaries & Connectors	6
+252	show	Core Verbs	9
+253	sick	Adjectives	8
+254	sing	Core Verbs	5
+255	sister	Family	7
+256	sit	Core Verbs	6
+257	six	Numbers	6
+258	sleep	Core Verbs	6
+259	slow	Adjectives	8
+260	small	Adjectives	8
+261	snake	Animals	7
+262	some	Auxiliaries & Connectors	7
+263	sometimes	Auxiliaries & Connectors	5
+264	son	Family	10
+265	soon	Time	11
+266	sorry	Polite Words	7
+267	soup	Food & Drink	6
+268	south	Directions	7
+269	stand	Core Verbs	5
+270	start	Core Verbs	4
+271	stay	Core Verbs	9
+272	stop	Core Verbs	5
+273	store	Places	7
+274	story	School & Work	7
+275	strong	Adjectives	8
+276	student	School & Work	8
+277	study	School & Work	10
+278	swim	Core Verbs	4
+279	table	Household	5
+280	take	Core Verbs	11
+281	talk	Core Verbs	7
+282	tea	Food & Drink	7
+283	teach	Core Verbs	7
+284	teacher	School & Work	8
+285	teeth	Health	4
+286	tell	Core Verbs	10
+287	ten	Numbers	5
+288	test	School & Work	8
+289	thank you	Polite Words	7
+290	that	Pronouns	4
+291	there	Directions	6
+292	they	Pronouns	5
+293	think	Core Verbs	7
+294	this	Pronouns	4
+295	three	Numbers	7
+296	time	Time	8
+297	tired	Emotions	7
+298	today	Time	9
+299	tomorrow	Time	7
+300	tonight	Time	5
+301	train	Transport	9
+302	travel	Core Verbs	9
+303	try	Core Verbs	6
+304	two	Numbers	6
+305	understand	Core Verbs	7
+306	university	Places	7
+307	until	Auxiliaries & Connectors	7
+308	up	Directions	7
+309	use	Core Verbs	5
+310	visit	Core Verbs	9
+311	wait	Core Verbs	10
+312	walk	Core Verbs	11
+313	want	Core Verbs	9
+314	wash	Core Verbs	6
+315	water	Food & Drink	9
+316	we	Pronouns	7
+317	weak	Adjectives	7
+318	wear	Core Verbs	6
+319	week	Time	9
+320	weekend	Time	9
+321	welcome	Polite Words	5
+322	west	Directions	8
+323	what	Questions	12
+324	when	Questions	8
+325	where	Questions	7
+326	which	Questions	6
+327	white	Colors	10
+328	who	Questions	14
+329	why	Questions	11
+330	wife	Family	8
+331	will	Auxiliaries & Connectors	4
+332	win	Core Verbs	7
+333	window	Household	6
+334	with	Auxiliaries & Connectors	8
+335	woman	Family	11
+336	word	School & Work	8
+337	work	Core Verbs	10
+338	worry	Core Verbs	5
+339	write	Core Verbs	10
+340	wrong	Adjectives	8
+341	year	Time	10
+342	yellow	Colors	8
+343	yes	Polite Words	12
+344	yesterday	Time	10
+345	you	Pronouns	8
+346	young	Adjectives	5
+347	your	Pronouns	6

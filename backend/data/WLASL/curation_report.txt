@@ -1,989 +1,367 @@
-======================================================================
-GestureBridge — Dataset Curation Report
-MIN_SAMPLES threshold  : 5
-Target vocabulary size : ~800 words
-Words requested        : 900
-Words accepted         : 803
-Words rejected         : 97
-======================================================================
+============================================================
+GestureBridge Dataset Curation Report (~200-word vocab)
+============================================================
+MIN_SAMPLES = 3
+Desired vocab size    : 353
+Accepted              : 348
+Rejected              : 5
+Total usable videos   : 2600
+Min / Max / Avg       : 3 / 16 / 7.5
+With aug=8 (~×9 total): ~67 samples/class
 
-ACCEPTED WORDS BY CATEGORY
-----------------------------------------------------------------------
+── ACCEPTED ────────────────────────────────────────────────
+  accident                       cat=Emergency                      n=13
+  afraid                         cat=Emotions                       n=5
+  after                          cat=Auxiliaries & Connectors       n=7
+  afternoon                      cat=Time                           n=7
+  again                          cat=Auxiliaries & Connectors       n=8
+  agree                          cat=Core Verbs                     n=5
+  airplane                       cat=Transport                      n=7
+  all                            cat=Auxiliaries & Connectors       n=8
+  also                           cat=Auxiliaries & Connectors       n=7
+  always                         cat=Auxiliaries & Connectors       n=7
+  and                            cat=Auxiliaries & Connectors       n=5
+  angry                          cat=Emotions                       n=7
+  any                            cat=Auxiliaries & Connectors       n=5
+  apple                          cat=Food & Drink                   n=11
+  ask                            cat=Core Verbs                     n=7
+  baby                           cat=Family                         n=9
+  bad                            cat=Adjectives                     n=10
+  bear                           cat=Animals                        n=7
+  beautiful                      cat=Adjectives                     n=7
+  because                        cat=Auxiliaries & Connectors       n=10
+  bed                            cat=Household                      n=13
+  before                         cat=Auxiliaries & Connectors       n=16
+  bicycle                        cat=Transport                      n=6
+  big                            cat=Adjectives                     n=9
+  bird                           cat=Animals                        n=10
+  birthday                       cat=Time                           n=6
+  black                          cat=Colors                         n=10
+  blood                          cat=Health                         n=5
+  blue                           cat=Colors                         n=8
+  book                           cat=School & Work                  n=6
+  both                           cat=Auxiliaries & Connectors       n=6
+  bottle                         cat=Household                      n=7
+  box                            cat=Household                      n=7
+  boy                            cat=Family                         n=8
+  bread                          cat=Food & Drink                   n=7
+  break                          cat=Core Verbs                     n=5
+  bring                          cat=Core Verbs                     n=8
+  brother                        cat=Family                         n=11
+  brown                          cat=Colors                         n=8
+  bus                            cat=Transport                      n=5
+  business                       cat=School & Work                  n=7
+  busy                           cat=Adjectives                     n=5
+  but                            cat=Auxiliaries & Connectors       n=7
+  buy                            cat=Core Verbs                     n=9
+  cake                           cat=Food & Drink                   n=8
+  call                           cat=Emergency                      n=12
+  can                            cat=Auxiliaries & Connectors       n=9
+  candy                          cat=Food & Drink                   n=13
+  car                            cat=Transport                      n=7
+  carry                          cat=Core Verbs                     n=7
+  cat                            cat=Animals                        n=9
+  catch                          cat=Core Verbs                     n=9
+  chair                          cat=Household                      n=7
+  check                          cat=Core Verbs                     n=11
+  chicken                        cat=Food & Drink                   n=5
+  chocolate                      cat=Food & Drink                   n=6
+  choose                         cat=Core Verbs                     n=8
+  church                         cat=Places                         n=6
+  city                           cat=Places                         n=9
+  class                          cat=School & Work                  n=9
+  clean                          cat=Core Verbs                     n=7
+  clock                          cat=Household                      n=5
+  close                          cat=Core Verbs                     n=8
+  coffee                         cat=Food & Drink                   n=7
+  cold                           cat=Adjectives                     n=12
+  come                           cat=Core Verbs                     n=6
+  computer                       cat=School & Work                  n=14
+  continue                       cat=Core Verbs                     n=6
+  cook                           cat=Core Verbs                     n=8
+  cow                            cat=Animals                        n=9
+  cry                            cat=Emotions                       n=10
+  cup                            cat=Household                      n=6
+  cut                            cat=Core Verbs                     n=8
+  dance                          cat=Core Verbs                     n=7
+  danger                         cat=Emergency                      n=5
+  daughter                       cat=Family                         n=10
+  day                            cat=Time                           n=9
+  decide                         cat=Core Verbs                     n=9
+  different                      cat=Adjectives                     n=8
+  dirty                          cat=Adjectives                     n=9
+  doctor                         cat=Health                         n=10
+  dog                            cat=Animals                        n=11
+  door                           cat=Household                      n=7
+  down                           cat=Directions                     n=8
+  draw                           cat=Core Verbs                     n=6
+  drink                          cat=Core Verbs                     n=15
+  drive                          cat=Core Verbs                     n=7
+  duck                           cat=Animals                        n=6
+  ear                            cat=Health                         n=8
+  early                          cat=Time                           n=6
+  east                           cat=Directions                     n=8
+  easy                           cat=Adjectives                     n=6
+  eat                            cat=Core Verbs                     n=7
+  egg                            cat=Food & Drink                   n=7
+  eight                          cat=Numbers                        n=6
+  elephant                       cat=Animals                        n=7
+  email                          cat=School & Work                  n=6
+  every                          cat=Auxiliaries & Connectors       n=5
+  excited                        cat=Emotions                       n=6
+  eye                            cat=Health                         n=6
+  family                         cat=Family                         n=11
+  far                            cat=Directions                     n=11
+  fast                           cat=Adjectives                     n=9
+  father                         cat=Family                         n=7
+  feel                           cat=Core Verbs                     n=7
+  find                           cat=Core Verbs                     n=8
+  fine                           cat=Polite Words                   n=9
+  finish                         cat=Core Verbs                     n=9
+  fire                           cat=Emergency                      n=3
+  fish                           cat=Food & Drink                   n=10
+  five                           cat=Numbers                        n=5
+  food                           cat=Food & Drink                   n=7
+  for                            cat=Auxiliaries & Connectors       n=5
+  forget                         cat=Core Verbs                     n=7
+  four                           cat=Numbers                        n=5
+  free                           cat=Adjectives                     n=4
+  friend                         cat=Family                         n=7
+  from                           cat=Auxiliaries & Connectors       n=7
+  fruit                          cat=Food & Drink                   n=7
+  funny                          cat=Adjectives                     n=5
+  get                            cat=Core Verbs                     n=7
+  girl                           cat=Family                         n=9
+  give                           cat=Core Verbs                     n=10
+  go                             cat=Core Verbs                     n=15
+  good                           cat=Adjectives                     n=10
+  goodbye                        cat=Polite Words                   n=5
+  green                          cat=Colors                         n=7
+  grow                           cat=Core Verbs                     n=6
+  happen                         cat=Core Verbs                     n=6
+  happy                          cat=Emotions                       n=8
+  hard                           cat=Adjectives                     n=6
+  hate                           cat=Emotions                       n=4
+  have                           cat=Core Verbs                     n=6
+  head                           cat=Health                         n=6
+  headache                       cat=Health                         n=9
+  heart                          cat=Health                         n=8
+  hello                          cat=Polite Words                   n=4
+  help                           cat=Core Verbs                     n=14
+  her                            cat=Pronouns                       n=8
+  here                           cat=Directions                     n=7
+  his                            cat=Pronouns                       n=4
+  hit                            cat=Core Verbs                     n=6
+  hold                           cat=Core Verbs                     n=5
+  home                           cat=Places                         n=7
+  hope                           cat=Core Verbs                     n=9
+  horse                          cat=Animals                        n=4
+  hospital                       cat=Places                         n=7
+  hot                            cat=Adjectives                     n=10
+  hour                           cat=Time                           n=7
+  house                          cat=Places                         n=7
+  how                            cat=Questions                      n=9
+  hungry                         cat=Food & Drink                   n=6
+  hurt                           cat=Emotions                       n=5
+  husband                        cat=Family                         n=7
+  i                              cat=Pronouns                       n=4
+  if                             cat=Auxiliaries & Connectors       n=6
+  important                      cat=Adjectives                     n=8
+  jump                           cat=Core Verbs                     n=6
+  keep                           cat=Core Verbs                     n=6
+  key                            cat=Household                      n=6
+  know                           cat=Core Verbs                     n=8
+  late                           cat=Time                           n=8
+  laugh                          cat=Emotions                       n=11
+  learn                          cat=Core Verbs                     n=8
+  leave                          cat=Core Verbs                     n=11
+  left                           cat=Directions                     n=5
+  library                        cat=Places                         n=5
+  like                           cat=Core Verbs                     n=10
+  lion                           cat=Animals                        n=5
+  listen                         cat=Core Verbs                     n=7
+  lose                           cat=Core Verbs                     n=9
+  love                           cat=Emotions                       n=7
+  make                           cat=Core Verbs                     n=9
+  man                            cat=Family                         n=12
+  many                           cat=Auxiliaries & Connectors       n=10
+  math                           cat=School & Work                  n=7
+  me                             cat=Pronouns                       n=4
+  meat                           cat=Food & Drink                   n=8
+  medicine                       cat=Health                         n=8
+  meet                           cat=Core Verbs                     n=9
+  meeting                        cat=School & Work                  n=6
+  milk                           cat=Food & Drink                   n=5
+  money                          cat=School & Work                  n=6
+  monkey                         cat=Animals                        n=7
+  month                          cat=Time                           n=7
+  more                           cat=Auxiliaries & Connectors       n=8
+  morning                        cat=Time                           n=6
+  mother                         cat=Family                         n=11
+  mouth                          cat=Health                         n=5
+  music                          cat=School & Work                  n=8
+  my                             cat=Pronouns                       n=6
+  name                           cat=School & Work                  n=6
+  near                           cat=Directions                     n=9
+  need                           cat=Core Verbs                     n=6
+  nervous                        cat=Emotions                       n=7
+  never                          cat=Auxiliaries & Connectors       n=7
+  new                            cat=Adjectives                     n=9
+  night                          cat=Time                           n=5
+  nine                           cat=Numbers                        n=5
+  no                             cat=Polite Words                   n=11
+  north                          cat=Directions                     n=7
+  nose                           cat=Health                         n=6
+  not                            cat=Auxiliaries & Connectors       n=7
+  now                            cat=Time                           n=9
+  nurse                          cat=Health                         n=6
+  office                         cat=Places                         n=9
+  ok                             cat=Polite Words                   n=7
+  old                            cat=Adjectives                     n=7
+  one                            cat=Numbers                        n=8
+  open                           cat=Core Verbs                     n=7
+  or                             cat=Auxiliaries & Connectors       n=3
+  orange                         cat=Colors                         n=10
+  our                            cat=Pronouns                       n=4
+  pain                           cat=Health                         n=5
+  paper                          cat=School & Work                  n=8
+  pencil                         cat=Household                      n=5
+  person                         cat=Family                         n=7
+  phone                          cat=School & Work                  n=5
+  pink                           cat=Colors                         n=9
+  pizza                          cat=Food & Drink                   n=12
+  plan                           cat=Core Verbs                     n=7
+  play                           cat=Core Verbs                     n=11
+  please                         cat=Polite Words                   n=7
+  police                         cat=Emergency                      n=8
+  promise                        cat=Core Verbs                     n=5
+  protect                        cat=Core Verbs                     n=6
+  proud                          cat=Emotions                       n=5
+  pull                           cat=Core Verbs                     n=9
+  purple                         cat=Colors                         n=8
+  push                           cat=Core Verbs                     n=6
+  put                            cat=Core Verbs                     n=6
+  rabbit                         cat=Animals                        n=8
+  read                           cat=Core Verbs                     n=6
+  ready                          cat=Adjectives                     n=10
+  red                            cat=Colors                         n=7
+  remember                       cat=Core Verbs                     n=7
+  restaurant                     cat=Places                         n=7
+  right                          cat=Adjectives                     n=9
+  run                            cat=Core Verbs                     n=7
+  sad                            cat=Emotions                       n=8
+  safe                           cat=Emergency                      n=5
+  same                           cat=Adjectives                     n=9
+  save                           cat=Core Verbs                     n=8
+  say                            cat=Core Verbs                     n=6
+  school                         cat=Places                         n=9
+  science                        cat=School & Work                  n=7
+  see                            cat=Core Verbs                     n=5
+  send                           cat=Core Verbs                     n=5
+  seven                          cat=Numbers                        n=6
+  share                          cat=Core Verbs                     n=7
+  she                            cat=Pronouns                       n=6
+  should                         cat=Auxiliaries & Connectors       n=6
+  show                           cat=Core Verbs                     n=9
+  sick                           cat=Adjectives                     n=8
+  sing                           cat=Core Verbs                     n=5
+  sister                         cat=Family                         n=7
+  sit                            cat=Core Verbs                     n=6
+  six                            cat=Numbers                        n=6
+  sleep                          cat=Core Verbs                     n=6
+  slow                           cat=Adjectives                     n=8
+  small                          cat=Adjectives                     n=8
+  snake                          cat=Animals                        n=7
+  some                           cat=Auxiliaries & Connectors       n=7
+  sometimes                      cat=Auxiliaries & Connectors       n=5
+  son                            cat=Family                         n=10
+  soon                           cat=Time                           n=11
+  sorry                          cat=Polite Words                   n=7
+  soup                           cat=Food & Drink                   n=6
+  south                          cat=Directions                     n=7
+  stand                          cat=Core Verbs                     n=5
+  start                          cat=Core Verbs                     n=4
+  stay                           cat=Core Verbs                     n=9
+  stop                           cat=Core Verbs                     n=5
+  store                          cat=Places                         n=7
+  story                          cat=School & Work                  n=7
+  strong                         cat=Adjectives                     n=8
+  student                        cat=School & Work                  n=8
+  study                          cat=School & Work                  n=10
+  swim                           cat=Core Verbs                     n=4
+  table                          cat=Household                      n=5
+  take                           cat=Core Verbs                     n=11
+  talk                           cat=Core Verbs                     n=7
+  tea                            cat=Food & Drink                   n=7
+  teach                          cat=Core Verbs                     n=7
+  teacher                        cat=School & Work                  n=8
+  teeth                          cat=Health                         n=4
+  tell                           cat=Core Verbs                     n=10
+  ten                            cat=Numbers                        n=5
+  test                           cat=School & Work                  n=8
+  thank you                      cat=Polite Words                   n=7
+  that                           cat=Pronouns                       n=4
+  there                          cat=Directions                     n=6
+  they                           cat=Pronouns                       n=5
+  think                          cat=Core Verbs                     n=7
+  this                           cat=Pronouns                       n=4
+  three                          cat=Numbers                        n=7
+  time                           cat=Time                           n=8
+  tired                          cat=Emotions                       n=7
+  today                          cat=Time                           n=9
+  tomorrow                       cat=Time                           n=7
+  tonight                        cat=Time                           n=5
+  train                          cat=Transport                      n=9
+  travel                         cat=Core Verbs                     n=9
+  try                            cat=Core Verbs                     n=6
+  two                            cat=Numbers                        n=6
+  understand                     cat=Core Verbs                     n=7
+  university                     cat=Places                         n=7
+  until                          cat=Auxiliaries & Connectors       n=7
+  up                             cat=Directions                     n=7
+  use                            cat=Core Verbs                     n=5
+  visit                          cat=Core Verbs                     n=9
+  wait                           cat=Core Verbs                     n=10
+  walk                           cat=Core Verbs                     n=11
+  want                           cat=Core Verbs                     n=9
+  wash                           cat=Core Verbs                     n=6
+  water                          cat=Food & Drink                   n=9
+  we                             cat=Pronouns                       n=7
+  weak                           cat=Adjectives                     n=7
+  wear                           cat=Core Verbs                     n=6
+  week                           cat=Time                           n=9
+  weekend                        cat=Time                           n=9
+  welcome                        cat=Polite Words                   n=5
+  west                           cat=Directions                     n=8
+  what                           cat=Questions                      n=12
+  when                           cat=Questions                      n=8
+  where                          cat=Questions                      n=7
+  which                          cat=Questions                      n=6
+  white                          cat=Colors                         n=10
+  who                            cat=Questions                      n=14
+  why                            cat=Questions                      n=11
+  wife                           cat=Family                         n=8
+  will                           cat=Auxiliaries & Connectors       n=4
+  win                            cat=Core Verbs                     n=7
+  window                         cat=Household                      n=6
+  with                           cat=Auxiliaries & Connectors       n=8
+  woman                          cat=Family                         n=11
+  word                           cat=School & Work                  n=8
+  work                           cat=Core Verbs                     n=10
+  worry                          cat=Core Verbs                     n=5
+  write                          cat=Core Verbs                     n=10
+  wrong                          cat=Adjectives                     n=8
+  year                           cat=Time                           n=10
+  yellow                         cat=Colors                         n=8
+  yes                            cat=Polite Words                   n=12
+  yesterday                      cat=Time                           n=10
+  you                            cat=Pronouns                       n=8
+  young                          cat=Adjectives                     n=5
+  your                           cat=Pronouns                       n=6
 
-[Adverbs & Degree Words]  (19 words)
-  after                          usable=  7  total= 12
-  again                          usable=  8  total= 16
-  already                        usable=  8  total= 11
-  always                         usable=  7  total= 14
-  before                         usable= 16  total= 26
-  here                           usable=  7  total= 15
-  later                          usable= 12  total= 20
-  maybe                          usable=  6  total= 11
-  never                          usable=  7  total= 13
-  now                            usable=  9  total= 21
-  often                          usable=  6  total= 11
-  really                         usable=  7  total= 12
-  soon                           usable= 11  total= 16
-  still                          usable=  5  total=  8
-  there                          usable=  6  total= 13
-  today                          usable=  9  total= 14
-  tomorrow                       usable=  7  total= 13
-  very                           usable=  6  total=  7
-  yesterday                      usable= 10  total= 17
-
-[Animals]  (24 words)
-  bear                           usable=  7  total= 13
-  bee                            usable=  6  total=  9
-  bird                           usable= 10  total= 19
-  butterfly                      usable=  5  total=  9
-  cat                            usable=  9  total= 17
-  cow                            usable=  9  total= 19
-  deer                           usable=  7  total= 13
-  dinosaur                       usable=  7  total=  9
-  dog                            usable= 11  total= 20
-  duck                           usable=  6  total= 11
-  eagle                          usable=  7  total= 11
-  elephant                       usable=  7  total= 13
-  frog                           usable=  7  total= 11
-  giraffe                        usable=  7  total= 12
-  lion                           usable=  5  total= 11
-  monkey                         usable=  7  total= 13
-  pig                            usable=  7  total= 12
-  rabbit                         usable=  8  total= 17
-  snake                          usable=  7  total= 13
-  spider                         usable=  6  total= 10
-  tiger                          usable=  9  total= 13
-  turtle                         usable=  5  total= 11
-  whale                          usable=  6  total=  8
-  wolf                           usable=  6  total= 10
-
-[Auxiliary & Modal Verbs]  (18 words)
-  agree                          usable=  5  total= 10
-  allow                          usable=  8  total= 12
-  become                         usable=  5  total= 10
-  can                            usable=  9  total= 20
-  continue                       usable=  6  total= 12
-  done                           usable=  5  total=  7
-  finish                         usable=  9  total= 21
-  get                            usable=  7  total= 13
-  happen                         usable=  6  total= 13
-  have                           usable=  6  total= 17
-  keep                           usable=  6  total= 10
-  must                           usable=  7  total= 11
-  need                           usable=  6  total= 18
-  require                        usable=  6  total= 11
-  seem                           usable=  6  total= 11
-  stay                           usable=  9  total= 16
-  use                            usable=  5  total= 14
-  want                           usable=  9  total= 19
-
-[Clothing]  (23 words)
-  backpack                       usable=  8  total= 17
-  belt                           usable=  7  total= 12
-  bracelet                       usable=  7  total= 13
-  clothes                        usable=  5  total= 25
-  coat                           usable=  5  total=  9
-  dress                          usable=  8  total= 15
-  earring                        usable=  6  total= 13
-  glasses                        usable=  9  total= 14
-  hat                            usable=  9  total= 20
-  helmet                         usable=  5  total=  9
-  jacket                         usable=  7  total= 18
-  jewelry                        usable=  6  total=  7
-  necklace                       usable=  9  total= 13
-  pants                          usable=  8  total= 15
-  ring                           usable=  5  total=  9
-  shirt                          usable= 12  total= 20
-  shoes                          usable=  6  total= 14
-  skirt                          usable=  6  total= 11
-  socks                          usable=  6  total= 10
-  sweater                        usable=  6  total= 10
-  swimsuit                       usable=  5  total=  8
-  tie                            usable=  7  total= 10
-  underwear                      usable=  8  total= 11
-
-[Colors]  (13 words)
-  black                          usable= 10  total= 21
-  blue                           usable=  8  total= 20
-  brown                          usable=  8  total= 18
-  gray                           usable=  6  total=  9
-  green                          usable=  7  total= 17
-  orange                         usable= 10  total= 21
-  pink                           usable=  9  total= 19
-  purple                         usable=  8  total= 18
-  red                            usable=  7  total= 17
-  silver                         usable=  6  total=  8
-  tan                            usable=  5  total=  9
-  white                          usable= 10  total= 20
-  yellow                         usable=  8  total= 18
-
-[Common Adjectives]  (68 words)
-  amazing                        usable=  5  total=  8
-  awful                          usable=  8  total= 12
-  bad                            usable= 10  total= 16
-  beautiful                      usable=  7  total= 10
-  big                            usable=  9  total= 12
-  bright                         usable=  6  total=  9
-  busy                           usable=  5  total= 10
-  cheap                          usable=  7  total= 12
-  clean                          usable=  7  total= 12
-  cold                           usable= 12  total= 16
-  cool                           usable= 16  total= 21
-  dangerous                      usable=  6  total=  7
-  dark                           usable= 12  total= 19
-  different                      usable=  8  total= 17
-  dirty                          usable=  9  total= 13
-  dry                            usable=  9  total= 13
-  early                          usable=  6  total= 11
-  easy                           usable=  6  total= 14
-  empty                          usable=  5  total=  9
-  expensive                      usable=  8  total= 13
-  fast                           usable=  9  total= 13
-  fat                            usable= 10  total= 15
-  final                          usable=  5  total=  8
-  first                          usable=  9  total= 16
-  full                           usable= 10  total= 18
-  funny                          usable=  5  total= 11
-  general                        usable=  6  total=  9
-  great                          usable=  9  total= 12
-  hard                           usable=  6  total= 14
-  heavy                          usable=  5  total=  9
-  hot                            usable= 10  total= 21
-  important                      usable=  8  total= 13
-  last                           usable= 12  total= 19
-  late                           usable=  8  total= 16
-  light                          usable=  8  total= 15
-  loud                           usable=  6  total= 10
-  new                            usable=  9  total= 15
-  next                           usable=  5  total= 10
-  nice                           usable=  6  total= 14
-  old                            usable=  7  total= 16
-  perfect                        usable=  7  total= 10
-  possible                       usable=  8  total= 13
-  pretty                         usable=  5  total= 11
-  quiet                          usable=  7  total= 13
-  ready                          usable= 10  total= 13
-  recent                         usable=  7  total=  8
-  rough                          usable=  7  total= 11
-  safe                           usable=  5  total=  8
-  same                           usable=  9  total= 18
-  short                          usable= 13  total= 19
-  sick                           usable=  8  total= 17
-  slow                           usable=  8  total= 13
-  small                          usable=  8  total= 15
-  smart                          usable=  8  total= 12
-  smooth                         usable=  5  total=  8
-  soft                           usable=  8  total= 12
-  special                        usable=  8  total= 11
-  specific                       usable=  6  total=  9
-  strange                        usable=  7  total= 12
-  strong                         usable=  8  total= 12
-  stupid                         usable=  5  total= 11
-  tall                           usable= 13  total= 20
-  terrible                       usable=  6  total=  9
-  thin                           usable= 16  total= 22
-  ugly                           usable=  9  total= 15
-  weak                           usable=  7  total= 12
-  wet                            usable=  9  total= 14
-  wonderful                      usable=  6  total=  9
-
-[Common Nouns]  (62 words)
-  art                            usable=  7  total= 12
-  birthday                       usable=  6  total= 18
-  camera                         usable=  5  total= 10
-  card                           usable=  8  total=  9
-  city                           usable=  9  total= 18
-  clock                          usable=  5  total= 15
-  community                      usable=  6  total= 10
-  computer                       usable= 14  total= 30
-  country                        usable=  9  total= 15
-  day                            usable=  9  total= 15
-  document                       usable=  7  total=  8
-  event                          usable=  7  total= 12
-  example                        usable= 11  total= 15
-  experience                     usable=  7  total= 12
-  fact                           usable=  6  total= 11
-  form                           usable=  9  total= 12
-  game                           usable=  6  total= 15
-  government                     usable= 10  total= 15
-  history                        usable=  8  total= 12
-  idea                           usable=  8  total= 13
-  image                          usable=  5  total=  9
-  information                    usable=  7  total= 10
-  internet                       usable=  8  total= 14
-  key                            usable=  6  total=  9
-  language                       usable= 10  total= 20
-  law                            usable=  7  total= 14
-  letter                         usable= 11  total= 18
-  list                           usable=  9  total= 16
-  math                           usable=  7  total= 11
-  message                        usable=  5  total=  8
-  mirror                         usable=  8  total= 13
-  money                          usable=  6  total= 14
-  music                          usable=  8  total= 15
-  name                           usable=  6  total= 16
-  number                         usable=  5  total= 12
-  party                          usable=  9  total= 15
-  phone                          usable=  5  total= 13
-  picture                        usable=  6  total= 13
-  place                          usable=  5  total= 10
-  point                          usable=  9  total= 13
-  problem                        usable=  9  total= 16
-  radio                          usable=  6  total= 11
-  reason                         usable=  7  total= 12
-  result                         usable=  7  total=  9
-  science                        usable=  7  total= 13
-  sentence                       usable=  7  total= 13
-  song                           usable=  5  total=  8
-  story                          usable=  7  total= 12
-  team                           usable=  6  total= 10
-  technology                     usable=  5  total=  8
-  television                     usable=  6  total= 11
-  thing                          usable=  6  total= 10
-  ticket                         usable=  6  total= 12
-  time                           usable=  8  total= 19
-  topic                          usable=  7  total= 10
-  town                           usable=  9  total= 13
-  trip                           usable=  5  total=  7
-  vacation                       usable=  6  total= 13
-  way                            usable=  5  total=  9
-  wedding                        usable=  7  total= 12
-  word                           usable=  8  total= 14
-  world                          usable=  6  total= 12
-
-[Common Verbs]  (97 words)
-  answer                         usable=  7  total= 12
-  approve                        usable=  8  total= 15
-  argue                          usable= 10  total= 14
-  ask                            usable=  7  total= 11
-  break                          usable=  5  total= 10
-  bring                          usable=  8  total= 14
-  build                          usable=  6  total= 11
-  buy                            usable=  9  total= 16
-  call                           usable= 12  total= 16
-  carry                          usable=  7  total= 10
-  catch                          usable=  9  total= 14
-  check                          usable= 11  total= 17
-  climb                          usable=  5  total= 10
-  close                          usable=  8  total= 15
-  come                           usable=  6  total=  8
-  copy                           usable=  8  total= 16
-  cut                            usable=  8  total= 13
-  dance                          usable=  7  total= 19
-  decide                         usable=  9  total= 18
-  describe                       usable=  7  total= 10
-  develop                        usable=  8  total= 12
-  discuss                        usable=  8  total= 15
-  draw                           usable=  6  total= 14
-  drink                          usable= 15  total= 35
-  drive                          usable=  7  total= 15
-  drop                           usable=  9  total= 15
-  eat                            usable=  7  total= 19
-  explain                        usable=  7  total= 13
-  fight                          usable=  7  total= 13
-  find                           usable=  8  total= 13
-  fix                            usable=  6  total=  9
-  fly                            usable=  8  total= 13
-  follow                         usable=  9  total= 13
-  forget                         usable=  7  total= 19
-  give                           usable= 10  total= 19
-  go                             usable= 15  total= 26
-  hear                           usable=  9  total= 15
-  hit                            usable=  6  total= 13
-  hurry                          usable=  7  total= 14
-  improve                        usable=  9  total= 14
-  introduce                      usable=  6  total= 12
-  invite                         usable=  5  total= 10
-  jump                           usable=  6  total= 14
-  know                           usable=  8  total= 16
-  learn                          usable=  8  total= 17
-  leave                          usable= 11  total= 16
-  like                           usable= 10  total= 21
-  listen                         usable=  7  total= 11
-  lose                           usable=  9  total= 16
-  make                           usable=  9  total= 15
-  meet                           usable=  9  total= 19
-  move                           usable= 10  total= 14
-  open                           usable=  7  total= 10
-  order                          usable= 10  total= 15
-  organize                       usable=  5  total=  8
-  paint                          usable=  7  total= 18
-  pass                           usable=  7  total= 11
-  pay                            usable=  7  total= 14
-  plan                           usable=  7  total= 15
-  practice                       usable=  9  total= 15
-  prepare                        usable=  7  total= 11
-  pull                           usable=  9  total= 18
-  push                           usable=  6  total= 12
-  put                            usable=  6  total= 11
-  receive                        usable=  5  total=  8
-  refuse                         usable=  6  total=  9
-  remember                       usable=  7  total= 16
-  ride                           usable=  8  total= 15
-  rise                           usable=  7  total= 11
-  run                            usable=  7  total= 17
-  save                           usable=  8  total= 14
-  say                            usable=  6  total= 10
-  search                         usable=  5  total=  9
-  see                            usable=  5  total= 11
-  sell                           usable=  7  total= 12
-  send                           usable=  5  total= 11
-  share                          usable=  7  total= 16
-  show                           usable=  9  total= 17
-  sing                           usable=  5  total=  9
-  sit                            usable=  6  total= 13
-  sleep                          usable=  6  total= 14
-  stand                          usable=  5  total= 11
-  steal                          usable=  7  total= 11
-  stop                           usable=  5  total= 11
-  suggest                        usable=  6  total= 10
-  take                           usable= 11  total= 17
-  talk                           usable=  7  total= 14
-  tell                           usable= 10  total= 18
-  think                          usable=  7  total= 14
-  throw                          usable=  7  total= 14
-  trust                          usable=  6  total=  9
-  visit                          usable=  9  total= 18
-  wait                           usable= 10  total= 18
-  walk                           usable= 11  total= 22
-  warn                           usable=  5  total= 11
-  win                            usable=  7  total= 14
-  work                           usable= 10  total= 19
-
-[Communication Verbs]  (7 words)
-  announce                       usable=  5  total= 10
-  convince                       usable= 10  total= 15
-  disagree                       usable=  5  total= 10
-  inform                         usable=  9  total= 17
-  promise                        usable=  5  total= 11
-  sign language                  usable=  5  total=  9
-  translate                      usable=  7  total= 11
-
-[Conjunctions & Connectors]  (27 words)
-  about                          usable=  7  total= 15
-  against                        usable=  5  total=  8
-  also                           usable=  7  total= 11
-  and                            usable=  5  total= 11
-  another                        usable=  5  total=  9
-  any                            usable=  5  total= 12
-  around                         usable=  5  total=  8
-  because                        usable= 10  total= 15
-  between                        usable=  6  total=  7
-  but                            usable=  7  total= 18
-  during                         usable=  5  total= 11
-  every                          usable=  5  total= 11
-  for                            usable=  5  total= 12
-  from                           usable=  7  total= 13
-  if                             usable=  6  total= 10
-  in                             usable=  7  total= 11
-  instead                        usable=  5  total=  8
-  not                            usable=  7  total= 14
-  on                             usable=  5  total=  9
-  out                            usable=  5  total=  9
-  some                           usable=  7  total= 15
-  then                           usable=  5  total= 10
-  through                        usable=  5  total=  9
-  to                             usable=  7  total= 11
-  until                          usable=  7  total= 12
-  with                           usable=  8  total= 17
-  without                        usable=  7  total= 10
-
-[Daily Activities]  (13 words)
-  brush                          usable=  7  total= 10
-  comb                           usable=  6  total= 11
-  cook                           usable=  8  total= 18
-  exercise                       usable=  5  total= 11
-  get up                         usable=  6  total=  7
-  play                           usable= 11  total= 19
-  read                           usable=  6  total= 17
-  rest                           usable=  6  total= 11
-  teach                          usable=  7  total= 15
-  wake up                        usable=  5  total=  8
-  wash                           usable=  6  total= 11
-  watch                          usable=  8  total= 12
-  write                          usable= 10  total= 17
-
-[Directions]  (22 words)
-  above                          usable=  5  total=  9
-  across                         usable=  6  total= 10
-  back                           usable=  7  total= 14
-  behind                         usable=  5  total= 14
-  below                          usable=  6  total= 10
-  bottom                         usable=  8  total= 11
-  center                         usable=  7  total= 15
-  down                           usable=  8  total= 13
-  east                           usable=  8  total= 14
-  far                            usable= 11  total= 16
-  front                          usable=  8  total= 12
-  inside                         usable=  6  total= 11
-  left                           usable=  5  total=  9
-  middle                         usable=  7  total=  9
-  near                           usable=  9  total= 14
-  north                          usable=  7  total= 14
-  outside                        usable=  9  total= 12
-  side                           usable=  5  total= 10
-  south                          usable=  7  total= 15
-  top                            usable=  6  total= 12
-  up                             usable=  7  total= 11
-  west                           usable=  8  total= 14
-
-[Drinks]  (7 words)
-  beer                           usable=  8  total= 12
-  coffee                         usable=  7  total= 16
-  milk                           usable=  5  total= 14
-  soda                           usable=  6  total= 13
-  tea                            usable=  7  total= 17
-  water                          usable=  9  total= 18
-  wine                           usable=  5  total= 11
-
-[Emergency]  (10 words)
-  accident                       usable= 13  total= 19
-  arrest                         usable=  6  total= 11
-  crash                          usable=  9  total= 15
-  danger                         usable=  5  total=  7
-  escape                         usable=  8  total= 13
-  police                         usable=  8  total= 16
-  rob                            usable=  8  total=  9
-  shock                          usable=  9  total= 11
-  siren                          usable=  6  total=  8
-  war                            usable=  7  total= 15
-
-[Emotions]  (26 words)
-  afraid                         usable=  5  total=  8
-  angry                          usable=  7  total= 11
-  bored                          usable=  7  total= 13
-  calm                           usable=  7  total= 11
-  confused                       usable=  6  total=  8
-  cry                            usable= 10  total= 17
-  curious                        usable=  6  total= 10
-  depressed                      usable=  5  total=  8
-  embarrass                      usable=  6  total= 10
-  excited                        usable=  6  total= 11
-  guilty                         usable=  7  total= 11
-  happy                          usable=  8  total= 16
-  hope                           usable=  9  total= 15
-  jealous                        usable=  8  total= 13
-  joy                            usable=  5  total=  7
-  laugh                          usable= 11  total= 17
-  lonely                         usable=  6  total=  9
-  love                           usable=  7  total= 12
-  nervous                        usable=  7  total= 11
-  pity                           usable=  5  total=  8
-  proud                          usable=  5  total=  8
-  sad                            usable=  8  total= 14
-  shame                          usable=  5  total=  8
-  smile                          usable=  7  total= 12
-  tired                          usable=  7  total= 16
-  worry                          usable=  5  total= 12
-
-[Family]  (18 words)
-  aunt                           usable=  7  total= 12
-  brother                        usable= 11  total= 17
-  cousin                         usable= 14  total= 23
-  dad                            usable=  7  total= 10
-  daughter                       usable= 10  total= 16
-  family                         usable= 11  total= 20
-  father                         usable=  7  total= 14
-  grandfather                    usable=  7  total= 12
-  grandmother                    usable=  7  total= 11
-  husband                        usable=  7  total= 15
-  mom                            usable=  7  total= 11
-  mother                         usable= 11  total= 21
-  nephew                         usable=  6  total= 14
-  niece                          usable=  7  total= 14
-  sister                         usable=  7  total= 14
-  son                            usable= 10  total= 18
-  uncle                          usable=  6  total= 13
-  wife                           usable=  8  total= 18
-
-[Food]  (45 words)
-  apple                          usable= 11  total= 19
-  bacon                          usable=  7  total= 12
-  banana                         usable=  9  total= 15
-  bread                          usable=  7  total= 13
-  breakfast                      usable=  5  total=  7
-  butter                         usable=  6  total= 11
-  cake                           usable=  8  total= 12
-  candy                          usable= 13  total= 24
-  carrot                         usable=  9  total= 12
-  cereal                         usable=  8  total= 14
-  cheese                         usable=  7  total= 14
-  chicken                        usable=  5  total= 13
-  cookie                         usable=  8  total= 13
-  corn                           usable= 12  total= 19
-  dessert                        usable=  8  total= 11
-  dinner                         usable=  7  total=  9
-  egg                            usable=  7  total= 14
-  fish                           usable= 10  total= 20
-  food                           usable=  7  total= 12
-  french fries                   usable=  6  total=  8
-  fruit                          usable=  7  total= 10
-  grapes                         usable=  7  total= 11
-  hot dog                        usable=  5  total=  7
-  ice cream                      usable=  7  total= 10
-  lemon                          usable=  8  total= 13
-  lettuce                        usable=  7  total= 13
-  lunch                          usable=  6  total= 10
-  meat                           usable=  8  total= 14
-  mushroom                       usable=  5  total= 10
-  onion                          usable=  8  total= 13
-  peach                          usable=  6  total= 12
-  peanut butter                  usable=  5  total=  8
-  pepper                         usable=  7  total= 13
-  pizza                          usable= 12  total= 19
-  potato                         usable=  8  total= 14
-  salad                          usable=  6  total= 12
-  salt                           usable=  8  total= 15
-  sandwich                       usable= 10  total= 15
-  shrimp                         usable=  6  total= 10
-  soup                           usable=  6  total= 12
-  strawberry                     usable=  8  total=  9
-  sugar                          usable=  7  total= 12
-  toast                          usable= 10  total= 13
-  tomato                         usable=  8  total= 15
-  vegetable                      usable=  5  total= 10
-
-[Greetings]  (8 words)
-  bye                            usable=  5  total=  7
-  good                           usable= 10  total= 16
-  goodbye                        usable=  5  total= 10
-  please                         usable=  7  total= 15
-  sign                           usable=  9  total= 15
-  sorry                          usable=  7  total= 14
-  thank you                      usable=  7  total= 14
-  welcome                        usable=  5  total= 10
-
-[Home]  (28 words)
-  basement                       usable=  6  total= 13
-  bathroom                       usable=  7  total= 16
-  bed                            usable= 13  total= 20
-  bedroom                        usable=  6  total= 12
-  blanket                        usable= 10  total= 16
-  cabinet                        usable=  5  total=  8
-  ceiling                        usable=  6  total=  8
-  chair                          usable=  7  total= 26
-  closet                         usable=  5  total=  7
-  couch                          usable=  5  total= 10
-  dining room                    usable=  5  total=  7
-  door                           usable=  7  total= 17
-  drawer                         usable=  7  total= 11
-  floor                          usable=  6  total= 13
-  home                           usable=  7  total= 16
-  house                          usable=  7  total= 15
-  kitchen                        usable=  7  total= 13
-  pillow                         usable=  7  total= 11
-  room                           usable= 11  total= 17
-  shelf                          usable=  5  total=  9
-  shower                         usable=  5  total= 12
-  soap                           usable=  7  total= 13
-  stairs                         usable=  6  total= 10
-  table                          usable=  5  total= 21
-  toilet                         usable=  5  total= 13
-  towel                          usable=  5  total=  7
-  wall                           usable=  5  total=  9
-  window                         usable=  6  total= 16
-
-[Medical]  (39 words)
-  allergy                        usable=  8  total= 10
-  appointment                    usable= 10  total= 13
-  arm                            usable=  7  total= 11
-  blind                          usable=  8  total= 13
-  blood                          usable=  5  total=  9
-  cough                          usable=  6  total= 14
-  deaf                           usable= 11  total= 23
-  dentist                        usable=  8  total= 13
-  diabetes                       usable=  5  total=  8
-  doctor                         usable= 10  total= 19
-  ear                            usable=  8  total= 13
-  eye                            usable=  6  total=  8
-  headache                       usable=  9  total= 17
-  health                         usable=  6  total=  9
-  hearing                        usable=  8  total= 20
-  hearing aid                    usable=  5  total=  9
-  heart                          usable=  8  total= 14
-  hospital                       usable=  7  total= 13
-  hurt                           usable=  5  total= 12
-  infection                      usable=  6  total=  8
-  medicine                       usable=  8  total= 18
-  mouth                          usable=  5  total= 10
-  muscle                         usable=  5  total= 11
-  neck                           usable=  6  total= 10
-  nose                           usable=  6  total= 11
-  nurse                          usable=  6  total= 14
-  pain                           usable=  5  total= 10
-  patient                        usable=  7  total= 14
-  recover                        usable=  6  total=  7
-  skin                           usable=  6  total=  8
-  sore throat                    usable=  6  total=  8
-  stomach                        usable=  7  total= 12
-  surgery                        usable=  7  total= 13
-  temperature                    usable=  8  total= 14
-  therapy                        usable=  6  total= 12
-  thermometer                    usable=  5  total=  9
-  tongue                         usable=  5  total=  8
-  tooth                          usable=  6  total=  9
-  vomit                          usable=  9  total= 14
-
-[Nature & Weather]  (14 words)
-  cloud                          usable=  8  total= 12
-  flower                         usable=  7  total= 14
-  grass                          usable=  5  total=  8
-  leaf                           usable=  6  total=  9
-  lightning                      usable=  6  total=  8
-  moon                           usable=  7  total= 14
-  rain                           usable=  7  total= 13
-  sky                            usable=  8  total= 11
-  snow                           usable= 10  total= 17
-  star                           usable=  7  total= 13
-  sun                            usable=  6  total= 10
-  tree                           usable=  6  total= 13
-  warm                           usable=  5  total= 11
-  wind                           usable=  8  total= 12
-
-[Numbers]  (17 words)
-  double                         usable=  6  total= 10
-  eight                          usable=  6  total= 10
-  eighteen                       usable=  6  total=  8
-  five                           usable=  5  total=  7
-  four                           usable=  5  total=  9
-  half                           usable=  5  total= 10
-  nine                           usable=  5  total=  7
-  nineteen                       usable=  6  total=  8
-  one                            usable=  8  total= 12
-  quarter                        usable=  5  total=  7
-  seven                          usable=  6  total=  9
-  six                            usable=  6  total=  9
-  sixteen                        usable=  6  total=  7
-  ten                            usable=  5  total=  7
-  thousand                       usable=  6  total= 10
-  three                          usable=  7  total= 10
-  two                            usable=  6  total= 10
-
-[People]  (14 words)
-  adult                          usable=  7  total= 12
-  baby                           usable=  9  total= 14
-  boy                            usable=  8  total= 15
-  child                          usable=  9  total= 13
-  children                       usable=  7  total= 15
-  friend                         usable=  7  total= 16
-  girl                           usable=  9  total= 15
-  man                            usable= 12  total= 20
-  member                         usable=  5  total=  8
-  neighbor                       usable=  7  total= 12
-  people                         usable=  6  total= 13
-  person                         usable=  7  total= 16
-  visitor                        usable=  5  total=  8
-  woman                          usable= 11  total= 21
-
-[Places]  (13 words)
-  apartment                      usable=  6  total= 10
-  church                         usable=  6  total= 13
-  earth                          usable=  6  total= 10
-  farm                           usable=  8  total=  9
-  forest                         usable=  7  total= 11
-  island                         usable=  6  total= 11
-  mountain                       usable=  5  total= 10
-  museum                         usable=  5  total= 11
-  ocean                          usable=  5  total=  9
-  prison                         usable=  6  total= 12
-  restaurant                     usable=  7  total= 15
-  river                          usable=  5  total= 10
-  stadium                        usable=  6  total=  7
-
-[Polite Expressions]  (9 words)
-  fine                           usable=  9  total= 22
-  help                           usable= 14  total= 22
-  honest                         usable=  5  total=  9
-  no                             usable= 11  total= 22
-  ok                             usable=  7  total= 14
-  right                          usable=  9  total= 18
-  true                           usable=  5  total=  9
-  wrong                          usable=  8  total= 20
-  yes                            usable= 12  total= 22
-
-[Pronouns]  (12 words)
-  her                            usable=  8  total= 11
-  herself                        usable=  7  total= 10
-  my                             usable=  6  total= 12
-  myself                         usable=  6  total=  9
-  she                            usable=  6  total=  9
-  their                          usable=  5  total= 10
-  themselves                     usable=  7  total= 12
-  they                           usable=  5  total=  9
-  we                             usable=  7  total= 10
-  you                            usable=  8  total= 16
-  your                           usable=  6  total= 15
-  yourself                       usable=  5  total= 10
-
-[Quantifiers & Determiners]  (14 words)
-  all                            usable=  8  total= 21
-  almost                         usable=  5  total= 10
-  both                           usable=  6  total= 12
-  enough                         usable=  5  total= 10
-  few                            usable=  5  total= 12
-  less                           usable=  5  total=  9
-  many                           usable= 10  total= 21
-  more                           usable=  8  total= 15
-  most                           usable=  7  total= 15
-  much                           usable=  6  total= 11
-  none                           usable=  7  total= 15
-  only                           usable=  6  total=  9
-  other                          usable=  5  total= 11
-  together                       usable=  6  total= 11
-
-[Questions]  (8 words)
-  how                            usable=  9  total= 18
-  question                       usable=  5  total= 10
-  what                           usable= 12  total= 21
-  when                           usable=  8  total= 14
-  where                          usable=  7  total= 15
-  which                          usable=  6  total= 14
-  who                            usable= 14  total= 25
-  why                            usable= 11  total= 17
-
-[Religion & Culture]  (11 words)
-  celebrate                      usable=  6  total= 10
-  christmas                      usable=  8  total= 15
-  easter                         usable=  7  total= 12
-  funeral                        usable=  5  total=  9
-  god                            usable=  7  total= 12
-  parade                         usable=  6  total= 10
-  pray                           usable=  6  total= 10
-  religion                       usable=  7  total= 12
-  spirit                         usable=  7  total= 11
-  thanksgiving                   usable= 13  total= 21
-  tradition                      usable=  5  total=  9
-
-[School]  (34 words)
-  algebra                        usable=  5  total=  8
-  biology                        usable=  6  total= 10
-  book                           usable=  6  total= 40
-  calculator                     usable=  5  total=  8
-  calculus                       usable=  5  total=  8
-  chemistry                      usable=  6  total=  9
-  class                          usable=  9  total= 17
-  college                        usable=  7  total= 16
-  curriculum                     usable=  6  total= 10
-  diploma                        usable=  5  total=  9
-  eraser                         usable=  5  total=  7
-  geography                      usable=  7  total=  8
-  graduate                       usable= 10  total= 20
-  grammar                        usable=  9  total= 12
-  homework                       usable=  5  total= 10
-  keyboard                       usable=  6  total= 10
-  lecture                        usable=  7  total= 11
-  lesson                         usable=  6  total= 11
-  library                        usable=  5  total= 12
-  linguistics                    usable=  7  total=  9
-  paper                          usable=  8  total= 18
-  pencil                         usable=  5  total= 15
-  physics                        usable=  6  total=  9
-  principal                      usable=  5  total=  8
-  professor                      usable=  5  total=  8
-  project                        usable=  7  total= 10
-  research                       usable=  7  total= 13
-  school                         usable=  9  total= 19
-  score                          usable= 11  total= 13
-  student                        usable=  8  total= 15
-  study                          usable= 10  total= 20
-  teacher                        usable=  8  total= 17
-  test                           usable=  8  total= 16
-  university                     usable=  7  total= 12
-
-[Shopping]  (7 words)
-  auction                        usable=  5  total=  8
-  cent                           usable=  6  total=  9
-  dollar                         usable=  8  total= 11
-  price                          usable=  6  total= 12
-  shop                           usable=  6  total= 14
-  store                          usable=  7  total= 10
-  trade                          usable= 13  total= 16
-
-[Sports]  (12 words)
-  baseball                       usable=  6  total= 11
-  basketball                     usable= 12  total= 18
-  champion                       usable= 11  total= 14
-  football                       usable=  9  total= 15
-  golf                           usable=  7  total= 11
-  race                           usable=  6  total=  9
-  soccer                         usable=  5  total= 10
-  swimming                       usable=  6  total=  7
-  tennis                         usable=  6  total= 10
-  tournament                     usable=  7  total= 10
-  trophy                         usable=  5  total=  9
-  volleyball                     usable=  5  total=  7
-
-[Technology]  (4 words)
-  laptop                         usable=  6  total=  8
-  microphone                     usable=  5  total=  8
-  network                        usable=  6  total=  8
-  printer                        usable=  6  total= 10
-
-[Time]  (33 words)
-  afternoon                      usable=  7  total= 13
-  ago                            usable=  9  total= 12
-  anniversary                    usable=  5  total=  9
-  april                          usable=  5  total=  8
-  august                         usable=  6  total= 10
-  autumn                         usable=  7  total= 10
-  date                           usable=  5  total=  8
-  december                       usable=  5  total=  8
-  friday                         usable=  6  total= 12
-  hour                           usable=  7  total= 14
-  january                        usable=  5  total=  8
-  june                           usable=  5  total=  8
-  march                          usable=  7  total= 11
-  minute                         usable=  9  total= 13
-  monday                         usable=  6  total= 10
-  month                          usable=  7  total= 14
-  morning                        usable=  6  total= 13
-  night                          usable=  5  total= 13
-  november                       usable=  5  total=  8
-  october                        usable=  5  total=  9
-  saturday                       usable=  7  total= 14
-  second                         usable=  6  total= 10
-  september                      usable=  5  total=  8
-  since                          usable=  8  total= 15
-  spring                         usable=  6  total=  8
-  summer                         usable=  7  total= 12
-  sunday                         usable=  8  total= 16
-  thursday                       usable= 11  total= 18
-  tuesday                        usable=  7  total= 12
-  wednesday                      usable=  8  total= 14
-  week                           usable=  9  total= 17
-  winter                         usable=  6  total= 10
-  year                           usable= 10  total= 22
-
-[Transportation]  (14 words)
-  airplane                       usable=  7  total= 11
-  arrive                         usable=  8  total= 15
-  bicycle                        usable=  6  total= 10
-  boat                           usable=  8  total= 11
-  bus                            usable=  5  total= 11
-  car                            usable=  7  total= 13
-  highway                        usable=  7  total= 10
-  motorcycle                     usable=  7  total= 13
-  street                         usable=  6  total= 12
-  subway                         usable=  5  total=  9
-  traffic                        usable=  6  total= 14
-  train                          usable=  9  total= 15
-  travel                         usable=  9  total= 16
-  truck                          usable=  6  total= 13
-
-[Workplace]  (13 words)
-  boss                           usable=  7  total= 11
-  business                       usable=  7  total= 15
-  email                          usable=  6  total= 12
-  interview                      usable=  5  total= 10
-  manager                        usable=  5  total=  9
-  meeting                        usable=  6  total= 13
-  office                         usable=  9  total= 15
-  presentation                   usable=  8  total= 10
-  resign                         usable=  5  total=  8
-  retire                         usable=  7  total= 11
-  salary                         usable=  5  total=  7
-  schedule                       usable=  5  total= 12
-  worker                         usable=  5  total=  8
-
-
-REJECTED WORDS
-----------------------------------------------------------------------
-  airport                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  anyway                         usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  assignment                     usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  attack                         usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  bag                            usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  begin                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  bridge                         usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  budget                         usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  client                         usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  communicate                    usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  contract                       usable=  3  REASON: TOO FEW SAMPLES — only 3 usable video(s), minimum required is 5
-  culture                        usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  deadline                       usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  deliver                        usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  depart                         usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  diagnosis                      usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  difficult                      usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  digital                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  disaster                       usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  discount                       usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  each                           usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  eleven                         usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  even                           usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  fall                           usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  february                       usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  fever                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  fifteen                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  fire                           usable=  3  REASON: TOO FEW SAMPLES — only 3 usable video(s), minimum required is 5
-  fourteen                       usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  free                           usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  gloves                         usable=  2  REASON: TOO FEW SAMPLES — only 2 usable video(s), minimum required is 5
-  go to bed                      usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  gold                           usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  he                             usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  healthy                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  himself                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  hire                           usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  his                            usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  holiday                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  horse                          usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  hotel                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  hundred                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  i                              usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  injury                         usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  interpret                      usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  into                           usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  it                             usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  job                            usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  july                           usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  just                           usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  lamp                           usable=  2  REASON: TOO FEW SAMPLES — only 2 usable video(s), minimum required is 5
-  let                            usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  life                           usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  look                           usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  market                         usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  may                            usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  me                             usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  medal                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  million                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  notebook                       usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  of                             usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  or                             usable=  3  REASON: TOO FEW SAMPLES — only 3 usable video(s), minimum required is 5
-  our                            usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  park                           usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  parking                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  pharmacy                       usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  profit                         usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  receipt                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  report                         usable=  3  REASON: TOO FEW SAMPLES — only 3 usable video(s), minimum required is 5
-  road                           usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  scarf                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  scholarship                    usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  screen                         usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  seventeen                      usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  several                        usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  shark                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  so                             usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  social media                   usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  spend                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  sport                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  start                          usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  station                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  storm                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  surprised                      usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  swim                           usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  taxi                           usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  than                           usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  that                           usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  these                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  thirteen                       usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  this                           usable=  4  REASON: TOO FEW SAMPLES — only 4 usable video(s), minimum required is 5
-  those                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  thunder                        usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  twelve                         usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  twenty                         usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  video                          usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-  yet                            usable=  0  REASON: NOT IN WLASL — word not found in WLASL_v0.3.json
-
-======================================================================
+── REJECTED ────────────────────────────────────────────────
+  he                             reason=not_in_wlasl
+  look                           reason=not_in_wlasl
+  worried                        reason=not_in_wlasl
+  hand                           reason=not_in_wlasl
+  job                            reason=not_in_wlasl

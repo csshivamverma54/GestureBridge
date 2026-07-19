@@ -34,12 +34,11 @@ const Icons = {
 };
 
 const NAV_ITEMS = [
-  { path: '/dashboard',    icon: 'dashboard',    label: 'Dashboard'     },
-  { path: '/sign-to-text', icon: 'signToText',   label: 'Sign to Text'  },
-  { path: '/text-to-sign', icon: 'textToSign',   label: 'Text to Sign'  },
-  { path: '/history',      icon: 'history',      label: 'History'       },
-  { path: '/profile',      icon: 'profile',      label: 'Profile'       },
-  { path: '/settings',     icon: 'settings',     label: 'Settings'      },
+  { path: '/dashboard',    icon: 'dashboard',    label: 'Dashboard'    },
+  { path: '/sign-to-text', icon: 'signToText',   label: 'Sign to Text' },
+  { path: '/text-to-sign', icon: 'textToSign',   label: 'Text to Sign' },
+  { path: '/history',      icon: 'history',      label: 'History'      },
+  { path: '/account',      icon: 'settings',     label: 'Account'      },
 ];
 
 export default function Sidebar({ open, onClose }) {
@@ -93,8 +92,7 @@ export default function Sidebar({ open, onClose }) {
           }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
               stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2a10 10 0 100 20 10 10 0 000-20z" />
-              <path d="M12 12h4v3a5 5 0 01-8.54 3.54" />
+              <path d="M18 11V6.5a2.5 2.5 0 00-5 0v5M5 11h14M5 11a7 7 0 0014 0" />
             </svg>
           </div>
           <span style={{ fontWeight: 700, fontSize: '.9rem', letterSpacing: '-.01em', color: 'var(--text-main)' }}>

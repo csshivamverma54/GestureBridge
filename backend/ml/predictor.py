@@ -27,8 +27,7 @@ rather than crashing the server.
 Input contract
 --------------
 `landmark_sequence` can be:
-  - np.ndarray of shape (T, 126) — raw landmark sequence from MediaPipe
-    (left-hand 63 floats + right-hand 63 floats per frame)
+  - np.ndarray of shape (T, 218) — raw landmark sequence from MediaPipe v2
   - list of lists / nested Python floats — JSON-decoded body from the
     frontend webcam module (shape inferred at runtime)
 
@@ -53,10 +52,14 @@ log = logging.getLogger(__name__)
 # Paths (relative to backend/ — where the Flask app is launched)
 # ------------------------------------------------------------------
 _ML_DIR         = Path(__file__).parent           # backend/ml/
-_MODEL_PATH     = _ML_DIR / "gesture_model.pt"
-_LABELS_PATH    = _ML_DIR / "labels.json"
-_META_PATH      = _ML_DIR / "model_meta.json"
+_MODEL_PATH      = _ML_DIR / "gesture_model.pt"
+_LABELS_PATH     = _ML_DIR / "labels.json"
+_META_PATH       = _ML_DIR / "model_meta.json"
 _NORMALIZER_PATH = _ML_DIR / "normalizer.npz"
+
+# Runtime values — overridden by model_meta.json if present
+_SEQUENCE_LENGTH:      int = 45
+_LANDMARK_VECTOR_SIZE: int = 218
 
 # ------------------------------------------------------------------
 # Singleton model + labels (loaded once at import)
@@ -80,6 +83,7 @@ def _load_labels(labels_path: Path) -> dict:
 
 def _load_model(model_path: Path, meta_path: Path, num_classes: int):
     """Load the PyTorch model state dict. Returns None if file does not exist."""
+    global _SEQUENCE_LENGTH, _LANDMARK_VECTOR_SIZE
     if not model_path.exists():
         log.warning(
             "Model file not found at %s. "
@@ -88,11 +92,16 @@ def _load_model(model_path: Path, meta_path: Path, num_classes: int):
         )
         return None
 
-    # Determine num_classes from meta file if available
-    if num_classes == 0 and meta_path.exists():
+    # Determine num_classes, sequence_length, and feature size from meta
+    if meta_path.exists():
         with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
-        num_classes = meta.get("num_classes", 0)
+        if num_classes == 0:
+            num_classes = meta.get("num_classes", 0)
+        _SEQUENCE_LENGTH      = meta.get("sequence_length",      _SEQUENCE_LENGTH)
+        _LANDMARK_VECTOR_SIZE = meta.get("landmark_vector_size", _LANDMARK_VECTOR_SIZE)
+        log.info("model_meta.json: num_classes=%d  seq_len=%d  feat_size=%d",
+                 num_classes, _SEQUENCE_LENGTH, _LANDMARK_VECTOR_SIZE)
 
     if num_classes == 0:
         log.error(
@@ -110,6 +119,15 @@ def _load_model(model_path: Path, meta_path: Path, num_classes: int):
         model.eval()
         log.info("GestureBridge model loaded from %s (classes=%d)", model_path, num_classes)
         return model
+    except RuntimeError as exc:
+        # Most likely cause: saved weights have a different input_size (e.g. 182)
+        # but the current model expects LANDMARK_VECTOR_SIZE (218).
+        # The model must be retrained: python -m ml.preprocess_dataset && python -m ml.train
+        log.error(
+            "Model state_dict mismatch — the saved model was probably trained on a "
+            "different feature size. Retrain with ml/train.py.  Detail: %s", exc
+        )
+        return None
     except Exception as exc:  # noqa: BLE001
         log.error("Failed to load model: %s", exc)
         return None
@@ -125,8 +143,8 @@ def _initialize():
     # Load normalizer stats (saved by train.py)
     if _NORMALIZER_PATH.exists():
         npz = np.load(str(_NORMALIZER_PATH))
-        _feat_mean = npz["mean"]   # (63,)
-        _feat_std  = npz["std"]    # (63,)
+        _feat_mean = npz["mean"]   # (182,)
+        _feat_std  = npz["std"]    # (182,)
         log.info("Normalizer stats loaded from %s", _NORMALIZER_PATH)
     else:
         _feat_mean = None
@@ -154,10 +172,11 @@ def predict_gesture(landmark_sequence: Union[np.ndarray, list]) -> dict:
     Parameters
     ----------
     landmark_sequence : np.ndarray or list
-        Shape (T, 182) — T variable-length frames, each with 182 floats.
-        Feature layout per frame (produced by landmarks.py):
+        Shape (T, 218) — T variable-length frames (ideally T = _SEQUENCE_LENGTH),
+        each with 218 floats. Feature layout per frame (produced by landmarks.py):
           left_hand(63) | right_hand(63) | pose(24) | face(27)
-          | velocity(3) | interaction_dist(2)
+          | velocity(3) | interaction(2) | accel(3) | nmm(10)
+          | finger_angles(15) | wrist_quat(4) | body_dist(4)
 
     Returns
     -------
@@ -169,25 +188,32 @@ def predict_gesture(landmark_sequence: Union[np.ndarray, list]) -> dict:
     """
     if _model is None:
         return {
-            "predicted_word": "model_not_ready",
+            "predicted_word": "—",
             "confidence": 0.0,
             "top5": [],
-            "error": "Model not loaded. Please train the model first.",
+            "error": (
+                "Model not loaded — the saved weights are likely from a previous "
+                "feature version (182-dim). Retrain: "
+                "python -m ml.preprocess_dataset && python -m ml.train"
+            ),
+            "needs_retrain": True,
         }
 
-    # ── Coerce input to numpy ──────────────────────────────────────
+    # ── Coerce input to numpy (T × 182) ───────────────────────────
     if not isinstance(landmark_sequence, np.ndarray):
         landmark_sequence = np.array(landmark_sequence, dtype=np.float32)
-
     if landmark_sequence.ndim == 1:
-        # Single flat vector: reshape to (1, 63) — treated as a 1-frame sequence
         landmark_sequence = landmark_sequence.reshape(1, -1)
 
-    # ── Preprocess: pad/truncate + z-score standardize → (1, 30, 182) ─
-    X = preprocess_landmark_sequence(landmark_sequence, mean=_feat_mean, std=_feat_std)
+    # ── Preprocess: pad/truncate to _SEQUENCE_LENGTH, then z-score ─
+    from ml.utils.preprocess import pad_or_truncate
+    seq = pad_or_truncate(landmark_sequence, _SEQUENCE_LENGTH)    # (_SEQUENCE_LENGTH, 218)
+    if _feat_mean is not None and _feat_std is not None:
+        seq = (seq - _feat_mean) / (_feat_std + 1e-8)
+    X = np.expand_dims(seq, axis=0).astype(np.float32)           # (1, _SEQUENCE_LENGTH, 218)
 
     # ── Inference ──────────────────────────────────────────────────
-    tensor = torch.from_numpy(X.astype(np.float32))       # (1, 30, 182)
+    tensor = torch.from_numpy(X)       # (1, _SEQUENCE_LENGTH, 218)
     with torch.no_grad():
         logits = _model(tensor)                            # (1, num_classes)
         probs  = F.softmax(logits, dim=-1)[0].numpy()     # (num_classes,)

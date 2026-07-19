@@ -17,6 +17,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
+const GUEST_USER = { name: 'Guest', email: 'guest@gesturebridge.local', isGuest: true };
+const GUEST_TOKEN = 'guest-session';
+
 export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null);
   const [token,   setToken]   = useState(null);
@@ -47,6 +50,14 @@ export function AuthProvider({ children }) {
     localStorage.setItem('gb_user', JSON.stringify(newUser));
   };
 
+  /** Guest login — no backend call, limited functionality. */
+  const loginAsGuest = () => {
+    setToken(GUEST_TOKEN);
+    setUser(GUEST_USER);
+    // Guest session is intentionally NOT persisted to localStorage
+    // so it resets on page refresh.
+  };
+
   /** Clear session and redirect to login. */
   const logout = () => {
     setToken(null);
@@ -65,7 +76,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginAsGuest, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

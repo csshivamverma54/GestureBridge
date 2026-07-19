@@ -5,10 +5,9 @@
  *   All requests go to /api/*, Vite proxies them → Flask :5000,
  *   stripping the /api prefix before forwarding.
  *
- * In production (npm run build → Flask serves dist/):
- *   React and Flask run on the same origin (Flask :5000).
- *   Requests go directly to /register, /login, /predict, etc.
- *   The /api prefix is NOT used because Flask routes don't have it.
+ * In production (npm run build):
+ *   Requests go directly to https://gesturebridge.onrender.com
+ *   (the deployed Render backend).
  *
  * Solution: detect the mode via import.meta.env.DEV and set the base URL
  * accordingly so the same codebase works in both environments.
@@ -25,9 +24,10 @@
 
 import axios from 'axios';
 
-// Dev: prefix with /api so Vite's proxy can intercept.
-// Prod: no prefix — Flask routes are at the root.
-const BASE_URL = import.meta.env.DEV ? '/api' : '';
+// Dev:  /api prefix → Vite proxy → Flask :5000 (strips the prefix).
+// Prod: direct to the Render-hosted backend.
+const PROD_API  = 'https://gesturebridge.onrender.com';
+const BASE_URL  = import.meta.env.DEV ? '/api' : PROD_API;
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -86,8 +86,17 @@ export const getProfile = () => api.get('/profile');
  *   Each row: [left_hand×63_floats | right_hand×63_floats] — zeros if hand absent.
  * → { predicted_text, confidence, top5[], warning? }
  */
-export const predictGesture = (userId, gesture) =>
-  api.post('/predict', { user_id: userId, gesture });
+export const predictGesture = (userId, gesture, nmm = {}) =>
+  api.post('/predict', { user_id: userId, gesture, nmm });
+
+/**
+ * POST /generate-sentence  { glosses, nmm }
+ *   glosses : string[]  — ordered ASL gloss tokens
+ *   nmm     : object    — NMM scalar averages from the signing window
+ * → { sentence, glosses, nmm }
+ */
+export const generateSentence = (glosses, nmm = {}) =>
+  api.post('/generate-sentence', { glosses, nmm });
 
 /** GET /model/status */
 export const getModelStatus = () => api.get('/model/status');

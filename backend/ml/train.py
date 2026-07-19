@@ -73,7 +73,7 @@ def load_data(processed_dir: Path):
 
     Returns
     -------
-    X          : np.ndarray (N, 30, 126) float32
+    X          : np.ndarray (N, 45, 218) float32
     y          : np.ndarray (N,)        int64
     idx_to_label : dict {int: str}
     num_classes  : int
@@ -255,11 +255,11 @@ def run_training(
     (X_train, y_train), (X_val, y_val), (X_test, y_test) = split_data(X, y)
 
     # ── Z-score standardization using TRAINING-SET statistics only ─
-    # X shape: (N, 30, 126).  Compute mean/std over (N, T) → shape (126,).
+    # X shape: (N, 45, 218).  Compute mean/std over (N, T) → shape (218,).
     # This preserves inter-sample differences that global per-sequence
     # min-max normalization was destroying.
-    feat_mean = X_train.reshape(-1, X_train.shape[-1]).mean(axis=0)   # (126,)
-    feat_std  = X_train.reshape(-1, X_train.shape[-1]).std(axis=0)    # (126,)
+    feat_mean = X_train.reshape(-1, X_train.shape[-1]).mean(axis=0)   # (218,)
+    feat_std  = X_train.reshape(-1, X_train.shape[-1]).std(axis=0)    # (218,)
     feat_std  = np.where(feat_std < 1e-8, 1.0, feat_std)             # avoid /0
 
     X_train = ((X_train - feat_mean) / feat_std).astype(np.float32)
@@ -356,10 +356,16 @@ def run_training(
         shutil.copy2(src_labels, dst_labels)
     log.info("labels.json → %s", dst_labels)
 
-    # Save num_classes alongside the model so predictor can reconstruct it
+    # Save num_classes + sequence_length + landmark_vector_size so predictor
+    # can reconstruct the model and validate feature dimensions at runtime.
+    from ml.model import SEQUENCE_LENGTH as SEQ_LEN, LANDMARK_VECTOR_SIZE as FEAT_SIZE
     meta_path = output_dir / "model_meta.json"
     with open(meta_path, "w", encoding="utf-8") as f:
-        json.dump({"num_classes": num_classes}, f)
+        json.dump({
+            "num_classes":          num_classes,
+            "sequence_length":      SEQ_LEN,
+            "landmark_vector_size": FEAT_SIZE,
+        }, f)
     log.info("model_meta.json → %s", meta_path)
 
     # ── Save training history ──────────────────────────────────────
@@ -404,7 +410,8 @@ def main():
         default="ml",
         help="Directory to save the model, plots, and history.",
     )
-    parser.add_argument("--epochs",        type=int,   default=150)
+    parser.add_argument("--epochs",        type=int,   default=200,
+                        help="Training epochs (default 200; early-stopping with patience=20).")
     parser.add_argument("--batch_size",    type=int,   default=32)
     parser.add_argument("--learning_rate", type=float, default=0.001)
     args = parser.parse_args()

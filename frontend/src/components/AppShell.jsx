@@ -13,8 +13,7 @@ const PAGE_TITLES = {
   '/sign-to-text': 'Sign to Text',
   '/text-to-sign': 'Text to Sign',
   '/history':      'Translation History',
-  '/profile':      'Profile',
-  '/settings':     'Settings',
+  '/account':      'Account & Settings',
 };
 
 export default function AppShell({ children }) {
