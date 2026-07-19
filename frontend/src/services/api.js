@@ -27,7 +27,7 @@ import axios from 'axios';
 // Dev:  /api prefix → Vite proxy → Flask :5000 (strips the prefix).
 // Prod: direct to the Render-hosted backend.
 const PROD_API  = 'https://gesturebridge.onrender.com';
-const BASE_URL  = import.meta.env.DEV ? '/api' : PROD_API;
+const BASE_URL  = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
   baseURL: BASE_URL,
