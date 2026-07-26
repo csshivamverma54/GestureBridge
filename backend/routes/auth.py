@@ -49,8 +49,10 @@ _SCOPES = [
     'https://www.googleapis.com/auth/userinfo.profile',
 ]
 
-# Allow HTTP for local dev (Render terminates TLS before Flask sees the request)
-os.environ.setdefault('OAUTHLIB_INSECURE_TRANSPORT', '1')
+# Render (and most hosting platforms) terminate TLS at the edge and forward
+# plain HTTP to gunicorn.  oauthlib refuses to exchange the code over HTTP
+# unless we set this flag.  It is safe because the external URL IS https://.
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 
 def _client_config():
@@ -204,7 +206,15 @@ def google_callback():
         if saved_code_verifier:
             flow.code_verifier = saved_code_verifier
 
-        flow.fetch_token(authorization_response=request.url)
+        # On Render, Gunicorn receives plain HTTP from the edge proxy even
+        # though the external URL is HTTPS.  request.url starts with http://
+        # but Google sent the browser to the https:// callback URI.
+        # Replace the scheme so the redirect URI matches exactly.
+        auth_response = request.url
+        if auth_response.startswith('http://') and _redirect_uri().startswith('https://'):
+            auth_response = 'https://' + auth_response[len('http://'):]
+
+        flow.fetch_token(authorization_response=auth_response)
         credentials = flow.credentials
 
         # Verify the ID token and extract user info

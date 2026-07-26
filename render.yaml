@@ -8,7 +8,13 @@ services:
     plan: free
 
     buildCommand: bash build.sh
-    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 180 --preload
+    startCommand: >-
+      cd backend && gunicorn app:app
+      --bind 0.0.0.0:$PORT
+      --workers 2
+      --timeout 180
+      --preload
+      --forwarded-allow-ips="*"
 
     envVars:
       - key: MONGO_URI
@@ -29,10 +35,10 @@ services:
         sync: false
       - key: GMAIL_APP_PASSWORD
         sync: false
-      # Must match the Authorized Redirect URI registered in Google Cloud Console
+      # These MUST use value: (not sync: false) so Render always sets them correctly.
+      # Using sync:false leaves stale localhost values in place from older deploys.
       - key: GOOGLE_REDIRECT_URI
         value: https://gesturebridge.onrender.com/auth/google/callback
-      # After OAuth, Flask redirects the browser back to the React frontend
       - key: FRONTEND_ORIGIN
         value: https://gesturebridge1.onrender.com
       - key: FLASK_DEBUG
@@ -49,14 +55,15 @@ services:
     buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: frontend/dist
 
-    # SPA: all routes that don't match a real file fall back to index.html
+    # SPA: every path that doesn't match a real file returns index.html
+    # so that React Router handles /dashboard, /sign-to-text, /auth/callback etc.
     routes:
       - type: rewrite
         source: /*
         destination: /index.html
 
     envVars:
-      # Backend origin — baked into the JS bundle at build time by Vite
+      # Backend origin — baked into the JS bundle at Vite build time
       - key: VITE_API_URL
         value: https://gesturebridge.onrender.com
       - key: VITE_BACKEND_URL

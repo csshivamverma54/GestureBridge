@@ -1,4 +1,4 @@
-# -- Python -----------------------------------------------------------
+ï»¿# -- Python -----------------------------------------------------------
 __pycache__/
 *.py[cod]
 *.pyo
@@ -22,7 +22,7 @@ backend/.env
 .env
 *.env
 
-# -- ML artefacts (large binary files — not tracked in git) -----------
+# -- ML artefacts (large binary files ï¿½ not tracked in git) -----------
 backend/ml/gesture_model.pt
 backend/ml/normalizer.npz
 backend/ml/hand_landmarker.task
@@ -52,8 +52,8 @@ backend/database/data/
 backend/database/Letter-to-sentence */
 
 # -- Trained model artefacts (rebuilt by build.sh at deploy time) -------
-backend/models/*.joblib
-backend/models/*.json
+
+
 
 # -- TensorFlow wheel (large installer binary) ------------------------
 backend/*.whl
