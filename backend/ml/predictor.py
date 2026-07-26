@@ -41,8 +41,6 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
-import torch
-import torch.nn.functional as F
 
 from ml.utils.preprocess import preprocess_landmark_sequence
 
@@ -112,6 +110,7 @@ def _load_model(model_path: Path, meta_path: Path, num_classes: int):
         return None
 
     try:
+        import torch
         from ml.model import GestureBridgeLSTM
         model = GestureBridgeLSTM(num_classes=num_classes)
         state = torch.load(str(model_path), map_location="cpu", weights_only=True)
@@ -213,6 +212,8 @@ def predict_gesture(landmark_sequence: Union[np.ndarray, list]) -> dict:
     X = np.expand_dims(seq, axis=0).astype(np.float32)           # (1, _SEQUENCE_LENGTH, 218)
 
     # ── Inference ──────────────────────────────────────────────────
+    import torch
+    import torch.nn.functional as F
     tensor = torch.from_numpy(X)       # (1, _SEQUENCE_LENGTH, 218)
     with torch.no_grad():
         logits = _model(tensor)                            # (1, num_classes)

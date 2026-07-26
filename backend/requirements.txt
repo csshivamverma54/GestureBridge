@@ -34,6 +34,3 @@ google-auth-oauthlib==1.4.0
 google-auth==2.40.3
 ibm-watsonx-ai
 matplotlib==3.11.0
-torch
-torchaudio
-torchvision
