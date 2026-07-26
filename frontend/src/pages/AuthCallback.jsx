@@ -29,16 +29,18 @@ export default function AuthCallback() {
 
     if (err) {
       setError(decodeURIComponent(err));
-      // Redirect to login after a short delay so the user can read the message
       setTimeout(() => navigate('/login', { replace: true }), 3000);
       return;
     }
 
     if (token && email) {
+      // login() writes to localStorage synchronously and schedules a React
+      // state update.  We must let that update flush before navigating so
+      // ProtectedRoute sees user !== null and doesn't redirect back to /login.
       login(token, { name: name || email.split('@')[0], email });
-      navigate('/dashboard', { replace: true });
+      // requestAnimationFrame fires after React flushes the state update.
+      requestAnimationFrame(() => navigate('/dashboard', { replace: true }));
     } else {
-      // Nothing useful in the URL — send back to login
       navigate('/login', { replace: true });
     }
   }, []); // eslint-disable-line

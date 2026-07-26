@@ -2,19 +2,18 @@
  * Auth Page — Login · Register · OTP Verification · Guest access.
  *
  * Flow:
- *   Login  → credentials → dashboard
- *   Register → credentials → OTP screen (6-digit code) → dashboard
- *   Guest  → instant dashboard (no persistence)
+ *   Login    → credentials → dashboard
+ *   Register → credentials → POST /otp/send (real Gmail SMTP) → OTP screen → POST /otp/verify → dashboard
+ *   Guest    → instant dashboard (no persistence)
  *
- * Google OAuth: redirects to /api/auth/google (backend handles the OAuth dance).
- * OTP: a 6-digit code is shown in a simulated "email" (frontend-only demo);
- *      in production wire POST /verify-otp and POST /resend-otp endpoints.
+ * Google OAuth: redirects to VITE_BACKEND_URL/auth/google (backend handles the OAuth dance).
  */
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { loginUser, registerUser, getProfile, getErrorMessage } from '../services/api';
+import api from '../services/api';
 import Alert from '../components/Alert';
 import { Spinner } from '../components/LoadingSpinner';
 import { useSettings } from '../context/SettingsContext';
@@ -136,9 +135,6 @@ function useCountdown(seconds, active) {
   return remaining;
 }
 
-/* ── Generate a random 6-digit demo OTP ───────────────────────── */
-const genOtp = () => String(Math.floor(100000 + Math.random() * 900000));
-
 /* ══════════════════════════════════════════════════════════════════
    Main Auth component
 ══════════════════════════════════════════════════════════════════ */
@@ -163,7 +159,6 @@ export default function Auth({ defaultTab = 'login' }) {
 
   // OTP state
   const [otpValue,     setOtpValue]     = useState('');
-  const [demoOtp,      setDemoOtp]      = useState('');      // shown to user (demo only)
   const [otpActive,    setOtpActive]    = useState(false);   // drives countdown
   const [resendCount,  setResendCount]  = useState(0);
   const countdown = useCountdown(60, otpActive);
@@ -190,7 +185,7 @@ export default function Auth({ defaultTab = 'login' }) {
       let user = { email: loginEmail, name: loginEmail.split('@')[0] };
       try { const r = await getProfile(); user = r.data; } catch { /* fallback */ }
       login(token, user);
-      navigate(from, { replace: true });
+      requestAnimationFrame(() => navigate(from, { replace: true }));
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -198,7 +193,7 @@ export default function Auth({ defaultTab = 'login' }) {
     }
   };
 
-  /* ── Register → trigger OTP ────────────────────────────────── */
+  /* ── Register → send real OTP via backend ───────────────────── */
   const handleRegister = async (e) => {
     e.preventDefault(); clearMessages();
     if (!regName || !regEmail || !regPassword || !regConfirm) { setError('Please fill in all fields.'); return; }
@@ -206,13 +201,13 @@ export default function Auth({ defaultTab = 'login' }) {
     if (regPassword.length < 6) { setError('Password must be at least 6 characters.'); return; }
     setLoading(true);
     try {
+      // 1. Create the account first
       await registerUser({ name: regName, email: regEmail, password: regPassword });
-      // Generate demo OTP (in production, backend sends the email)
-      const code = genOtp();
-      setDemoOtp(code);
+      // 2. Send OTP email via backend (Gmail SMTP)
+      await api.post('/otp/send', { email: regEmail });
       setOtpValue('');
       setOtpActive(false);
-      setTimeout(() => setOtpActive(true), 50); // start countdown after state settles
+      setTimeout(() => setOtpActive(true), 50);
       setScreen('otp');
     } catch (err) {
       setError(getErrorMessage(err));
@@ -221,45 +216,55 @@ export default function Auth({ defaultTab = 'login' }) {
     }
   };
 
-  /* ── OTP verify ─────────────────────────────────────────────── */
+  /* ── OTP verify — calls POST /otp/verify ────────────────────── */
   const handleVerifyOtp = async (e) => {
     e?.preventDefault(); clearMessages();
     if (otpValue.length !== 6) { setError('Please enter the full 6-digit code.'); return; }
     setLoading(true);
     try {
-      // Demo: accept demoOtp or the hardcoded bypass "000000"
-      const valid = otpValue === demoOtp || otpValue === '000000';
-      await new Promise(r => setTimeout(r, 800)); // simulate network
-      if (!valid) { setError('Incorrect code. Please try again.'); setLoading(false); return; }
-      // Auto-login after verification
+      const { data } = await api.post('/otp/verify', { email: regEmail, code: otpValue });
+      if (!data.valid) {
+        setError(data.error || 'Incorrect code. Please try again.');
+        setLoading(false);
+        return;
+      }
+      // Auto-login after successful verification
       try {
-        const { data } = await loginUser({ email: regEmail, password: regPassword });
-        const token = data.token;
+        const { data: loginData } = await loginUser({ email: regEmail, password: regPassword });
+        const token = loginData.token;
         localStorage.setItem('gb_token', token);
         let user = { email: regEmail, name: regName };
         try { const r = await getProfile(); user = r.data; } catch { /* fallback */ }
         login(token, user);
-        navigate(from, { replace: true });
+        requestAnimationFrame(() => navigate(from, { replace: true }));
       } catch {
         setSuccess('Email verified! Please sign in.');
         switchScreen('login');
         setLoginEmail(regEmail);
       }
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
-  /* ── Resend OTP ─────────────────────────────────────────────── */
-  const handleResend = () => {
+  /* ── Resend OTP — calls POST /otp/send again ────────────────── */
+  const handleResend = async () => {
     if (countdown > 0) return;
-    const code = genOtp();
-    setDemoOtp(code);
-    setOtpValue('');
-    setOtpActive(false);
-    setTimeout(() => setOtpActive(true), 50);
-    setResendCount(c => c + 1);
-    setSuccess('A new code has been sent to your email.');
+    setLoading(true);
+    try {
+      await api.post('/otp/send', { email: regEmail });
+      setOtpValue('');
+      setOtpActive(false);
+      setTimeout(() => setOtpActive(true), 50);
+      setResendCount(c => c + 1);
+      setSuccess('A new code has been sent to your email.');
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* ── Guest ──────────────────────────────────────────────────── */
@@ -272,9 +277,11 @@ export default function Auth({ defaultTab = 'login' }) {
 
   /* ── Google OAuth ───────────────────────────────────────────── */
   const handleGoogle = () => {
-    // Full-page redirect to Flask, which redirects to Google consent screen.
-    // Flask callback issues a JWT and redirects to /auth/callback in React.
-    window.location.href = '/auth/google';
+    // VITE_BACKEND_URL is '' in dev (Vite proxy handles /auth/google → Flask).
+    // In split-origin production it is 'https://gesturebridge.onrender.com'
+    // so the browser hits the Flask server directly.
+    const backendOrigin = import.meta.env.VITE_BACKEND_URL || '';
+    window.location.href = `${backendOrigin}/auth/google`;
   };
 
   /* ── Auto-submit OTP when all 6 digits entered ─────────────── */
@@ -414,27 +421,6 @@ export default function Auth({ defaultTab = 'login' }) {
 
                 {error   && <Alert type="error"   message={error}   onClose={clearMessages} />}
                 {success && <Alert type="success" message={success} onClose={clearMessages} />}
-
-                {/* Demo: show the code in a hint box */}
-                {demoOtp && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '.6rem',
-                    padding: '.65rem .9rem', borderRadius: 'var(--radius-sm)',
-                    background: dark ? '#0D2149' : '#EFF6FF',
-                    border: `1px solid ${dark ? '#1E3A5F' : '#BFDBFE'}`,
-                    marginBottom: '1.25rem',
-                  }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
-                    <span style={{ fontSize: '.78rem', color: 'var(--text-muted)' }}>
-                      Demo code (email not sent):{' '}
-                      <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-primary)', letterSpacing: '.12em' }}>
-                        {demoOtp}
-                      </strong>
-                    </span>
-                  </div>
-                )}
 
                 <form onSubmit={handleVerifyOtp} noValidate>
                   <OtpInput value={otpValue} onChange={setOtpValue} disabled={loading} />

@@ -13,16 +13,27 @@ GET  /auth/google/callback — Google redirects here; exchange code for user
                              info, upsert user in MongoDB, return JWT to
                              the React SPA via a redirect to /auth/callback
                              with ?token=<jwt>&name=<name>&email=<email>
+
+PKCE note
+---------
+google-auth-oauthlib ≥ 1.0 automatically generates a PKCE code_verifier when
+authorization_url() is called. The verifier is stored on the Flow object but
+that object is garbage-collected after the redirect response is sent. When the
+callback creates a fresh Flow it has no verifier → Google returns
+"invalid_grant: Missing code verifier".
+
+Fix: store (state, code_verifier) in the Flask session between the two requests.
 """
 
-from flask import Blueprint, jsonify, request, redirect
-from flask_pymongo import PyMongo
-import bcrypt
-from datetime import datetime, timedelta
 import os
-import jwt
+import urllib.parse
+from datetime import datetime, timedelta
 from functools import wraps
 
+import bcrypt
+import jwt
+from flask import Blueprint, jsonify, request, redirect, session
+from flask_pymongo import PyMongo
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -38,13 +49,13 @@ _SCOPES = [
     'https://www.googleapis.com/auth/userinfo.profile',
 ]
 
-# Allow HTTP for local dev (Google requires HTTPS in prod — Render handles this)
+# Allow HTTP for local dev (Render terminates TLS before Flask sees the request)
 os.environ.setdefault('OAUTHLIB_INSECURE_TRANSPORT', '1')
 
 
-def _get_flow():
-    """Build a google_auth_oauthlib Flow from env config."""
-    client_config = {
+def _client_config():
+    """Return the OAuth2 client config dict from env vars."""
+    return {
         "web": {
             "client_id":     os.getenv('GOOGLE_CLIENT_ID', ''),
             "client_secret": os.getenv('GOOGLE_CLIENT_SECRET', ''),
@@ -56,15 +67,10 @@ def _get_flow():
             )],
         }
     }
-    flow = Flow.from_client_config(
-        client_config,
-        scopes=_SCOPES,
-        redirect_uri=os.getenv(
-            'GOOGLE_REDIRECT_URI',
-            'http://localhost:5000/auth/google/callback'
-        ),
-    )
-    return flow
+
+
+def _redirect_uri():
+    return os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:5000/auth/google/callback')
 
 
 def init_app(db):
@@ -143,27 +149,61 @@ def profile(current_user):
 
 @auth.route('/auth/google')
 def google_login():
-    """Step 1 — redirect the browser to Google's consent screen."""
+    """
+    Step 1 — Build the Google consent URL and redirect the browser to it.
+
+    The Flow object generates a PKCE code_verifier automatically (google-auth-
+    oauthlib ≥ 1.0). We must persist both `state` and `code_verifier` in the
+    Flask session so the callback can reconstruct an equivalent Flow.
+    """
     if not os.getenv('GOOGLE_CLIENT_ID'):
         return jsonify({'error': 'Google OAuth is not configured on this server.'}), 503
-    flow = _get_flow()
-    auth_url, _ = flow.authorization_url(
+
+    flow = Flow.from_client_config(
+        _client_config(),
+        scopes=_SCOPES,
+        redirect_uri=_redirect_uri(),
+    )
+
+    auth_url, state = flow.authorization_url(
         access_type='offline',
         include_granted_scopes='true',
         prompt='select_account',
     )
+
+    # Persist state + PKCE verifier across the redirect
+    session['oauth_state']         = state
+    session['oauth_code_verifier'] = getattr(flow, 'code_verifier', None)
+
     return redirect(auth_url)
 
 
 @auth.route('/auth/google/callback')
 def google_callback():
     """
-    Step 2 — Google redirects here with ?code=...
-    Exchange code for tokens, get user info, upsert in DB, issue JWT,
-    then redirect back to the React SPA at /auth/callback?token=...
+    Step 2 — Google redirects here with ?code=&state=
+
+    Reconstruct the Flow with the same state and code_verifier that were
+    stored in the session during step 1, then exchange the code for tokens.
     """
+    frontend_origin = os.getenv('FRONTEND_ORIGIN', 'http://localhost:3000')
+
     try:
-        flow = _get_flow()
+        # Retrieve PKCE verifier saved in step 1
+        saved_state         = session.pop('oauth_state', None)
+        saved_code_verifier = session.pop('oauth_code_verifier', None)
+
+        flow = Flow.from_client_config(
+            _client_config(),
+            scopes=_SCOPES,
+            redirect_uri=_redirect_uri(),
+            state=saved_state,
+        )
+
+        # Restore the code_verifier so fetch_token can include it
+        if saved_code_verifier:
+            flow.code_verifier = saved_code_verifier
+
         flow.fetch_token(authorization_response=request.url)
         credentials = flow.credentials
 
@@ -185,7 +225,7 @@ def google_callback():
             }},
             upsert=True,
         )
-        # Always refresh name from Google profile
+        # Always refresh display name from Google profile
         mongo.db.users.update_one({'email': email}, {'$set': {'name': name}})
 
         token = jwt.encode(
@@ -193,20 +233,10 @@ def google_callback():
             os.getenv('SECRET_KEY'), algorithm="HS256",
         )
 
-        # Redirect to the React callback page with credentials in query params.
-        # The React page stores them in localStorage and navigates to /dashboard.
-        frontend_origin = os.getenv('FRONTEND_ORIGIN', 'http://localhost:3000')
-        import urllib.parse
-        params = urllib.parse.urlencode({
-            'token': token,
-            'name':  name,
-            'email': email,
-        })
+        params = urllib.parse.urlencode({'token': token, 'name': name, 'email': email})
         return redirect(f'{frontend_origin}/auth/callback?{params}')
 
     except Exception as exc:
-        frontend_origin = os.getenv('FRONTEND_ORIGIN', 'http://localhost:3000')
-        import urllib.parse
         return redirect(
             f'{frontend_origin}/login?error={urllib.parse.quote(str(exc))}'
         )

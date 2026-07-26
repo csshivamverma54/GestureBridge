@@ -26,12 +26,20 @@ from routes.gesture import gesture, init_db as init_gesture_app
 from routes.history import history, init_db as init_history_app
 from routes.text_to_sign import text_to_sign
 from routes.ai import ai_bp
+from routes.otp import otp_bp, init_otp_db
 
 # Disable debug when FLASK_DEBUG env var is absent or "0".
-# Gunicorn / Render override this via the startCommand — Flask's own dev
-# reloader and debugger must never run in production.
 _DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
 _PORT  = int(os.getenv("PORT", 5000))
+
+# Allowed CORS origins — always include localhost for dev.
+# FRONTEND_ORIGIN covers the deployed React static site on a separate domain.
+_FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").rstrip("/")
+_CORS_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5000",
+    _FRONTEND_ORIGIN,
+]
 
 # ── Paths ─────────────────────────────────────────────────────────────────
 _BASE_DIR  = Path(__file__).parent
@@ -45,11 +53,11 @@ app = Flask(
 )
 app.config.from_object(Config)
 
-# Allow the React dev server (localhost:3000) to call Flask APIs.
-# In production the React bundle is served by Flask itself, so no CORS needed.
+# Explicit allowed origins — covers localhost dev + the deployed frontend.
+# credentials=True is required so the browser sends the JWT Authorization header.
 CORS(
     app,
-    resources={r"/*": {"origins": "*"}},
+    resources={r"/*": {"origins": _CORS_ORIGINS}},
     supports_credentials=True,
 )
 
@@ -59,12 +67,14 @@ mongo = PyMongo(app)
 init_app(mongo)
 init_gesture_app(mongo)
 init_history_app(mongo)
+init_otp_db(mongo)
 
 app.register_blueprint(auth)
 app.register_blueprint(gesture)
 app.register_blueprint(history)
 app.register_blueprint(text_to_sign)
 app.register_blueprint(ai_bp)
+app.register_blueprint(otp_bp)
 
 
 # ── Health / test routes ──────────────────────────────────────────────────
@@ -85,9 +95,23 @@ def test_db():
 # ── Serve React SPA ───────────────────────────────────────────────────────
 # In production, Flask serves index.html for every non-API route so that
 # React Router can handle client-side navigation.
+#
+# IMPORTANT: this catch-all must NOT swallow actual API paths.
+# Flask matches blueprint routes before catch-alls, but as a safety guard
+# we explicitly return 404 for any path that starts with a known API prefix.
+_API_PREFIXES = (
+    "predict", "generate", "model", "history", "register", "login",
+    "profile", "health", "test_db", "text-to-sign", "video", "ai",
+    "auth/google", "otp",
+)
+
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve_react(path):
+    # Guard: never serve index.html for API routes
+    if path and any(path.startswith(p) for p in _API_PREFIXES):
+        return jsonify({"error": "Not found"}), 404
+
     # If the request looks like a static asset and the file exists, serve it.
     asset = _DIST_DIR / path
     if path and asset.exists():

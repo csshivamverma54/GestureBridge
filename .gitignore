@@ -1,4 +1,4 @@
-﻿# ── Python ───────────────────────────────────────────────────────────
+# -- Python -----------------------------------------------------------
 __pycache__/
 *.py[cod]
 *.pyo
@@ -11,18 +11,18 @@ build/
 .eggs/
 *.whl
 
-# ── Virtual environments ─────────────────────────────────────────────
+# -- Virtual environments ---------------------------------------------
 backend/venv/
 venv/
 .venv/
 env/
 
-# ── Environment / secrets ────────────────────────────────────────────
+# -- Environment / secrets --------------------------------------------
 backend/.env
 .env
 *.env
 
-# ── ML artefacts (large binary files — not tracked in git) ───────────
+# -- ML artefacts (large binary files � not tracked in git) -----------
 backend/ml/gesture_model.pt
 backend/ml/normalizer.npz
 backend/ml/hand_landmarker.task
@@ -34,7 +34,7 @@ backend/ml/plots/
 backend/ml/__pycache__/
 backend/ml/utils/__pycache__/
 
-# ── WLASL dataset (videos + large JSON files) ────────────────────────
+# -- WLASL dataset (videos + large JSON files) ------------------------
 backend/data/WLASL/videos/
 backend/data/WLASL/WLASL_v0.3.json
 backend/data/WLASL/nslt_100.json
@@ -47,21 +47,22 @@ backend/data/WLASL/missing.txt
 backend/data/WLASL/all_classes.txt
 backend/data/WLASL/wlasl_class_list.txt
 
-# ── Database folder: ignore raw image data, keep collected npz ────
+# -- Database folder: ignore raw image data, keep collected npz ----
 backend/database/data/
 backend/database/Letter-to-sentence */
 
-# ── Trained model binaries (large — rebuild with train_asl_letter.py) ─
+# -- Trained model artefacts (rebuilt by build.sh at deploy time) -------
 backend/models/*.joblib
+backend/models/*.json
 
-# ── TensorFlow wheel (large installer binary) ────────────────────────
+# -- TensorFlow wheel (large installer binary) ------------------------
 backend/*.whl
-# ── Frontend build & deps ────────────────────────────────────────────
+# -- Frontend build & deps --------------------------------------------
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
-# ── OS / editor ──────────────────────────────────────────────────────
+# -- OS / editor ------------------------------------------------------
 .DS_Store
 Thumbs.db
 .vscode/
@@ -69,7 +70,7 @@ Thumbs.db
 *.swp
 *.swo
 
-# ── Misc ─────────────────────────────────────────────────────────────
+# -- Misc -------------------------------------------------------------
 *.log
 *.tmp
 .bob/

@@ -67,28 +67,6 @@ _AUG_COPIES    = 8
 _AUG_NOISE_STD = 0.015
 
 
-# ── Preprocessing ─────────────────────────────────────────────────────────
-
-def _normalise_batch(X: np.ndarray) -> np.ndarray:
-    """
-    Apply wrist-centering + scale normalisation to a batch of 63-feature vectors.
-
-    Each row is reshaped to (21, 3).  Landmark 0 (wrist) is subtracted, then
-    coordinates are divided by |Landmark 9| (Wrist → Middle MCP distance).
-    Rows where the scale is degenerate are zeroed out (rare with real data).
-    """
-    out = np.zeros_like(X)
-    for i, row in enumerate(X):
-        pts = row.reshape(21, 3).copy()
-        pts -= pts[0]                          # wrist-centering
-        scale = float(np.linalg.norm(pts[9]))  # wrist→middle-MCP distance
-        if scale < 1e-8:
-            continue                           # degenerate — leave as zeros
-        pts /= scale
-        out[i] = pts.flatten()
-    return out
-
-
 # ── Augmentation ──────────────────────────────────────────────────────────
 
 def _augment(X: np.ndarray, y: np.ndarray, copies: int = _AUG_COPIES) -> tuple[np.ndarray, np.ndarray]:

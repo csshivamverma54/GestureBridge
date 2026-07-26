@@ -17,3 +17,6 @@ class Config:
         'GOOGLE_REDIRECT_URI',
         'http://localhost:5000/auth/google/callback'
     )
+    # Gmail SMTP — OTP email delivery
+    GMAIL_USER         = os.getenv('GMAIL_USER', '')
+    GMAIL_APP_PASSWORD = os.getenv('GMAIL_APP_PASSWORD', '')

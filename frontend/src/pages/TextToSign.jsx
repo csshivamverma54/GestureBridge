@@ -21,7 +21,7 @@ import AppShell from '../components/AppShell';
 import Alert from '../components/Alert';
 import { Spinner } from '../components/LoadingSpinner';
 import { useSettings } from '../context/SettingsContext';
-import api, { getErrorMessage, bestVideoUrl, getLearningTip } from '../services/api';
+import api, { getErrorMessage, videoUrl, getLearningTip } from '../services/api';
 
 /* ── Quick-phrase chips ─────────────────────────────────────────────── */
 const QUICK_PHRASES = [
@@ -48,7 +48,8 @@ export default function TextToSign() {
   const [speed,       setSpeed]       = useState(1);
   const [loop,        setLoop]        = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(true);
-  const [videoError,  setVideoError]  = useState(false);   // true when current src fails
+  const [videoError,  setVideoError]  = useState(false);   // true when ALL sources fail
+  const [useFallback, setUseFallback] = useState(false);   // true when using external_url
 
   /* ── AI Learning Tip ───────────────────────────────────────────────── */
   const [tip,        setTip]        = useState(null);   // { tip, fun_fact }
@@ -69,7 +70,7 @@ export default function TextToSign() {
 
   useEffect(() => { autoRef.current    = autoAdvance; }, [autoAdvance]);
   useEffect(() => { loopRef.current    = loop;         }, [loop]);
-  useEffect(() => { currentIdxRef.current = currentIdx; setVideoError(false); }, [currentIdx]);
+  useEffect(() => { currentIdxRef.current = currentIdx; setVideoError(false); setUseFallback(false); }, [currentIdx]);
   useEffect(() => { playingRef.current = playing;      }, [playing]);
 
   /* ── Vocabulary hints ──────────────────────────────────────────────── */
@@ -80,7 +81,7 @@ export default function TextToSign() {
   }, []);
 
   /* ── Derived ───────────────────────────────────────────────────────── */
-  const playableWords = words.filter((w) => w.found && w.video_url);
+  const playableWords = words.filter((w) => w.found);
   const currentWord   = playableWords[currentIdx] ?? null;
   playableRef.current = playableWords;
 
@@ -118,6 +119,7 @@ export default function TextToSign() {
     setCoverage(null);
     setCurrentIdx(0);
     currentIdxRef.current = 0;
+    setUseFallback(false);
     // Mark as playing NOW so onCanPlay auto-starts the first video
     setPlaying(true);
     playingRef.current = true;
@@ -187,7 +189,8 @@ export default function TextToSign() {
 
   /* ── Derived display ───────────────────────────────────────────────── */
   const hasResults    = words.length > 0;
-  const notFoundWords = words.filter((w) => !w.found).map((w) => w.word);
+  const notFoundWords  = words.filter((w) => !w.found).map((w) => w.word);
+  const fuzzyWords     = words.filter((w) => w.found && w.fuzzy);
 
   return (
     <AppShell>
@@ -244,10 +247,16 @@ export default function TextToSign() {
           {/* ── Left: video player ──────────────────────────────────── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
 
+            {fuzzyWords.length > 0 && (
+              <Alert
+                type="info"
+                message={`Approximate match used for: ${fuzzyWords.map((w) => `"${w.word}" → ${w.matched_word}`).join(', ')}`}
+              />
+            )}
             {notFoundWords.length > 0 && (
               <Alert
                 type="warning"
-                message={`${notFoundWords.length} word${notFoundWords.length > 1 ? 's' : ''} not in vocabulary and will be skipped: ${notFoundWords.join(', ')}`}
+                message={`${notFoundWords.length} word${notFoundWords.length > 1 ? 's' : ''} not found and will be skipped: ${notFoundWords.join(', ')}`}
               />
             )}
 
@@ -260,6 +269,11 @@ export default function TextToSign() {
                     <span style={{ fontSize: '.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Now Signing</span>
                     <h2 style={{ color: 'var(--color-primary)', fontSize: 'clamp(1.3rem,4vw,1.8rem)', fontWeight: 800, lineHeight: 1, marginTop: '.1rem' }}>
                       {currentWord?.word}
+                      {currentWord?.fuzzy && currentWord?.matched_word !== currentWord?.word && (
+                        <span style={{ fontSize: '.6em', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '.4rem' }}>
+                          (~{currentWord.matched_word})
+                        </span>
+                      )}
                     </h2>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -270,50 +284,57 @@ export default function TextToSign() {
                   </div>
                 </div>
 
-                {/* Video element — local first, CDN fallback on error */}
+                {/* Video element — local first, CDN external_url fallback on error */}
                 <div style={{ position: 'relative', background: '#0F172A', borderRadius: 'var(--radius-md)', overflow: 'hidden', aspectRatio: '16/9' }}>
-                  {currentWord && !videoError && (
-                    <video
-                      key={currentIdx}
-                      ref={videoRef}
-                      src={bestVideoUrl(currentWord)}
-                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                      onEnded={handleVideoEnded}
-                      onPlay={() => {
-                        advancingRef.current = false;  // clear once real play starts
-                        setPlaying(true); playingRef.current = true;
-                      }}
-                      onPause={() => {
-                        // Ignore synthetic pause fired when old video unmounts during advance
-                        if (advancingRef.current) return;
-                        setPlaying(false); playingRef.current = false;
-                      }}
-                      onError={() => setVideoError(true)}
-                      onCanPlay={(e) => {
-                        advancingRef.current = false;  // safe to clear here too
-                        e.target.playbackRate = speed;
-                        if (playingRef.current) {
-                          e.target.play().catch(() => {});
-                        }
-                      }}
-                      playsInline
-                      autoPlay={false}
-                    />
-                  )}
+                  {currentWord && !videoError && (() => {
+                    // Pick source: prefer local /video/<id>, fall back to external_url
+                    const localSrc = currentWord.video_url ? videoUrl(currentWord.video_url) : null;
+                    const extSrc   = currentWord.external_url || null;
+                    const src      = useFallback ? extSrc : (localSrc || extSrc);
+                    if (!src) return null;
+                    return (
+                      <video
+                        key={`${currentIdx}-${useFallback ? 'ext' : 'local'}`}
+                        ref={videoRef}
+                        src={src}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        onEnded={handleVideoEnded}
+                        onPlay={() => {
+                          advancingRef.current = false;
+                          setPlaying(true); playingRef.current = true;
+                        }}
+                        onPause={() => {
+                          if (advancingRef.current) return;
+                          setPlaying(false); playingRef.current = false;
+                        }}
+                        onError={() => {
+                          // If we were on local and there is an external fallback, switch to it
+                          if (!useFallback && extSrc && src !== extSrc) {
+                            setUseFallback(true);
+                          } else {
+                            setVideoError(true);  // both sources failed
+                          }
+                        }}
+                        onCanPlay={(e) => {
+                          advancingRef.current = false;
+                          e.target.playbackRate = speed;
+                          if (playingRef.current) {
+                            e.target.play().catch(() => {});
+                          }
+                        }}
+                        playsInline
+                        autoPlay={false}
+                      />
+                    );
+                  })()}
 
-                  {/* Video unavailable — shown when both local and CDN fail */}
+                  {/* Video unavailable — shown when both sources fail */}
                   {currentWord && videoError && (
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '.75rem', color: '#94A3B8', padding: '1rem', textAlign: 'center' }}>
                       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                      <p style={{ fontSize: '.85rem', margin: 0 }}>Video not available locally.</p>
-                      {currentWord.external_url && (
-                        <a href={currentWord.external_url} target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: '.8rem', color: '#60A5FA', textDecoration: 'underline' }}>
-                          Watch on source site ↗
-                        </a>
-                      )}
+                      <p style={{ fontSize: '.85rem', margin: 0 }}>Video unavailable for this sign.</p>
                       <button className="btn btn-ghost btn-sm" style={{ color: '#94A3B8', borderColor: '#334155' }}
-                        onClick={() => { setVideoError(false); handleVideoEnded(); }}>
+                        onClick={() => { setVideoError(false); setUseFallback(false); handleVideoEnded(); }}>
                         Skip to next
                       </button>
                     </div>
@@ -451,22 +472,27 @@ export default function TextToSign() {
                 {words.map((w, i) => {
                   const pidx = playableWords.indexOf(w);
                   const isActive = w.found && pidx === currentIdx;
+                  const borderColor = isActive ? 'var(--color-primary)' : w.found ? (w.fuzzy ? 'var(--color-warning)' : 'var(--border)') : 'var(--color-error)';
+                  const textColor   = isActive ? 'var(--color-primary)' : w.found ? 'var(--text-main)' : 'var(--color-error)';
+                  const titleText   = w.found
+                    ? (w.fuzzy ? `"${w.word}" → matched as "${w.matched_word}" — click to jump` : `Click to jump to "${w.word}"`)
+                    : `"${w.word}" not in vocabulary`;
                   return (
                     <button
                       key={i}
                       onClick={() => w.found ? jumpTo(pidx) : null}
                       style={{
                         padding: '.3rem .75rem', borderRadius: 999,
-                        border: `2px solid ${isActive ? 'var(--color-primary)' : w.found ? 'var(--border)' : 'var(--color-error)'}`,
+                        border: `2px solid ${borderColor}`,
                         background: isActive ? 'color-mix(in srgb, var(--color-primary) 12%, transparent)' : 'transparent',
-                        color: isActive ? 'var(--color-primary)' : w.found ? 'var(--text-main)' : 'var(--color-error)',
+                        color: textColor,
                         fontWeight: isActive ? 700 : 400,
                         fontSize: '.875rem', cursor: w.found ? 'pointer' : 'default',
                         transition: 'all var(--transition)', opacity: w.found ? 1 : .55,
                       }}
-                      title={w.found ? `Click to jump to "${w.word}"` : `"${w.word}" not in vocabulary`}
+                      title={titleText}
                     >
-                      {w.found ? '' : '✕ '}{w.word}
+                      {w.found ? '' : '✕ '}{w.word}{w.fuzzy && w.matched_word !== w.word ? ` (~${w.matched_word})` : ''}
                     </button>
                   );
                 })}
