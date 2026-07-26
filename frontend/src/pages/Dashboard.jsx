@@ -31,28 +31,28 @@ const QUICK_ACTIONS = [
     to: '/sign-to-text',
     icon: ['M18 11V6.5a2.5 2.5 0 00-5 0v5M5 11h14M5 11a7 7 0 0014 0'],
     title: 'Sign to Text',
-    desc: 'Open webcam and translate ASL gestures into words in real time.',
+    desc: 'Start the camera — GestureBridge reads signs and speaks the words aloud in real time.',
     accent: '#2563EB', bg: '#EFF6FF', darkBg: '#0D2149',
   },
   {
     to: '/text-to-sign',
     icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',
     title: 'Text to Sign',
-    desc: 'Type text and see the corresponding WLASL sign video instantly.',
+    desc: 'Type what you want to say — see the matching sign videos played back word by word.',
     accent: '#7C3AED', bg: '#F5F3FF', darkBg: '#200D40',
   },
   {
     to: '/history',
     icon: ['M12 8v4l3 3', 'M3.05 11a9 9 0 110 2'],
-    title: 'History',
-    desc: 'Review and export your past translation sessions.',
+    title: 'Conversation History',
+    desc: 'View and export all your past translated conversations.',
     accent: '#059669', bg: '#ECFDF5', darkBg: '#022C22',
   },
   {
     to: '/account',
     icon: ['M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2', 'M12 11a4 4 0 100-8 4 4 0 000 8z'],
     title: 'Account',
-    desc: 'Update profile, password, appearance and privacy settings.',
+    desc: 'Manage your profile and accessibility preferences.',
     accent: '#D97706', bg: '#FFFBEB', darkBg: '#2D1B00',
   },
 ];
@@ -141,12 +141,12 @@ export default function Dashboard() {
       }}>
         <div>
           <div style={{ fontSize: '.75rem', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-primary)', marginBottom: '.3rem' }}>
-            Dashboard
+            GestureBridge
           </div>
           <h2 style={{ marginBottom: '.25rem', fontSize: 'clamp(1.1rem, 2vw, 1.45rem)' }}>
             {getGreeting()}, {user?.name?.split(' ')[0] || 'User'}{user?.isGuest ? ' (Guest)' : ''} 👋
           </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '.875rem', margin: 0 }}>{today}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '.875rem', margin: 0 }}>Bridging communication between signers and non-signers.</p>
         </div>
         <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap' }}>
           <Link to="/sign-to-text" className="btn btn-primary btn-sm" style={{ gap: '.4rem' }}>

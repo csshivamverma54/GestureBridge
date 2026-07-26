@@ -25,6 +25,13 @@ from routes.auth import auth, init_app
 from routes.gesture import gesture, init_db as init_gesture_app
 from routes.history import history, init_db as init_history_app
 from routes.text_to_sign import text_to_sign
+from routes.ai import ai_bp
+
+# Disable debug when FLASK_DEBUG env var is absent or "0".
+# Gunicorn / Render override this via the startCommand — Flask's own dev
+# reloader and debugger must never run in production.
+_DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
+_PORT  = int(os.getenv("PORT", 5000))
 
 # ── Paths ─────────────────────────────────────────────────────────────────
 _BASE_DIR  = Path(__file__).parent
@@ -57,6 +64,7 @@ app.register_blueprint(auth)
 app.register_blueprint(gesture)
 app.register_blueprint(history)
 app.register_blueprint(text_to_sign)
+app.register_blueprint(ai_bp)
 
 
 # ── Health / test routes ──────────────────────────────────────────────────
@@ -97,6 +105,6 @@ def serve_react(path):
 
 
 if __name__ == "__main__":
-    # ssl_context is NOT set — Flask runs plain HTTP on port 5000.
-    # Never navigate to https://localhost:5000; always use http://
-    app.run(debug=True, host="127.0.0.1", port=5000)
+    # Direct `python app.py` — only used locally.
+    # Production uses gunicorn (see Procfile / render.yaml).
+    app.run(debug=_DEBUG, host="0.0.0.0", port=_PORT)

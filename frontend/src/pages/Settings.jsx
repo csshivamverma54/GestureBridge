@@ -12,9 +12,22 @@ const LANGUAGES = [
   { value: 'ISL', label: 'Indian Sign Language (ISL)' },
 ];
 
+const RECOGNITION_MODES = [
+  {
+    value: 'word',
+    label: '🤟 Sign Mode',
+    desc:  'Read full ASL signs and convert them into complete sentences. Best for fluent signers.',
+  },
+  {
+    value: 'letter',
+    label: '🔤 Spell Mode',
+    desc:  'Finger-spell words letter by letter (A–Z). Best for names, unusual words, or beginners.',
+  },
+];
+
 export default function Settings() {
   const {
-    theme, language, notifications, privacyMode,
+    theme, language, recognitionMode, notifications, privacyMode,
     captureInterval, confidenceThreshold,
     updateSettings, toggleTheme,
   } = useSettings();
@@ -48,6 +61,46 @@ export default function Settings() {
           </div>
         </div>
 
+        {/* Recognition Mode */}
+        <div className="card">
+          <h3 style={{ marginBottom: '1rem' }}>🤟 Recognition Mode</h3>
+          <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            You can also switch modes directly on the Sign-to-Text page using the tabs at the top.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
+            {RECOGNITION_MODES.map((mode) => {
+              const active = recognitionMode === mode.value;
+              return (
+                <label
+                  key={mode.value}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '.75rem',
+                    padding: '.75rem 1rem',
+                    border: `2px solid ${active ? 'var(--color-primary)' : 'var(--border)'}`,
+                    borderRadius: 'var(--radius-sm)',
+                    background: active ? 'color-mix(in srgb, var(--color-primary) 8%, var(--bg-card))' : 'var(--bg-card)',
+                    cursor: 'pointer',
+                    transition: 'border-color var(--transition)',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="recognitionMode"
+                    value={mode.value}
+                    checked={active}
+                    onChange={() => updateSettings({ recognitionMode: mode.value })}
+                    style={{ marginTop: '.2rem', accentColor: 'var(--color-primary)' }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '.95rem', marginBottom: '.2rem' }}>{mode.label}</div>
+                    <div style={{ fontSize: '.8rem', color: 'var(--text-muted)' }}>{mode.desc}</div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Language */}
         <div className="card">
           <h3 style={{ marginBottom: '1rem' }}>🌍 Sign Language Preference</h3>
@@ -66,12 +119,12 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Capture settings */}
+        {/* Performance settings */}
         <div className="card">
-          <h3 style={{ marginBottom: '1rem' }}>📸 Capture Settings</h3>
+          <h3 style={{ marginBottom: '1rem' }}>⚡ Performance</h3>
           <div className="form-group" style={{ marginBottom: '1rem' }}>
             <label className="form-label" htmlFor="capture-interval">
-              Frame Capture Interval (ms): {captureInterval}
+              Response Speed: {captureInterval <= 150 ? 'Fast' : captureInterval <= 250 ? 'Balanced' : 'Smooth'} ({captureInterval} ms)
             </label>
             <input
               id="capture-interval"
@@ -84,13 +137,13 @@ export default function Settings() {
               style={{ width: '100%' }}
             />
             <p style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>
-              Lower = faster but more CPU intensive. Higher = slower but more stable.
+              Fast responds quicker but uses more CPU. Smooth is better for older devices.
             </p>
           </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="confidence-threshold">
-              Confidence Threshold: {(confidenceThreshold * 100).toFixed(0)}%
+              Sign Accuracy Bar: {(confidenceThreshold * 100).toFixed(0)}%
             </label>
             <input
               id="confidence-threshold"
@@ -103,7 +156,7 @@ export default function Settings() {
               style={{ width: '100%' }}
             />
             <p style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>
-              Only auto-add words above this confidence level.
+              Lower this if signs are being missed. Raise it to reduce false positives.
             </p>
           </div>
         </div>
@@ -140,7 +193,7 @@ export default function Settings() {
                 Privacy Mode
               </div>
               <p style={{ fontSize: '.8rem', color: 'var(--text-muted)' }}>
-                Prevent saving translations to history (local session only).
+                  Don't save this conversation to history — useful in sensitive situations.
               </p>
             </div>
             <label className="toggle-switch">

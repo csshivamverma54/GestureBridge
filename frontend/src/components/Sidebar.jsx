@@ -62,7 +62,7 @@ export default function Sidebar({ open, onClose }) {
       )}
 
       <aside
-        className="sidebar"
+        className={`sidebar${open ? ' sidebar-open' : ''}`}
         style={{
           position: 'fixed', top: 0, left: 0, bottom: 0,
           width: 'var(--sidebar-width)',
@@ -70,8 +70,7 @@ export default function Sidebar({ open, onClose }) {
           borderRight: '1px solid var(--border)',
           display: 'flex', flexDirection: 'column',
           zIndex: 50,
-          transform: open ? 'translateX(0)' : undefined,
-          transition: 'transform var(--transition)',
+          transition: 'transform 200ms cubic-bezier(.4,0,.2,1)',
           overflowY: 'auto',
         }}
       >

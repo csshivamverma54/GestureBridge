@@ -32,13 +32,16 @@ export default function AppShell({ children }) {
         </main>
       </div>
 
-      {/* Mobile sidebar CSS override */}
       <style>{`
+        /* ── Desktop: sidebar always visible ── */
+        .sidebar { transform: translateX(0); }
+
+        /* ── Mobile: sidebar slides in/out ── */
         @media (max-width: 768px) {
-          .sidebar {
-            transform: translateX(-100%);
-          }
-          .topbar { left: 0 !important; }
+          .sidebar          { transform: translateX(-100%); }
+          .sidebar.sidebar-open { transform: translateX(0); }
+          .main-content     { margin-left: 0 !important; }
+          .topbar           { left: 0 !important; }
           .topbar-hamburger { display: flex !important; }
         }
       `}</style>

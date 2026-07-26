@@ -36,7 +36,7 @@ import Alert from '../components/Alert';
 import { Spinner } from '../components/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { predictGesture, generateSentence } from '../services/api';
+import { predictGesture, generateSentence, predictLetter, generateLetterSentence, improveText } from '../services/api';
 
 /* ══════════════════════════════════════════════════════════════════
    Constants
@@ -52,6 +52,13 @@ const COOLDOWN_MS          = 800;   // post-commit cooldown
 const CALIBRATION_FRAMES   = 20;    // frames to measure handedness
 const FS_STABLE_THRESH     = 0.008; // fingerspelling: base-hand stable threshold
 const FS_MOTION_THRESH     = 0.025; // fingerspelling: dominant-hand micro-motion
+
+/* ── Letter-model constants ───────────────────────────────────────── */
+const LETTER_CONF_THRESH    = 0.70;  // min confidence to count a letter frame
+                                     // (matches backend LETTER_CONF_THRESH; RF top-out ~0.87)
+const LETTER_STABLE_FRAMES  = 4;     // consecutive frames → commit letter
+const LETTER_COOLDOWN_FRAMES= 10;    // frames to skip after commit
+const LETTER_CAPTURE_MS     = 200;   // letter inference poll interval (ms)
 
 /* ── Feature sizes (218 total, matching backend/ml/utils/landmarks.py) ── */
 const SINGLE_HAND_SIZE    = 63;
@@ -432,8 +439,11 @@ function loadScript(src) {
    ══════════════════════════════════════════════════════════════════ */
 export default function SignToText() {
   const { user }  = useAuth();
-  const { confidenceThreshold: settingsThreshold, privacyMode } = useSettings();
+  const { confidenceThreshold: settingsThreshold, privacyMode, recognitionMode, updateSettings } = useSettings();
   const effectiveThreshold = Math.max(settingsThreshold, CONFIDENCE_THRESHOLD);
+  // Stable ref so inference callbacks (closures) always read the latest mode
+  const recognitionModeRef = useRef(recognitionMode);
+  useEffect(() => { recognitionModeRef.current = recognitionMode; }, [recognitionMode]);
 
   /* ── UI state ──────────────────────────────────────────────────── */
   const [mpReady,       setMpReady]       = useState(false);
@@ -453,7 +463,21 @@ export default function SignToText() {
   const [glossSequence,    setGlossSequence]    = useState([]);
   const [sentence,         setSentence]         = useState([]);  // raw gloss sentences
   const [englishSentences, setEnglishSentences] = useState([]);  // NLP-translated English
+  const [improvedSentences,setImprovedSentences]= useState([]);  // AI-improved versions
   const [skipRate,         setSkipRate]         = useState(0);   // adaptive frame skip
+
+  /* ── AI improve state ──────────────────────────────────────────── */
+  const [improvingIdx,  setImprovingIdx]  = useState(-1);  // index being improved
+
+  /* ── Letter-model UI state ─────────────────────────────────────── */
+  const [letterPrediction,  setLetterPrediction]  = useState('');   // current frame letter
+  const [letterConf,        setLetterConf]        = useState(0);
+  const [letterTop5,        setLetterTop5]        = useState([]);
+  const [letterWord,        setLetterWord]        = useState('');   // building word
+  const [letterWords,       setLetterWords]       = useState([]);   // committed words
+  const [letterSuggestions, setLetterSuggestions] = useState([]);
+  const [letterStableDots,  setLetterStableDots]  = useState(0);
+  const [letterSentence,    setLetterSentence]    = useState('');   // generated sentence
 
   /* ── Refs ──────────────────────────────────────────────────────── */
   const videoRef        = useRef(null);
@@ -485,9 +509,9 @@ export default function SignToText() {
   const lastCommitTime  = useRef(0);
   const lastCommitWord  = useRef('');          // duplicate hash
 
-  // Adaptive frame skip
-  const frameSkipCount  = useRef(0);           // Holistic frames to skip
-  const holisticBusy    = useRef(false);       // prevent queue buildup
+  // Adaptive frame skip — only update state every N skips to avoid re-renders
+  const frameSkipCount  = useRef(0);
+  const holisticBusy    = useRef(false);
 
   // Handedness calibration
   const calibFrames     = useRef(0);
@@ -501,13 +525,34 @@ export default function SignToText() {
   const baseStableRef   = useRef(0);           // frames base-hand has been stable
   const retrainWarnedRef = useRef(false);       // show retrain error once
 
+  // Letter-model inference state — processed inside onResults, no second timer
+  const letterStableLetterRef = useRef('');
+  const letterStableCountRef  = useRef(0);
+  const letterCooldownRef     = useRef(0);
+  const letterWordRef         = useRef('');
+  const letterWordsRef        = useRef([]);
+  const letterSendingRef      = useRef(false);
+  // Cached dominant-hand vector (63 floats) — set inside onResults
+  const lastDomHandRef        = useRef(null);
+  const lastIndexTipRef       = useRef(null);
+  // Previous UI values to skip no-op setState calls
+  const prevMotionStateRef    = useRef('idle');
+  const prevHandsVisibleRef   = useRef(false);
+  const prevNmmLabelRef       = useRef('');
+  const prevLetterRef         = useRef('');
+  const prevLetterConfRef     = useRef(0);
+
   const thresholdRef    = useRef(effectiveThreshold);
   useEffect(() => { thresholdRef.current = Math.max(settingsThreshold, CONFIDENCE_THRESHOLD); }, [settingsThreshold]);
 
-  /* ── Load CDN libraries ────────────────────────────────────────── */
+  /* ── Load CDN libraries (sequential so progress is meaningful) ──── */
+  const [loadStep, setLoadStep] = useState(0); // 0=idle 1=holistic 2=camera 3=drawing 4=done
   useEffect(() => {
-    Promise.all([loadScript(MP_HOLISTIC_CDN), loadScript(MP_CAMERA_CDN), loadScript(MP_DRAWING_CDN)])
-      .then(() => setMpReady(true))
+    setLoadStep(1);
+    loadScript(MP_HOLISTIC_CDN)
+      .then(() => { setLoadStep(2); return loadScript(MP_CAMERA_CDN); })
+      .then(() => { setLoadStep(3); return loadScript(MP_DRAWING_CDN); })
+      .then(() => { setLoadStep(4); setMpReady(true); })
       .catch(e => setError(e.message));
   }, []);
   useEffect(() => () => teardown(), []);
@@ -555,9 +600,12 @@ export default function SignToText() {
         locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629/${f}`,
       });
       holisticRef.current.setOptions({
-        modelComplexity: 1, smoothLandmarks: true,
-        enableSegmentation: false, refineFaceLandmarks: false,
-        minDetectionConfidence: 0.5, minTrackingConfidence: 0.5,
+        modelComplexity: 0,              // 0 = lite — much faster to initialise
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        refineFaceLandmarks: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
       });
 
       holisticRef.current.onResults((results) => {
@@ -567,9 +615,13 @@ export default function SignToText() {
         const hasLeft  = !!results.leftHandLandmarks;
         const hasRight = !!results.rightHandLandmarks;
         const hasHands = hasLeft || hasRight;
-        setHandsVisible(hasHands);
+        // Only call setState when value actually changes
+        if (hasHands !== prevHandsVisibleRef.current) {
+          prevHandsVisibleRef.current = hasHands;
+          setHandsVisible(hasHands);
+        }
 
-        /* ── 3. Dynamic handedness calibration ────────────────────── */
+        /* ── Dynamic handedness calibration ───────────────────────── */
         if (calibFrames.current < CALIBRATION_FRAMES) {
           if (results.poseLandmarks) {
             const lw = results.poseLandmarks[15], rw = results.poseLandmarks[16];
@@ -589,8 +641,8 @@ export default function SignToText() {
           }
         }
 
-        /* ── 5. Build 218-dim feature vector ──────────────────────── */
-        const { vec, wrist, vel, headState, nmmSummary, shoulderScale, domRaw, baseRaw } =
+        /* ── Build 218-dim feature vector ─────────────────────────── */
+        const { vec, wrist, vel, headState, nmmSummary, domRaw, baseRaw } =
           buildFrameVector(results, dominantRef.current, prevWristRef.current, prevVelRef.current, headStateRef.current);
 
         prevWristRef.current  = wrist;
@@ -598,7 +650,94 @@ export default function SignToText() {
         headStateRef.current  = headState;
         nmmSummaryRef.current = nmmSummary;
 
-        // Accumulate NMM averages for the current gloss window
+        /* ── Capture raw dominant hand for letter model ────────────── */
+        const domLms = dominantRef.current
+          ? results.rightHandLandmarks
+          : results.leftHandLandmarks;
+        if (domLms && domLms.length === 21) {
+          const flat = new Array(63);
+          for (let i = 0; i < 21; i++) {
+            flat[i * 3]     = domLms[i].x;
+            flat[i * 3 + 1] = domLms[i].y;
+            flat[i * 3 + 2] = domLms[i].z;
+          }
+          lastDomHandRef.current = flat;
+          lastIndexTipRef.current = [domLms[8].x, domLms[8].y];
+        } else {
+          lastDomHandRef.current  = null;
+          lastIndexTipRef.current = null;
+        }
+
+        /* ── Inline letter-model debounce (no second timer) ───────── */
+        if (recognitionModeRef.current !== 'word' && hasHands && lastDomHandRef.current && !letterSendingRef.current) {
+          if (letterCooldownRef.current > 0) {
+            letterCooldownRef.current--;
+          } else {
+            // Fire ONE network request per stability window
+            letterSendingRef.current = true;
+            const landmarksSnap = lastDomHandRef.current.slice();
+            const tipSnap       = lastIndexTipRef.current;
+            predictLetter(landmarksSnap, tipSnap)
+              .then(({ data: ld }) => {
+                const lt   = ld.letter     ?? '—';
+                const lc   = ld.confidence ?? 0;
+                const top5l = ld.top5      ?? [];
+
+                // Only update letter display state when value changes
+                if (lt !== prevLetterRef.current) {
+                  prevLetterRef.current = lt;
+                  setLetterPrediction(lt);
+                  setLetterTop5(top5l);
+                }
+                if (Math.abs(lc - prevLetterConfRef.current) > 0.02) {
+                  prevLetterConfRef.current = lc;
+                  setLetterConf(lc);
+                }
+
+                // Debounce: require LETTER_STABLE_FRAMES consecutive same-letter frames
+                if (lt !== '—' && lc >= LETTER_CONF_THRESH) {
+                  if (lt === letterStableLetterRef.current) {
+                    letterStableCountRef.current++;
+                    setLetterStableDots(letterStableCountRef.current);
+                  } else {
+                    letterStableLetterRef.current = lt;
+                    letterStableCountRef.current  = 1;
+                    setLetterStableDots(1);
+                  }
+                  if (letterStableCountRef.current >= LETTER_STABLE_FRAMES) {
+                    const newWord = letterWordRef.current + lt;
+                    letterWordRef.current = newWord;
+                    setLetterWord(newWord);
+                    letterStableCountRef.current  = 0;
+                    letterStableLetterRef.current = '';
+                    setLetterStableDots(0);
+                    letterCooldownRef.current = LETTER_COOLDOWN_FRAMES;
+                    // Only fetch suggestions on commit — not every frame
+                    generateLetterSentence(newWord)
+                      .then(({ data: sd }) => setLetterSuggestions(sd.suggestions ?? []))
+                      .catch(() => {});
+                  }
+                } else {
+                  if (letterStableCountRef.current !== 0) {
+                    letterStableLetterRef.current = lt;
+                    letterStableCountRef.current  = 0;
+                    setLetterStableDots(0);
+                  }
+                }
+              })
+              .catch(() => {})
+              .finally(() => { letterSendingRef.current = false; });
+          }
+        } else if (!hasHands) {
+          // Reset letter debounce when hand leaves frame
+          if (letterStableCountRef.current !== 0) {
+            letterStableLetterRef.current = '';
+            letterStableCountRef.current  = 0;
+            setLetterStableDots(0);
+          }
+        }
+
+        /* ── NMM accumulator ──────────────────────────────────────── */
         if (nmmSummary && typeof nmmSummary === 'object') {
           const w = nmmWindowRef.current;
           w._frames++;
@@ -607,11 +746,11 @@ export default function SignToText() {
           }
         }
 
-        /* ── 6. Sliding FIFO push ──────────────────────────────────── */
+        /* ── Sliding FIFO push ────────────────────────────────────── */
         frameBuffer.current.push(Array.from(vec));
         if (frameBuffer.current.length > MAX_SEQUENCE_LENGTH) frameBuffer.current.shift();
 
-        /* ── 7. Sign boundary detection ───────────────────────────── */
+        /* ── Sign boundary detection ──────────────────────────────── */
         const speed = vecSpeed(vec);
         if (!hasHands && speed < VELOCITY_REST_THRESH) {
           restFrameCount.current = Math.min(restFrameCount.current + 1, REST_FRAMES + 5);
@@ -619,50 +758,52 @@ export default function SignToText() {
           restFrameCount.current = 0;
         }
 
-        /* ── 2. Fingerspelling branch ──────────────────────────────── */
+        /* ── Fingerspelling branch ────────────────────────────────── */
         if (hasHands && baseRaw) {
-          // Measure base-hand stability
           const baseWrist = baseRaw[0];
           const bSpeed = prevWristRef.current
             ? norm3(baseWrist.x - prevWristRef.current.x, baseWrist.y - prevWristRef.current.y, 0)
             : 0;
-          if (bSpeed < FS_STABLE_THRESH) {
-            baseStableRef.current++;
-          } else {
-            baseStableRef.current = 0;
-          }
-          const domMicro = speed;
-          const inFS = baseStableRef.current > 10 && domMicro > FS_MOTION_THRESH && domMicro < 0.06;
+          if (bSpeed < FS_STABLE_THRESH) baseStableRef.current++;
+          else baseStableRef.current = 0;
+          const inFS = baseStableRef.current > 10 && speed > FS_MOTION_THRESH && speed < 0.06;
           if (inFS !== fsModeRef.current) {
             fsModeRef.current = inFS;
             setFsMode(inFS);
           }
         } else {
-          fsModeRef.current = false;
-          setFsMode(false);
+          if (fsModeRef.current) { fsModeRef.current = false; setFsMode(false); }
           baseStableRef.current = 0;
         }
 
-        // Motion state UI
-        const isResting = restFrameCount.current >= REST_FRAMES;
-        setMotionState(hasHands
+        /* ── Motion badge (only re-render on change) ──────────────── */
+        const isResting  = restFrameCount.current >= REST_FRAMES;
+        const nextMotion = hasHands
           ? (speed < VELOCITY_REST_THRESH ? 'holding' : 'signing')
-          : (isResting ? 'resting' : 'idle'));
+          : (isResting ? 'resting' : 'idle');
+        if (nextMotion !== prevMotionStateRef.current) {
+          prevMotionStateRef.current = nextMotion;
+          setMotionState(nextMotion);
+        }
 
-        // NMM label
-        setNmmLabel(nmm2label(nmmSummary));
+        /* ── NMM label (only re-render on change) ─────────────────── */
+        const nextLabel = nmm2label(nmmSummary);
+        if (nextLabel !== prevNmmLabelRef.current) {
+          prevNmmLabelRef.current = nextLabel;
+          setNmmLabel(nextLabel);
+        }
       });
 
       await holisticRef.current.initialize();
 
-      /* 4. Adaptive latency — skip frames when Holistic is still busy */
+      /* Adaptive latency — skip frames when Holistic is still busy */
       cameraRef.current = new window.Camera(videoRef.current, {
         onFrame: async () => {
           if (!holisticRef.current) return;
-          // 4. Adaptive skip: if busy, skip this frame
           if (holisticBusy.current) {
             frameSkipCount.current++;
-            setSkipRate(frameSkipCount.current);
+            // Only update skip-rate UI every 30 skipped frames to avoid render storm
+            if (frameSkipCount.current % 30 === 0) setSkipRate(frameSkipCount.current);
             return;
           }
           holisticBusy.current = true;
@@ -674,8 +815,10 @@ export default function SignToText() {
       });
       await cameraRef.current.start();
 
-      /* 6. Continuous sliding-window inference loop */
+      /* Continuous sliding-window inference loop (word model only) */
       captureTimerRef.current = setInterval(async () => {
+        // Skip word-model inference entirely when in letter mode
+        if (recognitionModeRef.current === 'letter') return;
         if (frameBuffer.current.length < SEQUENCE_LENGTH || isSending.current) return;
 
         // End-of-sentence on rest — translate gloss → English then clear window
@@ -787,17 +930,24 @@ export default function SignToText() {
     clearInterval(captureTimerRef.current); captureTimerRef.current = null;
     try { cameraRef.current?.stop(); }    catch {}
     try { holisticRef.current?.close(); } catch {}
-    cameraRef.current = null; holisticRef.current = null;
-    frameBuffer.current    = []; prevWristRef.current = null;
-    prevVelRef.current     = null; headStateRef.current = { yaw: 0, pitch: 0, roll: 0 };
-    restFrameCount.current = 0; isSending.current    = false;
-    stableCount.current    = 0; lastWord.current     = '';
-    lastCommitTime.current = 0; lastCommitWord.current = '';
-    holisticBusy.current   = false; frameSkipCount.current = 0;
-    calibFrames.current    = 0; leftEnergy.current = 0; rightEnergy.current = 0;
-    fsModeRef.current      = false; fsBufferRef.current = '';
-    baseStableRef.current  = 0;    retrainWarnedRef.current = false;
-    nmmWindowRef.current   = {
+    cameraRef.current  = null; holisticRef.current = null;
+    frameBuffer.current     = []; prevWristRef.current  = null;
+    prevVelRef.current      = null; headStateRef.current = { yaw: 0, pitch: 0, roll: 0 };
+    restFrameCount.current  = 0; isSending.current     = false;
+    stableCount.current     = 0; lastWord.current      = '';
+    lastCommitTime.current  = 0; lastCommitWord.current = '';
+    holisticBusy.current    = false; frameSkipCount.current = 0;
+    calibFrames.current     = 0; leftEnergy.current    = 0; rightEnergy.current = 0;
+    fsModeRef.current       = false; fsBufferRef.current = '';
+    baseStableRef.current   = 0; retrainWarnedRef.current = false;
+    lastDomHandRef.current  = null; lastIndexTipRef.current = null;
+    letterStableLetterRef.current = ''; letterStableCountRef.current = 0;
+    letterCooldownRef.current = 0; letterWordRef.current = '';
+    letterWordsRef.current    = []; letterSendingRef.current = false;
+    prevMotionStateRef.current = 'idle'; prevHandsVisibleRef.current = false;
+    prevNmmLabelRef.current    = ''; prevLetterRef.current = '';
+    prevLetterConfRef.current  = 0;
+    nmmWindowRef.current = {
       eyebrow_raise: 0, eyebrow_furrow: 0,
       head_nod: 0, head_shake: 0, mouth_open: 0, _frames: 0,
     };
@@ -808,6 +958,12 @@ export default function SignToText() {
     setPrediction(''); setConfidence(0); setTop5([]); setStableDots(0);
     setFsMode(false); setFsBuffer(''); setNmmLabel(''); setSkipRate(0);
     setDominant('right');
+    // Reset letter-model UI
+    setLetterPrediction(''); setLetterConf(0); setLetterTop5([]);
+    setLetterWord(''); setLetterWords([]); setLetterSuggestions([]);
+    setLetterStableDots(0); setLetterSentence('');
+    // Reset AI state
+    setImprovedSentences([]); setImprovingIdx(-1);
   }, []);
 
   /* ── Gloss / sentence helpers ──────────────────────────────────── */
@@ -825,11 +981,31 @@ export default function SignToText() {
   const handleUndoSentence = () => {
     setSentence(p => p.slice(0, -1));
     setEnglishSentences(p => p.slice(0, -1));
+    setImprovedSentences(p => p.slice(0, -1));
   };
   const handleClearAll     = () => {
     handleClearGloss();
     setSentence([]);
     setEnglishSentences([]);
+    setImprovedSentences([]);
+  };
+
+  const handleImprove = async (idx) => {
+    const source = improvedSentences[idx] || englishSentences[idx] || sentence[idx] || '';
+    if (!source) return;
+    setImprovingIdx(idx);
+    try {
+      const { data } = await improveText(source);
+      setImprovedSentences(prev => {
+        const next = [...prev];
+        next[idx] = data.improved || source;
+        return next;
+      });
+    } catch {
+      /* silently ignore — keep existing text */
+    } finally {
+      setImprovingIdx(-1);
+    }
   };
   const handleCopy         = () => {
     // Copy English translations if available, else raw glosses
@@ -839,6 +1015,45 @@ export default function SignToText() {
     navigator.clipboard?.writeText(englishText);
   };
 
+  /* ── Letter-model helpers ──────────────────────────────────────── */
+  const handleLetterCommitWord = () => {
+    const w = letterWordRef.current;
+    if (!w) return;
+    const next = [...letterWordsRef.current, w];
+    letterWordsRef.current = next;
+    setLetterWords([...next]);
+    letterWordRef.current = '';
+    setLetterWord('');
+    setLetterSuggestions([]);
+    // Generate sentence from all committed words joined by space
+    const joined = next.join(' ');
+    generateLetterSentence(joined)
+      .then(({ data }) => setLetterSentence(data.sentence ?? joined))
+      .catch(() => setLetterSentence(joined));
+  };
+  const handleLetterClearWord = () => {
+    letterWordRef.current = '';
+    setLetterWord('');
+    setLetterSuggestions([]);
+  };
+  const handleLetterClearAll = () => {
+    letterWordRef.current  = '';
+    letterWordsRef.current = [];
+    setLetterWord('');
+    setLetterWords([]);
+    setLetterSuggestions([]);
+    setLetterSentence('');
+  };
+  const handleLetterCopy = () => {
+    const text = letterSentence || letterWords.join(' ') || letterWord;
+    navigator.clipboard?.writeText(text);
+  };
+  const handleApplySuggestion = (suggestion) => {
+    letterWordRef.current = suggestion.toUpperCase();
+    setLetterWord(suggestion.toUpperCase());
+    setLetterSuggestions([]);
+  };
+
   /* ── Motion badge colours ──────────────────────────────────────── */
   const motionColor = { idle: '#64748B', resting: '#F59E0B', signing: '#10B981', holding: '#3B82F6' }[motionState] ?? '#64748B';
   const motionLabel = { idle: 'Idle', resting: 'Resting', signing: 'Signing', holding: 'Holding' }[motionState] ?? 'Idle';
@@ -846,18 +1061,62 @@ export default function SignToText() {
   /* ══════════════════════════════════════════════════════════════
      Render
      ══════════════════════════════════════════════════════════════ */
+  /* ── CDN loading labels ─────────────────────────────────────────── */
+  const loadLabels = ['', 'Loading hand tracker…', 'Loading camera utils…', 'Loading drawing utils…', 'Ready'];
+  const loadPct    = loadStep === 0 ? 0 : loadStep >= 4 ? 100 : Math.round((loadStep / 3) * 100);
+
   return (
     <AppShell>
       <div className="page-header">
         <h1>Sign to Text</h1>
-        <p>Real-time CSLR — full-body tracking, NMM grammar, fingerspelling, auto-handedness.</p>
+        <p>Point your camera at the signer — GestureBridge translates signs into spoken language in real time.</p>
+      </div>
+
+      {/* ── Mode selector tabs — right on the page, no Settings needed ── */}
+      <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1.25rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', padding: '.3rem', width: 'fit-content' }}>
+        {[
+          { value: 'word',   label: '🤟 Sign Mode',   desc: 'Full signs → words' },
+          { value: 'letter', label: '🔤 Spell Mode',  desc: 'Finger-spell letters' },
+        ].map((m) => {
+          const active = recognitionMode === m.value;
+          return (
+            <button
+              key={m.value}
+              onClick={() => updateSettings({ recognitionMode: m.value })}
+              style={{
+                padding: '.45rem 1.1rem', borderRadius: 'var(--radius-sm)', border: 'none',
+                background: active ? 'var(--bg-card)' : 'transparent',
+                color: active ? 'var(--color-primary)' : 'var(--text-muted)',
+                fontWeight: active ? 700 : 500, fontSize: '.875rem', cursor: 'pointer',
+                boxShadow: active ? 'var(--shadow-sm)' : 'none',
+                transition: 'all var(--transition)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '.1rem',
+              }}
+            >
+              <span>{m.label}</span>
+              <span style={{ fontSize: '.68rem', fontWeight: 400, color: active ? 'var(--color-primary)' : 'var(--text-light)', opacity: active ? .8 : 1 }}>{m.desc}</span>
+            </button>
+          );
+        })}
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
-      {!mpReady && !error && <Alert type="info" message="Loading MediaPipe Holistic from CDN…" />}
+
+      {/* CDN load progress bar */}
+      {!mpReady && !error && (
+        <div style={{ marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.78rem', color: 'var(--text-muted)', marginBottom: '.35rem' }}>
+            <span>⚙️ {loadLabels[loadStep] || 'Initialising…'}</span>
+            <span>{loadPct}%</span>
+          </div>
+          <div style={{ height: 4, background: 'var(--border)', borderRadius: 999 }}>
+            <div style={{ height: '100%', width: `${loadPct}%`, background: 'var(--color-primary)', borderRadius: 999, transition: 'width .4s ease' }} />
+          </div>
+        </div>
+      )}
+
       {privacyMode && <Alert type="info" message="Privacy Mode — translations not saved to history." />}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: '1.5rem', alignItems: 'start' }} className="stt-grid">
+      <div className="stt-grid">
 
         {/* ── Left ─────────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -872,7 +1131,7 @@ export default function SignToText() {
               {!camActive && (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '.75rem' }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-light)" strokeWidth="1.25"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-                  <p style={{ color: '#94A3B8', fontSize: '.9rem' }}>{mpReady ? 'Camera not started' : 'Loading MediaPipe…'}</p>
+                  <p style={{ color: '#94A3B8', fontSize: '.9rem' }}>{mpReady ? 'Tap Start Camera to begin' : 'Preparing…'}</p>
                 </div>
               )}
 
@@ -932,130 +1191,149 @@ export default function SignToText() {
             </div>
           </div>
 
-          {/* Gloss Sequence */}
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
-              <h3 style={{ margin: 0 }}>
-                Gloss Sequence
-                <span style={{ fontSize: '.72rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '.5rem' }}>(current phrase)</span>
-              </h3>
-              <div style={{ display: 'flex', gap: '.4rem' }}>
-                <button className="btn btn-ghost btn-sm" onClick={handleUndoGloss}  disabled={!glossSequence.length}>Undo</button>
-                <button className="btn btn-ghost btn-sm" onClick={handleClearGloss} disabled={!glossSequence.length}>Clear</button>
+          {/* Detected Signs — word mode only */}
+          {recognitionMode === 'word' && (
+            <div className="card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
+                <h3 style={{ margin: 0 }}>
+                  Detected Signs
+                  <span style={{ fontSize: '.72rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '.5rem' }}>(building phrase)</span>
+                </h3>
+                <div style={{ display: 'flex', gap: '.4rem' }}>
+                  <button className="btn btn-ghost btn-sm" onClick={handleUndoGloss}  disabled={!glossSequence.length}>Undo</button>
+                  <button className="btn btn-ghost btn-sm" onClick={handleClearGloss} disabled={!glossSequence.length}>Clear</button>
+                </div>
+              </div>
+              <div style={{ minHeight: 48, padding: '.75rem 1rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', display: 'flex', flexWrap: 'wrap', gap: '.4rem', alignItems: 'center' }}>
+                {glossSequence.length > 0
+                  ? glossSequence.map((w, i) => (
+                      <span key={i} style={{ padding: '.25rem .65rem', background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', border: '1px solid var(--color-primary)', borderRadius: 999, fontSize: '.875rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+                        {w}
+                      </span>
+                    ))
+                  : <span style={{ color: 'var(--text-light)', fontSize: '.875rem' }}>Signs will appear here…</span>
+                }
+                {fsBuffer && (
+                  <span style={{ padding: '.25rem .65rem', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 15%, transparent)', border: '1px solid var(--color-secondary,#7c5cd8)', borderRadius: 999, fontSize: '.875rem', fontWeight: 700, color: 'var(--color-secondary,#7c5cd8)', letterSpacing: '.08em' }}>
+                    ✏ {fsBuffer}
+                  </span>
+                )}
               </div>
             </div>
-            <div style={{ minHeight: 48, padding: '.75rem 1rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', display: 'flex', flexWrap: 'wrap', gap: '.4rem', alignItems: 'center' }}>
-              {glossSequence.length > 0
-                ? glossSequence.map((w, i) => (
-                    <span key={i} style={{ padding: '.25rem .65rem', background: 'color-mix(in srgb, var(--color-primary) 15%, transparent)', border: '1px solid var(--color-primary)', borderRadius: 999, fontSize: '.875rem', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                      {w}
-                    </span>
-                  ))
-                : <span style={{ color: 'var(--text-light)', fontSize: '.875rem' }}>Signs will appear here…</span>
-              }
-              {fsBuffer && (
-                <span style={{ padding: '.25rem .65rem', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 15%, transparent)', border: '1px solid var(--color-secondary,#7c5cd8)', borderRadius: 999, fontSize: '.875rem', fontWeight: 700, color: 'var(--color-secondary,#7c5cd8)', letterSpacing: '.08em' }}>
-                  ✏ {fsBuffer}
-                </span>
-              )}
-            </div>
-          </div>
+          )}
 
-          {/* Sentences — English translation (primary) + raw gloss (secondary) */}
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
-              <h3 style={{ margin: 0 }}>
-                Sentences
-                <span style={{ fontSize: '.72rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '.5rem' }}>(closed on rest pause)</span>
-              </h3>
-              <div style={{ display: 'flex', gap: '.4rem' }}>
-                <button className="btn btn-ghost btn-sm" onClick={handleUndoSentence} disabled={!sentence.length}>Undo</button>
-                <button className="btn btn-ghost btn-sm" onClick={handleClearAll} disabled={!sentence.length && !glossSequence.length}>Clear All</button>
-                <button className="btn btn-subtle btn-sm" onClick={handleCopy} disabled={!sentence.length && !glossSequence.length} title="Copies English translation">Copy</button>
+          {/* Translation — word mode only */}
+          {recognitionMode === 'word' && (
+            <div className="card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
+                <h3 style={{ margin: 0 }}>
+                  Translation
+                  <span style={{ fontSize: '.72rem', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '.5rem' }}>(auto-closes on pause)</span>
+                </h3>
+                <div style={{ display: 'flex', gap: '.4rem' }}>
+                  <button className="btn btn-ghost btn-sm" onClick={handleUndoSentence} disabled={!sentence.length}>Undo</button>
+                  <button className="btn btn-ghost btn-sm" onClick={handleClearAll} disabled={!sentence.length && !glossSequence.length}>Clear All</button>
+                  <button className="btn btn-subtle btn-sm" onClick={handleCopy} disabled={!sentence.length && !glossSequence.length} title="Copies English translation">Copy</button>
+                </div>
+              </div>
+              <div style={{ minHeight: 80, padding: '1rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
+                {sentence.length === 0
+                  ? <span style={{ color: 'var(--text-light)', fontSize: '1rem' }}>Translation will appear here — start signing.</span>
+                  : sentence.map((rawGloss, i) => {
+                      const displayText = improvedSentences[i] || englishSentences[i];
+                      const isImproved  = !!improvedSentences[i];
+                      return (
+                        <div key={i}>
+                          {/* Translation text — large and clear */}
+                          {displayText && (
+                            <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.5 }}>
+                              {displayText}
+                              {isImproved && (
+                                <span style={{ marginLeft: '.4rem', fontSize: '.7rem', fontWeight: 500, color: 'var(--color-secondary,#7c5cd8)', verticalAlign: 'middle' }}>✨ AI</span>
+                              )}
+                            </div>
+                          )}
+                          {/* Raw gloss */}
+                          <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', fontFamily: 'monospace', letterSpacing: '.04em', marginTop: displayText ? '.15rem' : 0 }}>
+                            {rawGloss}
+                          </div>
+                          {/* AI Improve button */}
+                          {(englishSentences[i] || rawGloss) && (
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ marginTop: '.35rem', fontSize: '.72rem', display: 'flex', alignItems: 'center', gap: '.25rem', opacity: improvingIdx === i ? .6 : 1 }}
+                              onClick={() => handleImprove(i)}
+                              disabled={improvingIdx === i}
+                              title="Polish with IBM Watsonx AI"
+                            >
+                              {improvingIdx === i ? <Spinner size="sm" /> : '✨'} {isImproved ? 'Re-improve' : 'Improve with AI'}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })
+                }
               </div>
             </div>
-            <div style={{ minHeight: 64, padding: '1rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
-              {sentence.length === 0
-                ? <span style={{ color: 'var(--text-light)', fontSize: '1rem' }}>Completed sentences will appear here…</span>
-                : sentence.map((rawGloss, i) => (
-                    <div key={i}>
-                      {/* English translation — shown when available */}
-                      {englishSentences[i] && (
-                        <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)', lineHeight: 1.5 }}>
-                          {englishSentences[i]}
-                        </div>
-                      )}
-                      {/* Raw ASL gloss — always shown as muted label */}
-                      <div style={{
-                        fontSize: '.75rem',
-                        color: 'var(--text-muted)',
-                        fontFamily: 'monospace',
-                        letterSpacing: '.04em',
-                        marginTop: englishSentences[i] ? '.15rem' : 0,
-                      }}>
-                        {rawGloss}
-                      </div>
-                    </div>
-                  ))
-              }
-            </div>
-          </div>
+          )}
         </div>
 
         {/* ── Right: prediction panel ──────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-          {/* Live prediction */}
-          <div className="card" style={{ textAlign: 'center' }}>
-            <h4 style={{ color: 'var(--text-muted)', marginBottom: '.75rem' }}>Live Prediction</h4>
-            <div style={{ fontSize: '2.2rem', fontWeight: 800, letterSpacing: '-.02em', color: prediction ? (fsMode ? 'var(--color-secondary,#7c5cd8)' : 'var(--color-primary)') : 'var(--text-light)', minHeight: '2.6rem' }}>
-              {prediction || '—'}
+          {/* Current sign being read — word mode only */}
+          {recognitionMode === 'word' && (
+            <div className="card" style={{ textAlign: 'center' }}>
+              <h4 style={{ color: 'var(--text-muted)', marginBottom: '.75rem' }}>Reading Now</h4>
+              <div style={{ fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-.02em', color: prediction ? (fsMode ? 'var(--color-secondary,#7c5cd8)' : 'var(--color-primary)') : 'var(--text-light)', minHeight: '2.8rem' }}>
+                {prediction || '—'}
+              </div>
+              {fsMode && <div style={{ fontSize: '.72rem', color: 'var(--color-secondary,#7c5cd8)', marginTop: '.2rem' }}>Spelling mode active</div>}
+
+              {confidence > 0 && (
+                <div style={{ marginTop: '.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.8rem', marginBottom: '.3rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Confidence</span>
+                    <span style={{ fontWeight: 700, color: confidence >= effectiveThreshold ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                      {(confidence * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="confidence-bar">
+                    <div className="confidence-bar-fill" style={{ width: `${confidence * 100}%` }} />
+                  </div>
+                  <div style={{ position: 'relative', height: 4 }}>
+                    <div style={{ position: 'absolute', left: `${effectiveThreshold * 100}%`, top: -12, width: 1, height: 14, background: 'var(--text-muted)', opacity: .5 }} />
+                  </div>
+                  <div style={{ fontSize: '.7rem', color: 'var(--text-muted)', marginTop: '.15rem', textAlign: 'right' }}>threshold: {(effectiveThreshold * 100).toFixed(0)}%</div>
+                </div>
+              )}
+
+              {/* Stability dots */}
+              {camActive && (
+                <div style={{ marginTop: '.9rem' }}>
+                  <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', marginBottom: '.4rem' }}>Stability ({stableDots}/{STABLE_FRAMES})</div>
+                  <div style={{ display: 'flex', gap: '.3rem', justifyContent: 'center' }}>
+                    {Array.from({ length: STABLE_FRAMES }).map((_, i) => (
+                      <div key={i} style={{ width: 11, height: 11, borderRadius: '50%', background: i < stableDots ? 'var(--color-primary)' : 'var(--border)', transition: 'background var(--transition)' }} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Rest-frame progress */}
+              {camActive && (
+                <div style={{ marginTop: '.9rem' }}>
+                  <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', marginBottom: '.35rem' }}>Sentence end pause</div>
+                  <div style={{ height: 4, background: 'var(--border)', borderRadius: 999 }}>
+                    <div style={{ height: '100%', width: `${Math.min((restFrameCount.current / REST_FRAMES) * 100, 100)}%`, background: restFrameCount.current >= REST_FRAMES ? 'var(--color-success)' : 'var(--color-warning)', borderRadius: 999, transition: 'width .2s ease' }} />
+                  </div>
+                </div>
+              )}
             </div>
-            {fsMode && <div style={{ fontSize: '.72rem', color: 'var(--color-secondary,#7c5cd8)', marginTop: '.2rem' }}>Fingerspelling mode</div>}
+          )}
 
-            {confidence > 0 && (
-              <div style={{ marginTop: '.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.8rem', marginBottom: '.3rem' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Confidence</span>
-                  <span style={{ fontWeight: 700, color: confidence >= effectiveThreshold ? 'var(--color-success)' : 'var(--color-warning)' }}>
-                    {(confidence * 100).toFixed(1)}%
-                  </span>
-                </div>
-                <div className="confidence-bar">
-                  <div className="confidence-bar-fill" style={{ width: `${confidence * 100}%` }} />
-                </div>
-                <div style={{ position: 'relative', height: 4 }}>
-                  <div style={{ position: 'absolute', left: `${effectiveThreshold * 100}%`, top: -12, width: 1, height: 14, background: 'var(--text-muted)', opacity: .5 }} />
-                </div>
-                <div style={{ fontSize: '.7rem', color: 'var(--text-muted)', marginTop: '.15rem', textAlign: 'right' }}>threshold: {(effectiveThreshold * 100).toFixed(0)}%</div>
-              </div>
-            )}
-
-            {/* Stability dots */}
-            {camActive && (
-              <div style={{ marginTop: '.9rem' }}>
-                <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', marginBottom: '.4rem' }}>Stability ({stableDots}/{STABLE_FRAMES})</div>
-                <div style={{ display: 'flex', gap: '.3rem', justifyContent: 'center' }}>
-                  {Array.from({ length: STABLE_FRAMES }).map((_, i) => (
-                    <div key={i} style={{ width: 11, height: 11, borderRadius: '50%', background: i < stableDots ? 'var(--color-primary)' : 'var(--border)', transition: 'background var(--transition)' }} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Rest-frame progress */}
-            {camActive && (
-              <div style={{ marginTop: '.9rem' }}>
-                <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', marginBottom: '.35rem' }}>Sentence end pause</div>
-                <div style={{ height: 4, background: 'var(--border)', borderRadius: 999 }}>
-                  <div style={{ height: '100%', width: `${Math.min((restFrameCount.current / REST_FRAMES) * 100, 100)}%`, background: restFrameCount.current >= REST_FRAMES ? 'var(--color-success)' : 'var(--color-warning)', borderRadius: 999, transition: 'width .2s ease' }} />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* NMM card */}
-          {camActive && nmmLabel && (
+          {/* NMM card — word mode only */}
+          {recognitionMode === 'word' && camActive && nmmLabel && (
             <div className="card" style={{ background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 8%, var(--bg-card))', borderColor: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 30%, var(--border))' }}>
               <h4 style={{ marginBottom: '.5rem', fontSize: '.85rem' }}>Non-Manual Markers</h4>
               <div style={{ fontSize: '.82rem', color: 'var(--text-main)', fontWeight: 600 }}>{nmmLabel}</div>
@@ -1065,8 +1343,8 @@ export default function SignToText() {
             </div>
           )}
 
-          {/* Top-5 */}
-          {top5.length > 0 && (
+          {/* Top-5 — word mode only */}
+          {recognitionMode === 'word' && top5.length > 0 && (
             <div className="card">
               <h4 style={{ marginBottom: '.75rem' }}>Top 5 Predictions</h4>
               {top5.map((t, i) => (
@@ -1083,49 +1361,161 @@ export default function SignToText() {
             </div>
           )}
 
-          {/* Instructions */}
-          <div className="card">
-            <h4 style={{ marginBottom: '.75rem' }}>How to Use</h4>
-            <ol style={{ paddingLeft: '1.1rem', fontSize: '.855rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
-              <li>Click <strong>Start Camera</strong> — keep full upper body visible.</li>
-              <li>Hold still for 1–2 s while the system auto-detects your dominant hand.</li>
-              <li>Sign naturally — the model reads hands, pose, face grammar and motion arc.</li>
-              <li>Raised eyebrows are detected as yes/no questions automatically.</li>
-              <li>To fingerspell a word: hold one hand still, spell with the other.</li>
-              <li>Return hands to rest (~1 s) to close the current sentence.</li>
-              <li>Use <strong>Undo / Clear</strong> to correct mistakes.</li>
-            </ol>
-          </div>
+          {/* ══ Letter-to-Sentence Panel — letter mode only ══════════ */}
+          {recognitionMode === 'letter' && (
+          <div className="card" style={{ borderColor: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 35%, var(--border))', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 4%, var(--bg-card))' }}>
 
-          {/* Feature legend */}
-          <div className="card" style={{ fontSize: '.78rem', color: 'var(--text-muted)' }}>
-            <h4 style={{ marginBottom: '.6rem', fontSize: '.85rem' }}>218-dim Feature Vector</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
-              {[
-                ['Hands (126)',       'Shape, wrist-norm, orientation'],
-                ['Pose (24)',         'Arm arc, body-relative position'],
-                ['Face spatial (27)', 'Lip/chin spatial targets'],
-                ['Velocity (3)',      'Wrist speed & direction'],
-                ['Interaction (2)',   'Fingertip → lips/palm'],
-                ['Acceleration (3)', 'Δ velocity — motion rhythm'],
-                ['NMM (10)',          'Eyebrows, head pose, mouth'],
-                ['Finger angles (15)','Joint angles per finger'],
-                ['Wrist quat (4)',    'Orientation quaternion'],
-                ['Body dist (4)',     'Hand → chin/chest/abdomen/palm'],
-              ].map(([name, desc]) => (
-                <div key={name} style={{ display: 'flex', gap: '.5rem' }}>
-                  <span style={{ fontWeight: 700, minWidth: 110, color: 'var(--text-main)', flexShrink: 0 }}>{name}</span>
-                  <span>{desc}</span>
-                </div>
-              ))}
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
+              <h4 style={{ margin: 0, color: 'var(--color-secondary,#7c5cd8)', fontSize: '.9rem' }}>
+                Letter → Sentence
+                <span style={{ marginLeft: '.4rem', fontSize: '.7rem', fontWeight: 400, color: 'var(--text-muted)' }}>ASL fingerspelling</span>
+              </h4>
+              <div style={{ display: 'flex', gap: '.3rem' }}>
+                <button className="btn btn-ghost btn-sm" onClick={handleLetterClearAll} disabled={!letterWord && !letterWords.length && !letterSentence}>Clear</button>
+                <button className="btn btn-subtle btn-sm" onClick={handleLetterCopy} disabled={!letterWord && !letterWords.length}>Copy</button>
+              </div>
             </div>
+
+            {/* Live letter prediction */}
+            <div style={{ textAlign: 'center', padding: '.75rem 0 .5rem' }}>
+              <div style={{ fontSize: '2.8rem', fontWeight: 900, letterSpacing: '.08em', color: letterPrediction && letterPrediction !== '—' ? 'var(--color-secondary,#7c5cd8)' : 'var(--text-light)', minHeight: '3.2rem', fontFamily: 'monospace' }}>
+                {letterPrediction || '—'}
+              </div>
+              {letterConf > 0 && (
+                <div style={{ marginTop: '.4rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.76rem', marginBottom: '.2rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Confidence</span>
+                    <span style={{ fontWeight: 700, color: letterConf >= LETTER_CONF_THRESH ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                      {(letterConf * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="confidence-bar" style={{ height: 4 }}>
+                    <div className="confidence-bar-fill" style={{ width: `${letterConf * 100}%`, background: 'var(--color-secondary,#7c5cd8)' }} />
+                  </div>
+                </div>
+              )}
+              {/* Stability dots */}
+              {camActive && (
+                <div style={{ marginTop: '.6rem', display: 'flex', gap: '.25rem', justifyContent: 'center' }}>
+                  {Array.from({ length: LETTER_STABLE_FRAMES }).map((_, i) => (
+                    <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: i < letterStableDots ? 'var(--color-secondary,#7c5cd8)' : 'var(--border)', transition: 'background .15s' }} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Top-5 letter predictions */}
+            {letterTop5.length > 0 && (
+              <div style={{ marginTop: '.5rem', display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
+                {letterTop5.map((t, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: i === 0 ? 800 : 500, fontSize: i === 0 ? '1rem' : '.85rem', color: i === 0 ? 'var(--color-secondary,#7c5cd8)' : 'var(--text-muted)', minWidth: 22 }}>
+                      {t.letter}
+                    </span>
+                    <div className="confidence-bar" style={{ flex: 1, height: i === 0 ? 6 : 4 }}>
+                      <div className="confidence-bar-fill" style={{ width: `${t.confidence * 100}%`, background: i === 0 ? 'var(--color-secondary,#7c5cd8)' : 'var(--border)' }} />
+                    </div>
+                    <span style={{ fontSize: '.72rem', color: 'var(--text-muted)', minWidth: 38, textAlign: 'right' }}>
+                      {(t.confidence * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Building word display */}
+            <div style={{ marginTop: '.85rem', padding: '.6rem .85rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', minHeight: 38 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.2rem' }}>
+                <span style={{ fontSize: '.72rem', color: 'var(--text-muted)' }}>Building word</span>
+                <button className="btn btn-ghost btn-sm" style={{ padding: '0 .4rem', fontSize: '.72rem' }} onClick={handleLetterClearWord} disabled={!letterWord}>✕</button>
+              </div>
+              <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '.12em', color: letterWord ? 'var(--text-main)' : 'var(--text-light)' }}>
+                {letterWord || '…'}
+              </div>
+              {letterWord && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  style={{ marginTop: '.5rem', width: '100%', fontSize: '.8rem', background: 'var(--color-secondary,#7c5cd8)', borderColor: 'var(--color-secondary,#7c5cd8)' }}
+                  onClick={handleLetterCommitWord}
+                >
+                  Commit word "{letterWord.toLowerCase()}"
+                </button>
+              )}
+            </div>
+
+            {/* Dictionary suggestions */}
+            {letterSuggestions.length > 0 && (
+              <div style={{ marginTop: '.5rem' }}>
+                <div style={{ fontSize: '.72rem', color: 'var(--text-muted)', marginBottom: '.3rem' }}>Suggestions</div>
+                <div style={{ display: 'flex', gap: '.35rem', flexWrap: 'wrap' }}>
+                  {letterSuggestions.map((s) => (
+                    <button
+                      key={s}
+                      className="btn btn-subtle btn-sm"
+                      style={{ fontSize: '.78rem', borderColor: 'var(--color-secondary,#7c5cd8)', color: 'var(--color-secondary,#7c5cd8)' }}
+                      onClick={() => handleApplySuggestion(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Committed words */}
+            {letterWords.length > 0 && (
+              <div style={{ marginTop: '.75rem' }}>
+                <div style={{ fontSize: '.72rem', color: 'var(--text-muted)', marginBottom: '.3rem' }}>Committed words</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.3rem' }}>
+                  {letterWords.map((w, i) => (
+                    <span key={i} style={{ padding: '.2rem .55rem', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 12%, transparent)', border: '1px solid var(--color-secondary,#7c5cd8)', borderRadius: 999, fontSize: '.8rem', fontWeight: 700, color: 'var(--color-secondary,#7c5cd8)', fontFamily: 'monospace' }}>
+                      {w.toLowerCase()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Generated sentence */}
+            {letterSentence && (
+              <div style={{ marginTop: '.75rem', padding: '.65rem .85rem', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 8%, var(--bg-surface))', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--color-secondary,#7c5cd8)' }}>
+                <div style={{ fontSize: '.72rem', color: 'var(--text-muted)', marginBottom: '.2rem' }}>Sentence</div>
+                <div style={{ fontSize: '.95rem', fontWeight: 600, color: 'var(--text-main)' }}>{letterSentence}</div>
+              </div>
+            )}
+
+            {/* Hint when no data yet */}
+            {!camActive && !letterWord && !letterWords.length && (
+              <div style={{ marginTop: '.5rem', fontSize: '.75rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                Start the camera and show an ASL letter to begin spelling.
+              </div>
+            )}
+          </div>
+          )}
+
+          {/* Quick tips */}
+          <div className="card">
+            <h4 style={{ marginBottom: '.75rem' }}>Quick Tips</h4>
+            {recognitionMode === 'word' ? (
+              <ul style={{ paddingLeft: '1.1rem', fontSize: '.875rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+                <li>Keep your <strong>full upper body</strong> in the frame.</li>
+                <li>Sign at a <strong>natural pace</strong> — pause briefly between words.</li>
+                <li>Drop hands to waist level to finish a sentence.</li>
+                <li>Use <strong>Copy</strong> to send the translation to any other app.</li>
+              </ul>
+            ) : (
+              <ul style={{ paddingLeft: '1.1rem', fontSize: '.875rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
+                <li>Hold each <strong>letter shape steady</strong> for about half a second.</li>
+                <li>Tap a suggestion chip to complete the word instantly.</li>
+                <li>Press <strong>Commit word</strong> to add it to the sentence.</li>
+                <li>Use <strong>Copy</strong> to send the sentence to any other app.</li>
+              </ul>
+            )}
           </div>
         </div>
       </div>
 
-      <style>{`
-        @media (max-width: 860px) { .stt-grid { grid-template-columns: 1fr !important; } }
-      `}</style>
     </AppShell>
   );
 }

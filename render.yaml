@@ -1,0 +1,34 @@
+services:
+  # ── Backend + bundled React SPA ─────────────────────────────────────────
+  - type: web
+    name: gesturebridge-api
+    runtime: python
+    region: oregon
+    plan: free
+
+    # Build: install Python deps, then build the React frontend into
+    # backend/static/dist so Flask can serve it.
+    buildCommand: |
+      pip install -r backend/requirements.txt
+      cd frontend && npm ci && npm run build
+
+    startCommand: cd backend && gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --preload
+
+    envVars:
+      - key: MONGO_URI
+        sync: false          # set in Render dashboard
+      - key: SECRET_KEY
+        generateValue: true  # Render generates a random value on first deploy
+      - key: IBM_API_KEY
+        sync: false          # optional — AI features degrade gracefully without it
+      - key: WATSONX_PROJECT_ID
+        sync: false
+      - key: WATSONX_URL
+        value: https://us-south.ml.cloud.ibm.com
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+    # Serve the built React bundle from Flask — no separate static service needed.
+    # All routes not matching an API endpoint fall through to index.html.

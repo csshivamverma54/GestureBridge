@@ -6,6 +6,7 @@
  * Exposes:
  *   theme               — 'light' | 'dark'
  *   language            — 'ASL' | 'ISL'
+ *   recognitionMode     — 'word' | 'letter'
  *   notifications       — boolean
  *   privacyMode         — boolean
  *   captureInterval     — number (ms between webcam frame captures)
@@ -21,6 +22,7 @@ const SettingsContext = createContext(null);
 const DEFAULTS = {
   theme:               'light',
   language:            'ASL',
+  recognitionMode:     'letter',  // 'word' | 'letter'  — letter-to-sentence is default
   notifications:       true,
   privacyMode:         false,
   captureInterval:     200,   // ms

@@ -5,9 +5,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import AppShell from '../components/AppShell';
 import Alert from '../components/Alert';
-import { CardLoader } from '../components/LoadingSpinner';
+import { CardLoader, Spinner } from '../components/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
-import { getHistory, getErrorMessage } from '../services/api';
+import { getHistory, getErrorMessage, getSentenceInsights } from '../services/api';
 
 const Icon = ({ d, size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
@@ -31,6 +31,11 @@ export default function History() {
   const [error,      setError]      = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [band,       setBand]       = useState(0); // index into CONFIDENCE_BANDS
+
+  /* ── AI Insights ─────────────────────────────────────────────── */
+  const [insights,        setInsights]        = useState('');
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError,   setInsightsError]   = useState('');
 
   const loadHistory = useCallback(async () => {
     setLoading(true); setError('');
@@ -82,6 +87,20 @@ export default function History() {
     URL.revokeObjectURL(url);
   };
 
+  const fetchInsights = async () => {
+    if (records.length === 0) return;
+    setInsightsLoading(true); setInsightsError(''); setInsights('');
+    try {
+      const translations = records.slice(0, 30).map(r => r.predicted_text).filter(Boolean);
+      const { data } = await getSentenceInsights(translations);
+      setInsights(data.insights || '');
+    } catch (err) {
+      setInsightsError(getErrorMessage(err));
+    } finally {
+      setInsightsLoading(false);
+    }
+  };
+
   return (
     <AppShell>
       {/* Header */}
@@ -108,7 +127,7 @@ export default function History() {
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
 
       {/* Toolbar */}
-      <div className="card" style={{ marginBottom: '1.25rem', display:'flex', gap:'.75rem', alignItems:'center', flexWrap:'wrap', padding:'1rem 1.25rem' }}>
+      <div className="card history-toolbar" style={{ marginBottom: '1.25rem', display:'flex', gap:'.75rem', alignItems:'center', flexWrap:'wrap', padding:'1rem 1.25rem' }}>
         <div style={{ position:'relative', flex:'1', minWidth:220 }}>
           <div style={{ position:'absolute', left:'.75rem', top:'50%', transform:'translateY(-50%)', color:'var(--text-light)', pointerEvents:'none' }}>
             <Icon d="M21 21l-4.35-4.35M17 11A6 6 0 111 11a6 6 0 0116 0z" size={15} />
@@ -144,6 +163,38 @@ export default function History() {
         <Icon d={['M12 8v4l3 3','M3.05 11a9 9 0 110 2']} size={14} />
         Showing <strong style={{ color:'var(--text-main)' }}>{filtered.length}</strong> of {records.length} records
       </div>
+
+      {/* ── AI Insights panel ─────────────────────────────────── */}
+      {records.length > 0 && (
+        <div className="card" style={{ marginBottom: '1.25rem', borderColor: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 35%, var(--border))', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 4%, var(--bg-card))' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.75rem', flexWrap: 'wrap' }}>
+            <div>
+              <h4 style={{ margin: 0, color: 'var(--color-secondary,#7c5cd8)' }}>✨ AI Learning Insights</h4>
+              <p style={{ fontSize: '.78rem', color: 'var(--text-muted)', margin: '.2rem 0 0' }}>
+                IBM Watsonx analyses your recent translations to surface patterns and tips.
+              </p>
+            </div>
+            <button
+              className="btn btn-subtle btn-sm"
+              style={{ borderColor: 'var(--color-secondary,#7c5cd8)', color: 'var(--color-secondary,#7c5cd8)', display: 'flex', alignItems: 'center', gap: '.35rem', flexShrink: 0 }}
+              onClick={fetchInsights}
+              disabled={insightsLoading}
+            >
+              {insightsLoading ? <Spinner size="sm" /> : '✨'} {insights ? 'Refresh' : 'Generate Insights'}
+            </button>
+          </div>
+
+          {insightsError && (
+            <p style={{ marginTop: '.75rem', fontSize: '.82rem', color: 'var(--color-error)' }}>{insightsError}</p>
+          )}
+
+          {insights && (
+            <div style={{ marginTop: '.85rem', padding: '.85rem 1rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--color-secondary,#7c5cd8)' }}>
+              <p style={{ fontSize: '.875rem', color: 'var(--text-main)', lineHeight: 1.7, margin: 0 }}>{insights}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {loading ? <CardLoader /> : filtered.length === 0 ? (
         <div className="card" style={{ textAlign:'center', padding:'4rem 2rem' }}>

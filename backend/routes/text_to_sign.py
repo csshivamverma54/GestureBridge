@@ -58,35 +58,44 @@ _JSON_PATH   = _BACKEND_DIR / "data" / "WLASL" / "curated_WLASL.json"
 text_to_sign = Blueprint("text_to_sign", __name__)
 
 # ── Build lookup tables once at import time ────────────────────────────────
-# word → list of video_ids that exist locally, sorted by preference
-# (val split first, then train, then test — val is typically cleaner demo clips)
+# word → list of { video_id, external_url } dicts, local files preferred
 _SPLIT_ORDER = {"val": 0, "train": 1, "test": 2}
 
 def _build_lookup() -> dict:
-    """Return {word_lowercase: [video_id, ...]} for every word that has
-    at least one local .mp4 file."""
+    """Return {word_lowercase: [{"video_id": str, "external_url": str|None}, ...]}
+    for every word that has at least one local .mp4 OR an external URL."""
     if not _JSON_PATH.exists():
         return {}
     with open(_JSON_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    lookup: dict[str, list[str]] = {}
+    lookup: dict[str, list[dict]] = {}
     for entry in data:
         word = entry["gloss"].lower().strip()
-        candidates = []
+        local_candidates = []   # (rank, video_id, ext_url) — local file exists
+        remote_candidates = []  # (rank, video_id, ext_url) — no local file
+
         for inst in entry.get("instances", []):
-            vid = str(inst["video_id"])
+            vid = str(inst["video_id"]).zfill(5)
+            ext_url = inst.get("url") or None
             mp4 = _VIDEOS_DIR / f"{vid}.mp4"
+            rank = _SPLIT_ORDER.get(inst.get("split", "train"), 1)
+            entry_dict = {"video_id": vid, "external_url": ext_url}
             if mp4.exists():
-                split_rank = _SPLIT_ORDER.get(inst.get("split", "train"), 1)
-                candidates.append((split_rank, vid))
-        if candidates:
-            # Sort by split preference, keep all (UI can cycle through them)
-            candidates.sort(key=lambda x: x[0])
-            lookup[word] = [vid for _, vid in candidates]
+                local_candidates.append((rank, entry_dict))
+            elif ext_url:
+                remote_candidates.append((rank, entry_dict))
+
+        # Sort by split preference
+        local_candidates.sort(key=lambda x: x[0])
+        remote_candidates.sort(key=lambda x: x[0])
+
+        all_candidates = [d for _, d in local_candidates] + [d for _, d in remote_candidates]
+        if all_candidates:
+            lookup[word] = all_candidates
     return lookup
 
-_WORD_LOOKUP: dict[str, list[str]] = _build_lookup()
+_WORD_LOOKUP: dict[str, list[dict]] = _build_lookup()
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────
@@ -108,7 +117,9 @@ def _resolve_tokens(tokens: list[str]) -> list[dict]:
     Try bigrams first (e.g. ["thank", "you"] → "thank you"), then
     fall back to single tokens.
 
-    Returns a list of result dicts (one per logical word/sign).
+    Each result dict now includes:
+      video_url     — local streaming path (/video/<id>) when file exists locally
+      external_url  — original source URL from WLASL dataset (CDN fallback)
     """
     results = []
     i = 0
@@ -117,34 +128,43 @@ def _resolve_tokens(tokens: list[str]) -> list[dict]:
         if i + 1 < len(tokens):
             bigram = f"{tokens[i]} {tokens[i+1]}"
             if bigram in _WORD_LOOKUP:
-                vids = _WORD_LOOKUP[bigram]
+                entries = _WORD_LOOKUP[bigram]
+                best = entries[0]
+                vid = best["video_id"]
+                local_mp4 = _VIDEOS_DIR / f"{vid}.mp4"
                 results.append({
-                    "word":      bigram,
-                    "found":     True,
-                    "video_id":  vids[0],
-                    "video_url": f"/video/{vids[0]}",
-                    "all_video_ids": vids,
+                    "word":         bigram,
+                    "found":        True,
+                    "video_id":     vid,
+                    "video_url":    f"/video/{vid}" if local_mp4.exists() else None,
+                    "external_url": best["external_url"],
+                    "all_entries":  entries,
                 })
                 i += 2
                 continue
         # Single token
         word = tokens[i]
         if word in _WORD_LOOKUP:
-            vids = _WORD_LOOKUP[word]
+            entries = _WORD_LOOKUP[word]
+            best = entries[0]
+            vid = best["video_id"]
+            local_mp4 = _VIDEOS_DIR / f"{vid}.mp4"
             results.append({
-                "word":      word,
-                "found":     True,
-                "video_id":  vids[0],
-                "video_url": f"/video/{vids[0]}",
-                "all_video_ids": vids,
+                "word":         word,
+                "found":        True,
+                "video_id":     vid,
+                "video_url":    f"/video/{vid}" if local_mp4.exists() else None,
+                "external_url": best["external_url"],
+                "all_entries":  entries,
             })
         else:
             results.append({
-                "word":          word,
-                "found":         False,
-                "video_id":      None,
-                "video_url":     None,
-                "all_video_ids": [],
+                "word":         word,
+                "found":        False,
+                "video_id":     None,
+                "video_url":    None,
+                "external_url": None,
+                "all_entries":  [],
             })
         i += 1
     return results
