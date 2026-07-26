@@ -61,6 +61,11 @@ export default function TextToSign() {
   const currentIdxRef   = useRef(0);
   const playingRef      = useRef(false);
   const playableRef     = useRef([]);
+  // Set true while handleVideoEnded is advancing to the next index.
+  // Suppresses the browser's synthetic "pause" event that fires when the old
+  // <video> element unmounts — prevents playingRef from being set to false
+  // before the new video's onCanPlay has a chance to auto-start it.
+  const advancingRef    = useRef(false);
 
   useEffect(() => { autoRef.current    = autoAdvance; }, [autoAdvance]);
   useEffect(() => { loopRef.current    = loop;         }, [loop]);
@@ -91,10 +96,12 @@ export default function TextToSign() {
     }
     const nextIdx = currentIdxRef.current + 1;
     if (nextIdx < playableRef.current.length) {
+      advancingRef.current  = true;   // block onPause from clearing playingRef
       currentIdxRef.current = nextIdx;
       setCurrentIdx(nextIdx);
-      // key change on <video> → remount → onCanPlay fires → play() called immediately
+      // key={currentIdx} change → <video> remounts → onCanPlay fires → play()
     } else if (loopRef.current) {
+      advancingRef.current  = true;
       currentIdxRef.current = 0;
       setCurrentIdx(0);
     } else {
@@ -272,10 +279,18 @@ export default function TextToSign() {
                       src={bestVideoUrl(currentWord)}
                       style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       onEnded={handleVideoEnded}
-                      onPlay={() => { setPlaying(true); playingRef.current = true; }}
-                      onPause={() => { setPlaying(false); playingRef.current = false; }}
+                      onPlay={() => {
+                        advancingRef.current = false;  // clear once real play starts
+                        setPlaying(true); playingRef.current = true;
+                      }}
+                      onPause={() => {
+                        // Ignore synthetic pause fired when old video unmounts during advance
+                        if (advancingRef.current) return;
+                        setPlaying(false); playingRef.current = false;
+                      }}
                       onError={() => setVideoError(true)}
                       onCanPlay={(e) => {
+                        advancingRef.current = false;  // safe to clear here too
                         e.target.playbackRate = speed;
                         if (playingRef.current) {
                           e.target.play().catch(() => {});

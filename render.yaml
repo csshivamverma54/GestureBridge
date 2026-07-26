@@ -25,6 +25,14 @@ services:
         sync: false
       - key: WATSONX_URL
         value: https://us-south.ml.cloud.ibm.com
+      - key: GOOGLE_CLIENT_ID
+        sync: false          # set in Render dashboard
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false          # e.g. https://gesturebridge.onrender.com/auth/google/callback
+      - key: FRONTEND_ORIGIN
+        sync: false          # e.g. https://gesturebridge.onrender.com  (same as app URL)
       - key: FLASK_DEBUG
         value: "0"
       - key: PYTHON_VERSION

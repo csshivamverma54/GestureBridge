@@ -272,8 +272,9 @@ export default function Auth({ defaultTab = 'login' }) {
 
   /* ── Google OAuth ───────────────────────────────────────────── */
   const handleGoogle = () => {
-    // In production: window.location.href = '/api/auth/google';
-    setError('Google sign-in is coming soon. Use email or continue as guest for now.');
+    // Full-page redirect to Flask, which redirects to Google consent screen.
+    // Flask callback issues a JWT and redirects to /auth/callback in React.
+    window.location.href = '/auth/google';
   };
 
   /* ── Auto-submit OTP when all 6 digits entered ─────────────── */

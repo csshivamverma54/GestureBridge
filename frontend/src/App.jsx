@@ -10,6 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 import Landing        from './pages/Landing';
 import Auth           from './pages/Auth';
+import AuthCallback   from './pages/AuthCallback';
 import Dashboard      from './pages/Dashboard';
 import SignToText     from './pages/SignToText';
 import TextToSign     from './pages/TextToSign';
@@ -23,9 +24,10 @@ function App() {
         <BrowserRouter>
           <Routes>
             {/* Public */}
-            <Route path="/"         element={<Landing />} />
-            <Route path="/login"    element={<Auth defaultTab="login" />} />
-            <Route path="/register" element={<Auth defaultTab="register" />} />
+            <Route path="/"                element={<Landing />} />
+            <Route path="/login"           element={<Auth defaultTab="login" />} />
+            <Route path="/register"        element={<Auth defaultTab="register" />} />
+            <Route path="/auth/callback"   element={<AuthCallback />} />
 
             {/* Protected */}
             <Route path="/dashboard"    element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

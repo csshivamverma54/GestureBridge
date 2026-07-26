@@ -10,26 +10,21 @@ export default defineConfig({
     strictPort: true,          // fail clearly if port is taken
     https: false,              // never use TLS on the dev server
     proxy: {
-      // All /api/* → Flask (strips the /api prefix)
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
-      },
-      // Video files are served directly by Flask at /video/<id>
-      // No prefix stripping needed — the path is forwarded as-is
-      '/video': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
-      // text-to-sign routes (vocabulary endpoint, etc.)
-      '/text-to-sign': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-        secure: false,
-      },
+      // Flask API routes — forward directly (no prefix stripping)
+      '/auth/google':       { target: 'http://localhost:5000', changeOrigin: true },
+      '/register':          { target: 'http://localhost:5000', changeOrigin: true },
+      '/login':             { target: 'http://localhost:5000', changeOrigin: true },
+      '/profile':           { target: 'http://localhost:5000', changeOrigin: true },
+      '/predict':           { target: 'http://localhost:5000', changeOrigin: true },
+      '/predict-letter':    { target: 'http://localhost:5000', changeOrigin: true },
+      '/generate-sentence': { target: 'http://localhost:5000', changeOrigin: true },
+      '/generate-letter-sentence': { target: 'http://localhost:5000', changeOrigin: true },
+      '/model':             { target: 'http://localhost:5000', changeOrigin: true },
+      '/history':           { target: 'http://localhost:5000', changeOrigin: true },
+      '/health':            { target: 'http://localhost:5000', changeOrigin: true },
+      '/text-to-sign':      { target: 'http://localhost:5000', changeOrigin: true },
+      '/video':             { target: 'http://localhost:5000', changeOrigin: true },
+      '/ai':                { target: 'http://localhost:5000', changeOrigin: true },
     },
   },
 

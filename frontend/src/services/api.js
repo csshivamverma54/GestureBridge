@@ -37,8 +37,12 @@
 
 import axios from 'axios';
 
-// Use VITE_API_URL if set (external deployment), otherwise same-origin (dev proxy / prod Flask).
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+// Use VITE_API_URL if explicitly set (e.g. React on CDN pointing at Render backend).
+// In dev, Vite's proxy handles all /api, /video, /text-to-sign paths → no base URL needed.
+// In production, Flask serves React on the same origin → relative paths work directly.
+// Default is '' (empty) so video URLs like /video/00639 resolve to the current origin,
+// not to a hardcoded localhost address that breaks in every deployed environment.
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 const api = axios.create({
   baseURL: BASE_URL,
