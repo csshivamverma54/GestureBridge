@@ -66,7 +66,7 @@ const STAT_CARDS = (historyCount, modelStatus, language) => [
   },
   {
     label: 'Model Status',
-    value: modelStatus?.model_loaded ? 'Ready' : 'Not Loaded',
+    value: modelStatus?.model_loaded ? 'Ready' : 'Loaded',
     icon: modelStatus?.model_loaded
       ? ['M9 12l2 2 4-4', 'M12 2a10 10 0 100 20 10 10 0 000-20z']
       : ['M12 9v4', 'M12 17h.01', 'M12 2a10 10 0 100 20 10 10 0 000-20z'],
