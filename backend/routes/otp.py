@@ -79,10 +79,10 @@ def _send_email(to_addr: str, code: str) -> None:
     msg["To"]      = to_addr
     msg.attach(MIMEText(html_body, "html"))
 
-    with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as server:
-        server.starttls()
+   with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(gmail_user, gmail_pass)
         server.sendmail(gmail_user, to_addr, msg.as_string())
+
 
 
 # ── POST /otp/send ─────────────────────────────────────────────────────────
