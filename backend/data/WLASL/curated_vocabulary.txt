@@ -1,0 +1,349 @@
+idx	word	category	usable_count
+0	accident	Emergency	13
+1	afraid	Emotions	5
+2	after	Auxiliaries & Connectors	7
+3	afternoon	Time	7
+4	again	Auxiliaries & Connectors	8
+5	agree	Core Verbs	5
+6	airplane	Transport	7
+7	all	Auxiliaries & Connectors	8
+8	also	Auxiliaries & Connectors	7
+9	always	Auxiliaries & Connectors	7
+10	and	Auxiliaries & Connectors	5
+11	angry	Emotions	7
+12	any	Auxiliaries & Connectors	5
+13	apple	Food & Drink	11
+14	ask	Core Verbs	7
+15	baby	Family	9
+16	bad	Adjectives	10
+17	bear	Animals	7
+18	beautiful	Adjectives	7
+19	because	Auxiliaries & Connectors	10
+20	bed	Household	13
+21	before	Auxiliaries & Connectors	16
+22	bicycle	Transport	6
+23	big	Adjectives	9
+24	bird	Animals	10
+25	birthday	Time	6
+26	black	Colors	10
+27	blood	Health	5
+28	blue	Colors	8
+29	book	School & Work	6
+30	both	Auxiliaries & Connectors	6
+31	bottle	Household	7
+32	box	Household	7
+33	boy	Family	8
+34	bread	Food & Drink	7
+35	break	Core Verbs	5
+36	bring	Core Verbs	8
+37	brother	Family	11
+38	brown	Colors	8
+39	bus	Transport	5
+40	business	School & Work	7
+41	busy	Adjectives	5
+42	but	Auxiliaries & Connectors	7
+43	buy	Core Verbs	9
+44	cake	Food & Drink	8
+45	call	Emergency	12
+46	can	Auxiliaries & Connectors	9
+47	candy	Food & Drink	13
+48	car	Transport	7
+49	carry	Core Verbs	7
+50	cat	Animals	9
+51	catch	Core Verbs	9
+52	chair	Household	7
+53	check	Core Verbs	11
+54	chicken	Food & Drink	5
+55	chocolate	Food & Drink	6
+56	choose	Core Verbs	8
+57	church	Places	6
+58	city	Places	9
+59	class	School & Work	9
+60	clean	Core Verbs	7
+61	clock	Household	5
+62	close	Core Verbs	8
+63	coffee	Food & Drink	7
+64	cold	Adjectives	12
+65	come	Core Verbs	6
+66	computer	School & Work	14
+67	continue	Core Verbs	6
+68	cook	Core Verbs	8
+69	cow	Animals	9
+70	cry	Emotions	10
+71	cup	Household	6
+72	cut	Core Verbs	8
+73	dance	Core Verbs	7
+74	danger	Emergency	5
+75	daughter	Family	10
+76	day	Time	9
+77	decide	Core Verbs	9
+78	different	Adjectives	8
+79	dirty	Adjectives	9
+80	doctor	Health	10
+81	dog	Animals	11
+82	door	Household	7
+83	down	Directions	8
+84	draw	Core Verbs	6
+85	drink	Core Verbs	15
+86	drive	Core Verbs	7
+87	duck	Animals	6
+88	ear	Health	8
+89	early	Time	6
+90	east	Directions	8
+91	easy	Adjectives	6
+92	eat	Core Verbs	7
+93	egg	Food & Drink	7
+94	eight	Numbers	6
+95	elephant	Animals	7
+96	email	School & Work	6
+97	every	Auxiliaries & Connectors	5
+98	excited	Emotions	6
+99	eye	Health	6
+100	family	Family	11
+101	far	Directions	11
+102	fast	Adjectives	9
+103	father	Family	7
+104	feel	Core Verbs	7
+105	find	Core Verbs	8
+106	fine	Polite Words	9
+107	finish	Core Verbs	9
+108	fire	Emergency	3
+109	fish	Food & Drink	10
+110	five	Numbers	5
+111	food	Food & Drink	7
+112	for	Auxiliaries & Connectors	5
+113	forget	Core Verbs	7
+114	four	Numbers	5
+115	free	Adjectives	4
+116	friend	Family	7
+117	from	Auxiliaries & Connectors	7
+118	fruit	Food & Drink	7
+119	funny	Adjectives	5
+120	get	Core Verbs	7
+121	girl	Family	9
+122	give	Core Verbs	10
+123	go	Core Verbs	15
+124	good	Adjectives	10
+125	goodbye	Polite Words	5
+126	green	Colors	7
+127	grow	Core Verbs	6
+128	happen	Core Verbs	6
+129	happy	Emotions	8
+130	hard	Adjectives	6
+131	hate	Emotions	4
+132	have	Core Verbs	6
+133	head	Health	6
+134	headache	Health	9
+135	heart	Health	8
+136	hello	Polite Words	4
+137	help	Core Verbs	14
+138	her	Pronouns	8
+139	here	Directions	7
+140	his	Pronouns	4
+141	hit	Core Verbs	6
+142	hold	Core Verbs	5
+143	home	Places	7
+144	hope	Core Verbs	9
+145	horse	Animals	4
+146	hospital	Places	7
+147	hot	Adjectives	10
+148	hour	Time	7
+149	house	Places	7
+150	how	Questions	9
+151	hungry	Food & Drink	6
+152	hurt	Emotions	5
+153	husband	Family	7
+154	i	Pronouns	4
+155	if	Auxiliaries & Connectors	6
+156	important	Adjectives	8
+157	jump	Core Verbs	6
+158	keep	Core Verbs	6
+159	key	Household	6
+160	know	Core Verbs	8
+161	late	Time	8
+162	laugh	Emotions	11
+163	learn	Core Verbs	8
+164	leave	Core Verbs	11
+165	left	Directions	5
+166	library	Places	5
+167	like	Core Verbs	10
+168	lion	Animals	5
+169	listen	Core Verbs	7
+170	lose	Core Verbs	9
+171	love	Emotions	7
+172	make	Core Verbs	9
+173	man	Family	12
+174	many	Auxiliaries & Connectors	10
+175	math	School & Work	7
+176	me	Pronouns	4
+177	meat	Food & Drink	8
+178	medicine	Health	8
+179	meet	Core Verbs	9
+180	meeting	School & Work	6
+181	milk	Food & Drink	5
+182	money	School & Work	6
+183	monkey	Animals	7
+184	month	Time	7
+185	more	Auxiliaries & Connectors	8
+186	morning	Time	6
+187	mother	Family	11
+188	mouth	Health	5
+189	music	School & Work	8
+190	my	Pronouns	6
+191	name	School & Work	6
+192	near	Directions	9
+193	need	Core Verbs	6
+194	nervous	Emotions	7
+195	never	Auxiliaries & Connectors	7
+196	new	Adjectives	9
+197	night	Time	5
+198	nine	Numbers	5
+199	no	Polite Words	11
+200	north	Directions	7
+201	nose	Health	6
+202	not	Auxiliaries & Connectors	7
+203	now	Time	9
+204	nurse	Health	6
+205	office	Places	9
+206	ok	Polite Words	7
+207	old	Adjectives	7
+208	one	Numbers	8
+209	open	Core Verbs	7
+210	or	Auxiliaries & Connectors	3
+211	orange	Colors	10
+212	our	Pronouns	4
+213	pain	Health	5
+214	paper	School & Work	8
+215	pencil	Household	5
+216	person	Family	7
+217	phone	School & Work	5
+218	pink	Colors	9
+219	pizza	Food & Drink	12
+220	plan	Core Verbs	7
+221	play	Core Verbs	11
+222	please	Polite Words	7
+223	police	Emergency	8
+224	promise	Core Verbs	5
+225	protect	Core Verbs	6
+226	proud	Emotions	5
+227	pull	Core Verbs	9
+228	purple	Colors	8
+229	push	Core Verbs	6
+230	put	Core Verbs	6
+231	rabbit	Animals	8
+232	read	Core Verbs	6
+233	ready	Adjectives	10
+234	red	Colors	7
+235	remember	Core Verbs	7
+236	restaurant	Places	7
+237	right	Adjectives	9
+238	run	Core Verbs	7
+239	sad	Emotions	8
+240	safe	Emergency	5
+241	same	Adjectives	9
+242	save	Core Verbs	8
+243	say	Core Verbs	6
+244	school	Places	9
+245	science	School & Work	7
+246	see	Core Verbs	5
+247	send	Core Verbs	5
+248	seven	Numbers	6
+249	share	Core Verbs	7
+250	she	Pronouns	6
+251	should	Auxiliaries & Connectors	6
+252	show	Core Verbs	9
+253	sick	Adjectives	8
+254	sing	Core Verbs	5
+255	sister	Family	7
+256	sit	Core Verbs	6
+257	six	Numbers	6
+258	sleep	Core Verbs	6
+259	slow	Adjectives	8
+260	small	Adjectives	8
+261	snake	Animals	7
+262	some	Auxiliaries & Connectors	7
+263	sometimes	Auxiliaries & Connectors	5
+264	son	Family	10
+265	soon	Time	11
+266	sorry	Polite Words	7
+267	soup	Food & Drink	6
+268	south	Directions	7
+269	stand	Core Verbs	5
+270	start	Core Verbs	4
+271	stay	Core Verbs	9
+272	stop	Core Verbs	5
+273	store	Places	7
+274	story	School & Work	7
+275	strong	Adjectives	8
+276	student	School & Work	8
+277	study	School & Work	10
+278	swim	Core Verbs	4
+279	table	Household	5
+280	take	Core Verbs	11
+281	talk	Core Verbs	7
+282	tea	Food & Drink	7
+283	teach	Core Verbs	7
+284	teacher	School & Work	8
+285	teeth	Health	4
+286	tell	Core Verbs	10
+287	ten	Numbers	5
+288	test	School & Work	8
+289	thank you	Polite Words	7
+290	that	Pronouns	4
+291	there	Directions	6
+292	they	Pronouns	5
+293	think	Core Verbs	7
+294	this	Pronouns	4
+295	three	Numbers	7
+296	time	Time	8
+297	tired	Emotions	7
+298	today	Time	9
+299	tomorrow	Time	7
+300	tonight	Time	5
+301	train	Transport	9
+302	travel	Core Verbs	9
+303	try	Core Verbs	6
+304	two	Numbers	6
+305	understand	Core Verbs	7
+306	university	Places	7
+307	until	Auxiliaries & Connectors	7
+308	up	Directions	7
+309	use	Core Verbs	5
+310	visit	Core Verbs	9
+311	wait	Core Verbs	10
+312	walk	Core Verbs	11
+313	want	Core Verbs	9
+314	wash	Core Verbs	6
+315	water	Food & Drink	9
+316	we	Pronouns	7
+317	weak	Adjectives	7
+318	wear	Core Verbs	6
+319	week	Time	9
+320	weekend	Time	9
+321	welcome	Polite Words	5
+322	west	Directions	8
+323	what	Questions	12
+324	when	Questions	8
+325	where	Questions	7
+326	which	Questions	6
+327	white	Colors	10
+328	who	Questions	14
+329	why	Questions	11
+330	wife	Family	8
+331	will	Auxiliaries & Connectors	4
+332	win	Core Verbs	7
+333	window	Household	6
+334	with	Auxiliaries & Connectors	8
+335	woman	Family	11
+336	word	School & Work	8
+337	work	Core Verbs	10
+338	worry	Core Verbs	5
+339	write	Core Verbs	10
+340	wrong	Adjectives	8
+341	year	Time	10
+342	yellow	Colors	8
+343	yes	Polite Words	12
+344	yesterday	Time	10
+345	you	Pronouns	8
+346	young	Adjectives	5
+347	your	Pronouns	6

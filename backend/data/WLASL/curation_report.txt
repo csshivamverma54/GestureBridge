@@ -1,0 +1,367 @@
+============================================================
+GestureBridge Dataset Curation Report (~200-word vocab)
+============================================================
+MIN_SAMPLES = 3
+Desired vocab size    : 353
+Accepted              : 348
+Rejected              : 5
+Total usable videos   : 2600
+Min / Max / Avg       : 3 / 16 / 7.5
+With aug=8 (~×9 total): ~67 samples/class
+
+── ACCEPTED ────────────────────────────────────────────────
+  accident                       cat=Emergency                      n=13
+  afraid                         cat=Emotions                       n=5
+  after                          cat=Auxiliaries & Connectors       n=7
+  afternoon                      cat=Time                           n=7
+  again                          cat=Auxiliaries & Connectors       n=8
+  agree                          cat=Core Verbs                     n=5
+  airplane                       cat=Transport                      n=7
+  all                            cat=Auxiliaries & Connectors       n=8
+  also                           cat=Auxiliaries & Connectors       n=7
+  always                         cat=Auxiliaries & Connectors       n=7
+  and                            cat=Auxiliaries & Connectors       n=5
+  angry                          cat=Emotions                       n=7
+  any                            cat=Auxiliaries & Connectors       n=5
+  apple                          cat=Food & Drink                   n=11
+  ask                            cat=Core Verbs                     n=7
+  baby                           cat=Family                         n=9
+  bad                            cat=Adjectives                     n=10
+  bear                           cat=Animals                        n=7
+  beautiful                      cat=Adjectives                     n=7
+  because                        cat=Auxiliaries & Connectors       n=10
+  bed                            cat=Household                      n=13
+  before                         cat=Auxiliaries & Connectors       n=16
+  bicycle                        cat=Transport                      n=6
+  big                            cat=Adjectives                     n=9
+  bird                           cat=Animals                        n=10
+  birthday                       cat=Time                           n=6
+  black                          cat=Colors                         n=10
+  blood                          cat=Health                         n=5
+  blue                           cat=Colors                         n=8
+  book                           cat=School & Work                  n=6
+  both                           cat=Auxiliaries & Connectors       n=6
+  bottle                         cat=Household                      n=7
+  box                            cat=Household                      n=7
+  boy                            cat=Family                         n=8
+  bread                          cat=Food & Drink                   n=7
+  break                          cat=Core Verbs                     n=5
+  bring                          cat=Core Verbs                     n=8
+  brother                        cat=Family                         n=11
+  brown                          cat=Colors                         n=8
+  bus                            cat=Transport                      n=5
+  business                       cat=School & Work                  n=7
+  busy                           cat=Adjectives                     n=5
+  but                            cat=Auxiliaries & Connectors       n=7
+  buy                            cat=Core Verbs                     n=9
+  cake                           cat=Food & Drink                   n=8
+  call                           cat=Emergency                      n=12
+  can                            cat=Auxiliaries & Connectors       n=9
+  candy                          cat=Food & Drink                   n=13
+  car                            cat=Transport                      n=7
+  carry                          cat=Core Verbs                     n=7
+  cat                            cat=Animals                        n=9
+  catch                          cat=Core Verbs                     n=9
+  chair                          cat=Household                      n=7
+  check                          cat=Core Verbs                     n=11
+  chicken                        cat=Food & Drink                   n=5
+  chocolate                      cat=Food & Drink                   n=6
+  choose                         cat=Core Verbs                     n=8
+  church                         cat=Places                         n=6
+  city                           cat=Places                         n=9
+  class                          cat=School & Work                  n=9
+  clean                          cat=Core Verbs                     n=7
+  clock                          cat=Household                      n=5
+  close                          cat=Core Verbs                     n=8
+  coffee                         cat=Food & Drink                   n=7
+  cold                           cat=Adjectives                     n=12
+  come                           cat=Core Verbs                     n=6
+  computer                       cat=School & Work                  n=14
+  continue                       cat=Core Verbs                     n=6
+  cook                           cat=Core Verbs                     n=8
+  cow                            cat=Animals                        n=9
+  cry                            cat=Emotions                       n=10
+  cup                            cat=Household                      n=6
+  cut                            cat=Core Verbs                     n=8
+  dance                          cat=Core Verbs                     n=7
+  danger                         cat=Emergency                      n=5
+  daughter                       cat=Family                         n=10
+  day                            cat=Time                           n=9
+  decide                         cat=Core Verbs                     n=9
+  different                      cat=Adjectives                     n=8
+  dirty                          cat=Adjectives                     n=9
+  doctor                         cat=Health                         n=10
+  dog                            cat=Animals                        n=11
+  door                           cat=Household                      n=7
+  down                           cat=Directions                     n=8
+  draw                           cat=Core Verbs                     n=6
+  drink                          cat=Core Verbs                     n=15
+  drive                          cat=Core Verbs                     n=7
+  duck                           cat=Animals                        n=6
+  ear                            cat=Health                         n=8
+  early                          cat=Time                           n=6
+  east                           cat=Directions                     n=8
+  easy                           cat=Adjectives                     n=6
+  eat                            cat=Core Verbs                     n=7
+  egg                            cat=Food & Drink                   n=7
+  eight                          cat=Numbers                        n=6
+  elephant                       cat=Animals                        n=7
+  email                          cat=School & Work                  n=6
+  every                          cat=Auxiliaries & Connectors       n=5
+  excited                        cat=Emotions                       n=6
+  eye                            cat=Health                         n=6
+  family                         cat=Family                         n=11
+  far                            cat=Directions                     n=11
+  fast                           cat=Adjectives                     n=9
+  father                         cat=Family                         n=7
+  feel                           cat=Core Verbs                     n=7
+  find                           cat=Core Verbs                     n=8
+  fine                           cat=Polite Words                   n=9
+  finish                         cat=Core Verbs                     n=9
+  fire                           cat=Emergency                      n=3
+  fish                           cat=Food & Drink                   n=10
+  five                           cat=Numbers                        n=5
+  food                           cat=Food & Drink                   n=7
+  for                            cat=Auxiliaries & Connectors       n=5
+  forget                         cat=Core Verbs                     n=7
+  four                           cat=Numbers                        n=5
+  free                           cat=Adjectives                     n=4
+  friend                         cat=Family                         n=7
+  from                           cat=Auxiliaries & Connectors       n=7
+  fruit                          cat=Food & Drink                   n=7
+  funny                          cat=Adjectives                     n=5
+  get                            cat=Core Verbs                     n=7
+  girl                           cat=Family                         n=9
+  give                           cat=Core Verbs                     n=10
+  go                             cat=Core Verbs                     n=15
+  good                           cat=Adjectives                     n=10
+  goodbye                        cat=Polite Words                   n=5
+  green                          cat=Colors                         n=7
+  grow                           cat=Core Verbs                     n=6
+  happen                         cat=Core Verbs                     n=6
+  happy                          cat=Emotions                       n=8
+  hard                           cat=Adjectives                     n=6
+  hate                           cat=Emotions                       n=4
+  have                           cat=Core Verbs                     n=6
+  head                           cat=Health                         n=6
+  headache                       cat=Health                         n=9
+  heart                          cat=Health                         n=8
+  hello                          cat=Polite Words                   n=4
+  help                           cat=Core Verbs                     n=14
+  her                            cat=Pronouns                       n=8
+  here                           cat=Directions                     n=7
+  his                            cat=Pronouns                       n=4
+  hit                            cat=Core Verbs                     n=6
+  hold                           cat=Core Verbs                     n=5
+  home                           cat=Places                         n=7
+  hope                           cat=Core Verbs                     n=9
+  horse                          cat=Animals                        n=4
+  hospital                       cat=Places                         n=7
+  hot                            cat=Adjectives                     n=10
+  hour                           cat=Time                           n=7
+  house                          cat=Places                         n=7
+  how                            cat=Questions                      n=9
+  hungry                         cat=Food & Drink                   n=6
+  hurt                           cat=Emotions                       n=5
+  husband                        cat=Family                         n=7
+  i                              cat=Pronouns                       n=4
+  if                             cat=Auxiliaries & Connectors       n=6
+  important                      cat=Adjectives                     n=8
+  jump                           cat=Core Verbs                     n=6
+  keep                           cat=Core Verbs                     n=6
+  key                            cat=Household                      n=6
+  know                           cat=Core Verbs                     n=8
+  late                           cat=Time                           n=8
+  laugh                          cat=Emotions                       n=11
+  learn                          cat=Core Verbs                     n=8
+  leave                          cat=Core Verbs                     n=11
+  left                           cat=Directions                     n=5
+  library                        cat=Places                         n=5
+  like                           cat=Core Verbs                     n=10
+  lion                           cat=Animals                        n=5
+  listen                         cat=Core Verbs                     n=7
+  lose                           cat=Core Verbs                     n=9
+  love                           cat=Emotions                       n=7
+  make                           cat=Core Verbs                     n=9
+  man                            cat=Family                         n=12
+  many                           cat=Auxiliaries & Connectors       n=10
+  math                           cat=School & Work                  n=7
+  me                             cat=Pronouns                       n=4
+  meat                           cat=Food & Drink                   n=8
+  medicine                       cat=Health                         n=8
+  meet                           cat=Core Verbs                     n=9
+  meeting                        cat=School & Work                  n=6
+  milk                           cat=Food & Drink                   n=5
+  money                          cat=School & Work                  n=6
+  monkey                         cat=Animals                        n=7
+  month                          cat=Time                           n=7
+  more                           cat=Auxiliaries & Connectors       n=8
+  morning                        cat=Time                           n=6
+  mother                         cat=Family                         n=11
+  mouth                          cat=Health                         n=5
+  music                          cat=School & Work                  n=8
+  my                             cat=Pronouns                       n=6
+  name                           cat=School & Work                  n=6
+  near                           cat=Directions                     n=9
+  need                           cat=Core Verbs                     n=6
+  nervous                        cat=Emotions                       n=7
+  never                          cat=Auxiliaries & Connectors       n=7
+  new                            cat=Adjectives                     n=9
+  night                          cat=Time                           n=5
+  nine                           cat=Numbers                        n=5
+  no                             cat=Polite Words                   n=11
+  north                          cat=Directions                     n=7
+  nose                           cat=Health                         n=6
+  not                            cat=Auxiliaries & Connectors       n=7
+  now                            cat=Time                           n=9
+  nurse                          cat=Health                         n=6
+  office                         cat=Places                         n=9
+  ok                             cat=Polite Words                   n=7
+  old                            cat=Adjectives                     n=7
+  one                            cat=Numbers                        n=8
+  open                           cat=Core Verbs                     n=7
+  or                             cat=Auxiliaries & Connectors       n=3
+  orange                         cat=Colors                         n=10
+  our                            cat=Pronouns                       n=4
+  pain                           cat=Health                         n=5
+  paper                          cat=School & Work                  n=8
+  pencil                         cat=Household                      n=5
+  person                         cat=Family                         n=7
+  phone                          cat=School & Work                  n=5
+  pink                           cat=Colors                         n=9
+  pizza                          cat=Food & Drink                   n=12
+  plan                           cat=Core Verbs                     n=7
+  play                           cat=Core Verbs                     n=11
+  please                         cat=Polite Words                   n=7
+  police                         cat=Emergency                      n=8
+  promise                        cat=Core Verbs                     n=5
+  protect                        cat=Core Verbs                     n=6
+  proud                          cat=Emotions                       n=5
+  pull                           cat=Core Verbs                     n=9
+  purple                         cat=Colors                         n=8
+  push                           cat=Core Verbs                     n=6
+  put                            cat=Core Verbs                     n=6
+  rabbit                         cat=Animals                        n=8
+  read                           cat=Core Verbs                     n=6
+  ready                          cat=Adjectives                     n=10
+  red                            cat=Colors                         n=7
+  remember                       cat=Core Verbs                     n=7
+  restaurant                     cat=Places                         n=7
+  right                          cat=Adjectives                     n=9
+  run                            cat=Core Verbs                     n=7
+  sad                            cat=Emotions                       n=8
+  safe                           cat=Emergency                      n=5
+  same                           cat=Adjectives                     n=9
+  save                           cat=Core Verbs                     n=8
+  say                            cat=Core Verbs                     n=6
+  school                         cat=Places                         n=9
+  science                        cat=School & Work                  n=7
+  see                            cat=Core Verbs                     n=5
+  send                           cat=Core Verbs                     n=5
+  seven                          cat=Numbers                        n=6
+  share                          cat=Core Verbs                     n=7
+  she                            cat=Pronouns                       n=6
+  should                         cat=Auxiliaries & Connectors       n=6
+  show                           cat=Core Verbs                     n=9
+  sick                           cat=Adjectives                     n=8
+  sing                           cat=Core Verbs                     n=5
+  sister                         cat=Family                         n=7
+  sit                            cat=Core Verbs                     n=6
+  six                            cat=Numbers                        n=6
+  sleep                          cat=Core Verbs                     n=6
+  slow                           cat=Adjectives                     n=8
+  small                          cat=Adjectives                     n=8
+  snake                          cat=Animals                        n=7
+  some                           cat=Auxiliaries & Connectors       n=7
+  sometimes                      cat=Auxiliaries & Connectors       n=5
+  son                            cat=Family                         n=10
+  soon                           cat=Time                           n=11
+  sorry                          cat=Polite Words                   n=7
+  soup                           cat=Food & Drink                   n=6
+  south                          cat=Directions                     n=7
+  stand                          cat=Core Verbs                     n=5
+  start                          cat=Core Verbs                     n=4
+  stay                           cat=Core Verbs                     n=9
+  stop                           cat=Core Verbs                     n=5
+  store                          cat=Places                         n=7
+  story                          cat=School & Work                  n=7
+  strong                         cat=Adjectives                     n=8
+  student                        cat=School & Work                  n=8
+  study                          cat=School & Work                  n=10
+  swim                           cat=Core Verbs                     n=4
+  table                          cat=Household                      n=5
+  take                           cat=Core Verbs                     n=11
+  talk                           cat=Core Verbs                     n=7
+  tea                            cat=Food & Drink                   n=7
+  teach                          cat=Core Verbs                     n=7
+  teacher                        cat=School & Work                  n=8
+  teeth                          cat=Health                         n=4
+  tell                           cat=Core Verbs                     n=10
+  ten                            cat=Numbers                        n=5
+  test                           cat=School & Work                  n=8
+  thank you                      cat=Polite Words                   n=7
+  that                           cat=Pronouns                       n=4
+  there                          cat=Directions                     n=6
+  they                           cat=Pronouns                       n=5
+  think                          cat=Core Verbs                     n=7
+  this                           cat=Pronouns                       n=4
+  three                          cat=Numbers                        n=7
+  time                           cat=Time                           n=8
+  tired                          cat=Emotions                       n=7
+  today                          cat=Time                           n=9
+  tomorrow                       cat=Time                           n=7
+  tonight                        cat=Time                           n=5
+  train                          cat=Transport                      n=9
+  travel                         cat=Core Verbs                     n=9
+  try                            cat=Core Verbs                     n=6
+  two                            cat=Numbers                        n=6
+  understand                     cat=Core Verbs                     n=7
+  university                     cat=Places                         n=7
+  until                          cat=Auxiliaries & Connectors       n=7
+  up                             cat=Directions                     n=7
+  use                            cat=Core Verbs                     n=5
+  visit                          cat=Core Verbs                     n=9
+  wait                           cat=Core Verbs                     n=10
+  walk                           cat=Core Verbs                     n=11
+  want                           cat=Core Verbs                     n=9
+  wash                           cat=Core Verbs                     n=6
+  water                          cat=Food & Drink                   n=9
+  we                             cat=Pronouns                       n=7
+  weak                           cat=Adjectives                     n=7
+  wear                           cat=Core Verbs                     n=6
+  week                           cat=Time                           n=9
+  weekend                        cat=Time                           n=9
+  welcome                        cat=Polite Words                   n=5
+  west                           cat=Directions                     n=8
+  what                           cat=Questions                      n=12
+  when                           cat=Questions                      n=8
+  where                          cat=Questions                      n=7
+  which                          cat=Questions                      n=6
+  white                          cat=Colors                         n=10
+  who                            cat=Questions                      n=14
+  why                            cat=Questions                      n=11
+  wife                           cat=Family                         n=8
+  will                           cat=Auxiliaries & Connectors       n=4
+  win                            cat=Core Verbs                     n=7
+  window                         cat=Household                      n=6
+  with                           cat=Auxiliaries & Connectors       n=8
+  woman                          cat=Family                         n=11
+  word                           cat=School & Work                  n=8
+  work                           cat=Core Verbs                     n=10
+  worry                          cat=Core Verbs                     n=5
+  write                          cat=Core Verbs                     n=10
+  wrong                          cat=Adjectives                     n=8
+  year                           cat=Time                           n=10
+  yellow                         cat=Colors                         n=8
+  yes                            cat=Polite Words                   n=12
+  yesterday                      cat=Time                           n=10
+  you                            cat=Pronouns                       n=8
+  young                          cat=Adjectives                     n=5
+  your                           cat=Pronouns                       n=6
+
+── REJECTED ────────────────────────────────────────────────
+  he                             reason=not_in_wlasl
+  look                           reason=not_in_wlasl
+  worried                        reason=not_in_wlasl
+  hand                           reason=not_in_wlasl
+  job                            reason=not_in_wlasl

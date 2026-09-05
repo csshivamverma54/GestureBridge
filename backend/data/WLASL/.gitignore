@@ -1,0 +1,5 @@
+# Ignore all video files — dataset is not tracked in git
+videos/
+# Also ignore generated outputs
+dataset_report.txt
+

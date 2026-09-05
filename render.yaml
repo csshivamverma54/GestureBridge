@@ -1,0 +1,70 @@
+services:
+  # ── Backend (Flask API) ───────────────────────────────────────────────────
+  # URL: https://gesturebridge.onrender.com
+  - type: web
+    name: gesturebridge-api
+    runtime: python
+    region: oregon
+    plan: free
+
+    buildCommand: bash build.sh
+    startCommand: >-
+      cd backend && gunicorn app:app
+      --bind 0.0.0.0:$PORT
+      --workers 2
+      --timeout 180
+      --preload
+      --forwarded-allow-ips="*"
+
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: IBM_API_KEY
+        sync: false
+      - key: WATSONX_PROJECT_ID
+        sync: false
+      - key: WATSONX_URL
+        value: https://us-south.ml.cloud.ibm.com
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      # These MUST use value: (not sync: false) so Render always sets them correctly.
+      # Using sync:false leaves stale localhost values in place from older deploys.
+      - key: GOOGLE_REDIRECT_URI
+        value: https://gesturebridge.onrender.com/auth/google/callback
+      - key: FRONTEND_ORIGIN
+        value: https://gesturebridge1.onrender.com
+      - key: FLASK_DEBUG
+        value: "0"
+
+  # ── Frontend (React static site) ─────────────────────────────────────────
+  # URL: https://gesturebridge1.onrender.com
+  - type: web
+    name: gesturebridge-frontend
+    runtime: static
+    region: oregon
+    plan: free
+
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist
+
+    # SPA: every path that doesn't match a real file returns index.html
+    # so that React Router handles /dashboard, /sign-to-text, /auth/callback etc.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+    envVars:
+      # Backend origin — baked into the JS bundle at Vite build time
+      - key: VITE_API_URL
+        value: https://gesturebridge.onrender.com
+      - key: VITE_BACKEND_URL
+        value: https://gesturebridge.onrender.com
