@@ -16,9 +16,10 @@ backend/venv/
 venv/
 .venv/
 env/
-
+docs/
 # -- Environment / secrets --------------------------------------------
 backend/.env
+backend/.env.example
 .env
 *.env
 
