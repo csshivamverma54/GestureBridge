@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GestureBridge — Backend Deep Dive</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 14px; line-height: 1.65; background: #ffffff; color: #1f2328; }
+  .page { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 3.5rem; }
+  h1 { font-size: 1.85rem; font-weight: 800; margin-bottom: .2rem; }
+  .subtitle { color: #57606a; font-size: .9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.25rem; font-weight: 700; margin: 2.8rem 0 .6rem; padding-bottom: .4rem; border-bottom: 2px solid #3b82d4; color: #1f2328; }
+  h3 { font-size: 1rem; font-weight: 700; margin: 1.6rem 0 .4rem; color: #3b82d4; }
+  h4 { font-size: .9rem; font-weight: 700; margin: 1.2rem 0 .3rem; color: #7c5cd8; }
+  p { color: #57606a; margin-bottom: .55rem; font-size: .88rem; }
+  code { font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: .82rem; background: #f0f3f7; padding: .1rem .35rem; border-radius: 4px; color: #1f2328; }
+  pre { font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: .78rem; background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin: .75rem 0 1rem; overflow-x: auto; line-height: 1.5; color: #1f2328; }
+  .fn-box { background: #f7f8fa; border: 1px solid #e5e7eb; border-left: 4px solid #3b82d4; border-radius: 6px; padding: .85rem 1rem; margin: .75rem 0 1.1rem; }
+  .fn-box.purple { border-left-color: #7c5cd8; }
+  .fn-box.green  { border-left-color: #059669; }
+  .fn-box.orange { border-left-color: #d97706; }
+  .fn-box.red    { border-left-color: #dc2626; }
+  .fn-name { font-family: monospace; font-size: .85rem; font-weight: 700; color: #1f2328; margin-bottom: .3rem; }
+  .fn-sig  { font-family: monospace; font-size: .78rem; color: #57606a; margin-bottom: .45rem; }
+  .fn-desc { font-size: .85rem; color: #57606a; }
+  .fn-desc ul { padding-left: 1.2rem; margin-top: .3rem; }
+  .fn-desc li  { margin: .2rem 0; }
+  .param-table { width: 100%; border-collapse: collapse; font-size: .82rem; margin: .5rem 0 .6rem; }
+  .param-table th { background: #eef2f8; font-weight: 600; text-align: left; padding: .4rem .65rem; border: 1px solid #e5e7eb; }
+  .param-table td { padding: .38rem .65rem; border: 1px solid #e5e7eb; vertical-align: top; }
+  .param-table tr:nth-child(even) td { background: #fafbfc; }
+  .badge { display: inline-block; border-radius: 4px; padding: .1rem .4rem; font-size: .68rem; font-weight: 700; margin-left: .3rem; vertical-align: middle; }
+  .b-get  { background: #d1fae5; color: #065f46; }
+  .b-post { background: #dbeafe; color: #1e40af; }
+  .b-ml   { background: #ede9fe; color: #5b21b6; }
+  .b-util { background: #fef3c7; color: #92400e; }
+  .toc { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; columns: 2; }
+  .toc ol { padding-left: 1.2rem; }
+  .toc li { margin: .2rem 0; font-size: .83rem; }
+  .toc a { color: #3b82d4; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .file-header { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+  .file-path { font-family: monospace; font-size: .82rem; background: #1f2328; color: #a5f3fc; padding: .3rem .7rem; border-radius: 4px; }
+  footer { border-top: 1px solid #e5e7eb; margin-top: 3rem; padding-top: 1rem; text-align: center; font-size: .75rem; color: #57606a; }
+  .flow-box { background: #f0f3f7; border: 1px dashed #c4c9d4; border-radius: 6px; padding: .75rem 1rem; font-size: .83rem; margin: .5rem 0; color: #57606a; }
+  .note { background: #fffbeb; border-left: 4px solid #f59e0b; padding: .6rem .9rem; border-radius: 4px; font-size: .83rem; color: #78350f; margin: .5rem 0 1rem; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>GestureBridge — Backend Deep Dive</h1>
+<p class="subtitle">Complete explanation of every Python file, every function, and every API endpoint in the backend.</p>
+
+<div class="toc">
+  <ol>
+    <li><a href="#app">app.py — Application Entry Point</a></li>
+    <li><a href="#config">config.py — Configuration</a></li>
+    <li><a href="#auth">routes/auth.py — Authentication</a></li>
+    <li><a href="#gesture">routes/gesture.py — Gesture Prediction</a></li>
+    <li><a href="#history">routes/history.py — History</a></li>
+    <li><a href="#tts">routes/text_to_sign.py — Text-to-Sign</a></li>
+    <li><a href="#ai">routes/ai.py — AI / Watsonx</a></li>
+    <li><a href="#otp">routes/otp.py — OTP Email</a></li>
+    <li><a href="#watsonx">services/watsonx.py — Watsonx SDK</a></li>
+    <li><a href="#predictor">ml/predictor.py — Gesture Inference</a></li>
+    <li><a href="#letter">ml/letter_predictor.py — Letter Inference</a></li>
+    <li><a href="#sentgen">ml/sentence_generator.py — Rule Engine</a></li>
+    <li><a href="#model">ml/model.py — LSTM Architecture</a></li>
+    <li><a href="#landmarks">ml/utils/landmarks.py — Feature Extraction</a></li>
+    <li><a href="#preprocess">ml/utils/preprocess.py — Preprocessing</a></li>
+    <li><a href="#training">Training Scripts Overview</a></li>
+  </ol>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="app">1. app.py — Application Entry Point</h2>
+<div class="file-path">backend/app.py</div>
+
+<p>This is the root Flask application file. It performs four tasks: creates the Flask app, initialises CORS and MongoDB, registers all Blueprints (sub-routers), and provides a static-file fallback to serve the React build.</p>
+
+<h3>Module-level setup</h3>
+<p><code>_DEBUG</code>, <code>_PORT</code> — read from environment so Render can inject <code>PORT</code>. <code>_FRONTEND_ORIGIN</code> — used by CORS to allow the frontend origin. <code>_DIST_DIR</code> — path to <code>backend/static/dist</code> where the React build is placed after <code>npm run build</code>.</p>
+
+<div class="fn-box">
+  <div class="fn-name">Flask app creation</div>
+  <div class="fn-sig">app = Flask(__name__, static_folder=_DIST_DIR, static_url_path="/")</div>
+  <div class="fn-desc">Flask is configured to serve files from the React build folder. <code>CORS(app, ...)</code> allows cross-origin requests from localhost:3000 and the production frontend URL. <code>PyMongo(app)</code> connects to MongoDB using the URI in Config.</div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">init_app / init_db / init_otp_db</div>
+  <div class="fn-desc">Each blueprint that needs database access exposes an <code>init_*(mongo)</code> function. App.py calls all four to inject the shared PyMongo instance. This avoids circular imports.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">health()</div>
+  <div class="fn-sig">GET /health → {status: "ok"}</div>
+  <div class="fn-desc">Health-check endpoint used by Render/load-balancers. Always returns HTTP 200.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">test_db()</div>
+  <div class="fn-sig">GET /test_db → {status: "MongoDB connection successful"}</div>
+  <div class="fn-desc">Inserts a <code>{ping: "pong"}</code> document into the test collection. Returns 500 if MongoDB is unreachable.</div>
+</div>
+
+<div class="fn-box orange">
+  <div class="fn-name">serve_react(path)</div>
+  <div class="fn-sig">GET / and GET /&lt;path:path&gt;</div>
+  <div class="fn-desc">
+    The React SPA catch-all. Logic:
+    <ul>
+      <li>If the path starts with any known API prefix (predict, login, etc.) → return 404 JSON so API routes aren't swallowed.</li>
+      <li>If a static asset exists at that path → serve it directly (JS/CSS/fonts).</li>
+      <li>Otherwise → serve index.html (React handles the route client-side).</li>
+      <li>If no build exists → return a plain HTML message telling the developer to run <code>npm run build</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="config">2. config.py — Configuration</h2>
+<div class="file-path">backend/config.py</div>
+
+<p>Loads environment variables from <code>.env</code> via python-dotenv and exposes them as class attributes on <code>Config</code>.</p>
+
+<table class="param-table">
+  <tr><th>Attribute</th><th>Env Variable</th><th>Purpose</th></tr>
+  <tr><td><code>MONGO_URI</code></td><td>MONGO_URI</td><td>Full MongoDB connection string (Atlas or local)</td></tr>
+  <tr><td><code>SECRET_KEY</code></td><td>SECRET_KEY</td><td>Flask session signing + JWT signing</td></tr>
+  <tr><td><code>IBM_API_KEY</code></td><td>IBM_API_KEY</td><td>IBM Cloud API key for Watsonx IAM auth</td></tr>
+  <tr><td><code>WATSONX_PROJECT_ID</code></td><td>WATSONX_PROJECT_ID</td><td>Watsonx project identifier</td></tr>
+  <tr><td><code>WATSONX_URL</code></td><td>WATSONX_URL</td><td>Watsonx generation endpoint base URL</td></tr>
+  <tr><td><code>GOOGLE_CLIENT_ID/SECRET</code></td><td>GOOGLE_*</td><td>Google OAuth app credentials</td></tr>
+  <tr><td><code>GOOGLE_REDIRECT_URI</code></td><td>GOOGLE_REDIRECT_URI</td><td>OAuth callback URL (must match Google Console)</td></tr>
+  <tr><td><code>GMAIL_USER/APP_PASSWORD</code></td><td>GMAIL_*</td><td>Gmail account for OTP email delivery</td></tr>
+</table>
+
+<!-- ══════════════════════════ -->
+<h2 id="auth">3. routes/auth.py — Authentication</h2>
+<div class="file-path">backend/routes/auth.py</div>
+<p>Blueprint <code>auth</code> handles user registration, login, Google OAuth, and JWT-protected profile access.</p>
+
+<div class="fn-box">
+  <div class="fn-name">init_app(db)</div>
+  <div class="fn-desc">Stores the shared PyMongo instance in the module-level <code>mongo</code> global. Called once from app.py during startup.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">_client_config()</div>
+  <div class="fn-sig">→ dict</div>
+  <div class="fn-desc">Builds the Google OAuth2 client configuration dictionary from environment variables. Used by <code>google-auth-oauthlib</code>'s Flow.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">_redirect_uri()</div>
+  <div class="fn-sig">→ str</div>
+  <div class="fn-desc">Returns the Google OAuth redirect URI from env vars (defaults to <code>http://localhost:5000/auth/google/callback</code>).</div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">register() <span class="badge b-post">POST /register</span></div>
+  <div class="fn-sig">Body: { name, email, password }</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Validates all fields are present.</li>
+      <li>Checks email uniqueness in <code>users</code> collection.</li>
+      <li>Hashes password with bcrypt (salt rounds = 12 default).</li>
+      <li>Inserts user document with <code>created_at: datetime.utcnow()</code>.</li>
+      <li>Returns 201 on success, 409 if email already registered.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">login() <span class="badge b-post">POST /login</span></div>
+  <div class="fn-sig">Body: { email, password } → { message, token }</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Looks up user by email in MongoDB.</li>
+      <li>Verifies password with <code>bcrypt.checkpw()</code>.</li>
+      <li>If valid, issues a JWT with <code>{"email": ..., "exp": now+24h}</code> signed with <code>SECRET_KEY</code> using HS256.</li>
+      <li>Returns 401 if email not found or password wrong.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">token_required(f) — Decorator</div>
+  <div class="fn-desc">
+    Wraps any route that requires a valid JWT.
+    <ul>
+      <li>Extracts <code>Bearer &lt;token&gt;</code> from Authorization header.</li>
+      <li>Decodes JWT with <code>SECRET_KEY</code> and retrieves <code>current_user</code> from MongoDB.</li>
+      <li>Passes <code>current_user</code> as the first argument to the decorated function.</li>
+      <li>Returns 401 if token is missing, expired, or invalid.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">profile(current_user) <span class="badge b-get">GET /profile</span></div>
+  <div class="fn-desc">Protected by <code>@token_required</code>. Returns <code>{name, email}</code> for the authenticated user.</div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">google_login() <span class="badge b-get">GET /auth/google</span></div>
+  <div class="fn-desc">
+    <ul>
+      <li>Checks that <code>GOOGLE_CLIENT_ID</code> is configured; returns 503 if not.</li>
+      <li>Creates a <code>google_auth_oauthlib.flow.Flow</code> with the three OpenID scopes.</li>
+      <li>Generates the Google authorization URL with <code>access_type=offline, prompt=select_account</code>.</li>
+      <li>Saves the OAuth state and optional PKCE code_verifier in the Flask session.</li>
+      <li>Redirects the browser to Google's consent screen.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">google_callback() <span class="badge b-get">GET /auth/google/callback</span></div>
+  <div class="fn-desc">
+    Handles Google's redirect back after user grants permission.
+    <ul>
+      <li>Retrieves saved OAuth state from session.</li>
+      <li>Reconstructs the Flow with same state.</li>
+      <li>Calls <code>flow.fetch_token(authorization_response=...)</code> to exchange the code for tokens.</li>
+      <li>Verifies the ID token with Google's public keys via <code>id_token.verify_oauth2_token()</code>.</li>
+      <li>Upserts user in MongoDB (<code>$setOnInsert</code> preserves existing data, <code>$set name</code> always updates).</li>
+      <li>Issues a 24-hour JWT and redirects to <code>FRONTEND_ORIGIN/auth/callback?token=&name=&email=</code>.</li>
+      <li>On any error → redirects to <code>/login?error=...</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="gesture">4. routes/gesture.py — Gesture Prediction</h2>
+<div class="file-path">backend/routes/gesture.py</div>
+<p>Blueprint <code>gesture</code> receives MediaPipe landmark sequences from the browser and returns ML predictions.</p>
+
+<div class="fn-box green">
+  <div class="fn-name">predict() <span class="badge b-post">POST /predict</span></div>
+  <div class="fn-sig">Body: { user_id, gesture: [[218 floats]×≤60], nmm: {…} }</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Calls <code>predict_gesture(gesture_input)</code> from <code>ml.predictor</code>.</li>
+      <li>If successful, stores a record in <code>gesture_history</code> with gesture array, predicted text, confidence, top5, NMM, and timestamp.</li>
+      <li>Returns <code>{predicted_text, confidence, top5, nmm}</code>.</li>
+      <li>If model not loaded, includes <code>warning</code> and <code>needs_retrain: true</code> in response (still HTTP 200).</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">generate_sentence_route() <span class="badge b-post">POST /generate-sentence</span></div>
+  <div class="fn-sig">Body: { glosses: string[], nmm: {…} } → { sentence, source }</div>
+  <div class="fn-desc">
+    Two-tier sentence generation:
+    <ul>
+      <li><strong>Tier 1 (Watsonx):</strong> If <code>is_configured()</code>, builds a Llama-3 prompt with ASL gloss string and NMM context cues, calls <code>wx_generate()</code>, strips stop tokens.</li>
+      <li><strong>Tier 2 (rule-based):</strong> Falls back to <code>sentence_generator.generate_sentence(glosses, nmm)</code> if Watsonx is unconfigured or throws.</li>
+      <li>Response includes <code>source: "watsonx"</code> or <code>source: "rule-based"</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">predict_letter_route() <span class="badge b-post">POST /predict-letter</span></div>
+  <div class="fn-sig">Body: { landmarks: [63 floats] } → { letter, confidence, top5, is_dynamic }</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Validates that exactly 63 landmark floats are provided (21 hand points × 3 coords).</li>
+      <li>Delegates to <code>predict_letter(landmarks)</code> from <code>ml.letter_predictor</code>.</li>
+      <li>Returns top-1 letter with confidence and top-5 alternatives.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">generate_letter_sentence_route() <span class="badge b-post">POST /generate-letter-sentence</span></div>
+  <div class="fn-sig">Body: { letters: string } → { sentence, suggestions[], source }</div>
+  <div class="fn-desc">Converts a fingerspelled letter string (e.g. "hlo") to the best matching English word. Uses Watsonx if configured (returns JSON word + suggestions), otherwise uses <code>LetterSession.suggest()</code> dictionary lookup.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">model_status() <span class="badge b-get">GET /model/status</span></div>
+  <div class="fn-desc">Returns live state of both ML models: gesture model loaded boolean, num_classes, first 5 label names; letter model loaded boolean, classes list, accuracy from meta.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">model_reload() <span class="badge b-post">POST /model/reload</span></div>
+  <div class="fn-desc">Calls <code>reload_model()</code> and <code>reload_letter_model()</code> to hot-reload model weights from disk without restarting Flask. Useful after retraining.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="history">5. routes/history.py — Translation History</h2>
+<div class="file-path">backend/routes/history.py</div>
+
+<div class="fn-box">
+  <div class="fn-name">get_history(user_id) <span class="badge b-get">GET /history/&lt;user_id&gt;</span></div>
+  <div class="fn-sig">Path param: user_id (email string)</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Queries <code>gesture_history</code> for all documents where <code>user_id == user_id</code>.</li>
+      <li>Projects only <code>gesture_input</code>, <code>predicted_text</code>, <code>timestamp</code> (excludes MongoDB <code>_id</code>).</li>
+      <li>Returns list of records as JSON array.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="tts">6. routes/text_to_sign.py — Text-to-Sign</h2>
+<div class="file-path">backend/routes/text_to_sign.py</div>
+
+<h3>Module-level constants and initialisation</h3>
+<p><code>_VIDEOS_DIR</code> — path to <code>backend/data/WLASL/videos/</code>. <code>_JSON_PATH</code> — path to <code>curated_WLASL.json</code>. <code>_SPLIT_ORDER</code> — preference ranking: val &gt; train &gt; test for picking the best video instance. Both <code>_WORD_LOOKUP</code> and <code>_VOCAB_LIST</code> are built at import time so each request is O(1).</p>
+
+<div class="fn-box purple">
+  <div class="fn-name">_build_lookup() → dict</div>
+  <div class="fn-desc">
+    Reads <code>curated_WLASL.json</code> once at startup. For each entry:
+    <ul>
+      <li>Collects all video instances; separates those with local mp4 from those with only a remote CDN URL.</li>
+      <li>Sorts each group by <code>_SPLIT_ORDER</code> (val first = cleanest data).</li>
+      <li>Concatenates local-first, remote-second.</li>
+      <li>Maps <code>word → [{ video_id, external_url }, ...]</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_tokenise(text) → list[str]</div>
+  <div class="fn-desc">Lowercases, strips non-alpha characters (keeps apostrophe), and splits on whitespace. E.g. <code>"I'm happy!"</code> → <code>["i'm", "happy"]</code>.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_stem_candidates(word) → list[str]</div>
+  <div class="fn-desc">
+    Applies a rule table of 28 suffix transformations (e.g. <code>-ing → e</code>, <code>-tions → te</code>, <code>-ed → ""</code>). For each derived stem, also collapses trailing double consonants (<code>rr → r</code>). Returns a deduplicated ordered list of stem candidates ≥ 3 chars.
+  </div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_fuzzy_match(word) → str | None</div>
+  <div class="fn-desc">
+    <ol>
+      <li>Tries all stem candidates in order; returns the first that exists in <code>_WORD_LOOKUP</code>.</li>
+      <li>For words ≥ 5 chars, uses <code>difflib.get_close_matches(word, _VOCAB_LIST, n=1, cutoff=0.80)</code>.</li>
+      <li>Returns <code>None</code> if nothing matches.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_make_entry(matched_word, original_word, fuzzy) → dict</div>
+  <div class="fn-desc">Builds the result dictionary for a matched word: original/matched word, found=True, fuzzy flag, video_id, video_url (<code>/video/{id}</code> if local file exists, else None), external_url (CDN), and all_entries list.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_resolve_tokens(tokens) → list[dict]</div>
+  <div class="fn-desc">
+    Main resolution loop. For each position <code>i</code>:
+    <ol>
+      <li>Check bigram <code>tokens[i] + " " + tokens[i+1]</code> in lookup (compound ASL signs).</li>
+      <li>Exact single-word lookup.</li>
+      <li>Fuzzy/stem match via <code>_fuzzy_match()</code>.</li>
+      <li>If nothing found → <code>{found: false, video_url: null}</code>.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">convert_text() <span class="badge b-post">POST /text-to-sign</span></div>
+  <div class="fn-sig">Body: { text: string } → { words[], coverage, total_words, found_words }</div>
+  <div class="fn-desc">Tokenises text, resolves each token, calculates coverage ratio (found/total), returns the full word array.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">serve_video(video_id) <span class="badge b-get">GET /video/&lt;video_id&gt;</span></div>
+  <div class="fn-desc">Validates <code>video_id</code> is 1–6 digits (prevents path traversal). Left-pads to 5 digits. Uses Flask's <code>send_file(..., conditional=True)</code> which supports HTTP Range requests (needed for HTML5 video seek). Returns 404 if mp4 not found locally.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">vocabulary() <span class="badge b-get">GET /text-to-sign/vocabulary</span></div>
+  <div class="fn-desc">Returns the full sorted vocabulary list and count. Used by the frontend to show supported words.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">dataset_status() <span class="badge b-get">GET /text-to-sign/status</span></div>
+  <div class="fn-desc">Reports whether the local WLASL video directory exists and how many mp4 files are present.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="ai">7. routes/ai.py — AI / Watsonx Endpoints</h2>
+<div class="file-path">backend/routes/ai.py</div>
+<p>Blueprint <code>ai_bp</code> (prefix <code>/ai</code>) provides five endpoints powered by IBM Watsonx.ai Llama-3.3-70B.</p>
+
+<div class="fn-box orange">
+  <div class="fn-name">_unavailable() → Response (503)</div>
+  <div class="fn-desc">Helper returning a standard 503 JSON error when Watsonx credentials are not set. Called at the top of any endpoint that requires AI.</div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">improve_text() <span class="badge b-post">POST /ai/improve-text</span></div>
+  <div class="fn-sig">Body: { text: string } → { improved: string }</div>
+  <div class="fn-desc">
+    Sends the raw sign-to-text output to Llama-3 with a system prompt instructing it to rewrite as fluent English (topic-comment → SVO, add articles/punctuation). Uses <code>max_new_tokens=120, temperature=0.2</code>. On error, returns the original text unchanged.
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">learning_tip() <span class="badge b-post">POST /ai/learning-tip</span></div>
+  <div class="fn-sig">Body: { word: string } → { word, tip, fun_fact }</div>
+  <div class="fn-desc">
+    Asks Llama-3 to return JSON <code>{"tip": "...", "fun_fact": "..."}</code> for a given ASL sign word. Parses the JSON response; falls back to raw text if JSON parse fails.
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">sentence_insights() <span class="badge b-post">POST /ai/sentence-insights</span></div>
+  <div class="fn-sig">Body: { translations: string[] } → { insights: string }</div>
+  <div class="fn-desc">
+    Takes up to 30 recent translated signs, joins them into a comma-separated string, asks Llama-3 to identify vocabulary themes, frequency patterns, one improvement suggestion, and one motivational observation. Returns plain prose.
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">gloss_to_english() <span class="badge b-post">POST /ai/gloss-to-english</span></div>
+  <div class="fn-sig">Body: { glosses: string[], nmm: {…} } → { sentence, source }</div>
+  <div class="fn-desc">
+    Alternative route (same logic as <code>gesture.generate_sentence_route</code> but exposed under <code>/ai/</code>). Interprets NMM signals into natural-language cues appended to the prompt. Falls back to <code>ml.sentence_generator</code> if Watsonx unavailable.
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">letter_to_sentence() <span class="badge b-post">POST /ai/letter-to-sentence</span></div>
+  <div class="fn-sig">Body: { letters: string } → { sentence, suggestions[], source }</div>
+  <div class="fn-desc">Asks Llama-3 for the best English word matching fingerspelled letters, returning JSON with <code>word</code> and up to 3 <code>suggestions</code>. Falls back to <code>LetterSession.suggest()</code>.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">ai_status() <span class="badge b-get">GET /ai/status</span></div>
+  <div class="fn-desc">Returns <code>{configured: bool, model: "meta-llama/llama-3-3-70b-instruct" | null}</code>. Safe to call with no credentials.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="otp">8. routes/otp.py — OTP Email Verification</h2>
+<div class="file-path">backend/routes/otp.py</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_gen_code() → str</div>
+  <div class="fn-desc">Generates a random 6-digit string using <code>random.choices(string.digits, k=6)</code>.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_send_email(to_addr, code) → None</div>
+  <div class="fn-desc">
+    Builds a branded HTML email (blue heading, large OTP digits, 10-minute expiry notice). Sends via <code>smtplib.SMTP_SSL("smtp.gmail.com", 465)</code> using Gmail app password. Raises <code>RuntimeError</code> if credentials missing.
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">send_otp() <span class="badge b-post">POST /otp/send</span></div>
+  <div class="fn-sig">Body: { email } → { message: "OTP sent" }</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Generates code, sets <code>expires_at = now + 10 min</code>.</li>
+      <li>Upserts <code>otp_codes</code> collection (one active code per email).</li>
+      <li>Calls <code>_send_email()</code>; if that fails, removes the DB record and returns 500.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">verify_otp() <span class="badge b-post">POST /otp/verify</span></div>
+  <div class="fn-sig">Body: { email, code } → { valid: true }</div>
+  <div class="fn-desc">
+    Checks: record exists → not already verified → not expired → code matches. On success, sets <code>verified=true</code> in MongoDB. Returns 400 with specific error messages for each failure case.
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="watsonx">9. services/watsonx.py — IBM Watsonx SDK</h2>
+<div class="file-path">backend/services/watsonx.py</div>
+<p>Wraps IBM Watsonx.ai REST API with IAM token caching.</p>
+
+<h3>Module-level state</h3>
+<p><code>MODEL_ID = "meta-llama/llama-3-3-70b-instruct"</code> — the LLM used for all generation. <code>_token_lock</code> — threading Lock prevents concurrent IAM token refresh. <code>_cached_token / _token_expiry</code> — cached access token with expiry timestamp.</p>
+
+<div class="fn-box purple">
+  <div class="fn-name">_get_iam_token() → str</div>
+  <div class="fn-desc">
+    Thread-safe. Checks if the cached token expires in &gt; 60 seconds; if so, returns it. Otherwise calls IBM IAM (<code>https://iam.cloud.ibm.com/identity/token</code>) with a grant_type=apikey POST, caches the new token + expiry. Raises on HTTP error.
+  </div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">generate(prompt, max_new_tokens, temperature, stop_sequences) → str</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Guards that both <code>IBM_API_KEY</code> and <code>PROJECT_ID</code> are set.</li>
+      <li>Gets a fresh IAM token via <code>_get_iam_token()</code>.</li>
+      <li>POSTs to Watsonx generation endpoint with model_id, project_id, input prompt, and parameters (greedy if temperature=0, sample otherwise; repetition_penalty=1.1).</li>
+      <li>Returns <code>results[0].generated_text</code> stripped of whitespace.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">is_configured() → bool</div>
+  <div class="fn-desc">Returns <code>True</code> only if both IBM_API_KEY and WATSONX_PROJECT_ID env vars are non-empty. Does not make a network call.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="predictor">10. ml/predictor.py — Gesture Inference</h2>
+<div class="file-path">backend/ml/predictor.py</div>
+<p>Loads the PyTorch GestureBridgeLSTM model at startup and exposes <code>predict_gesture()</code>.</p>
+
+<h3>Module-level state</h3>
+<p>All model artefacts are stored as module globals: <code>_model</code> (GestureBridgeLSTM or None), <code>_labels</code> (dict idx→word), <code>_num_classes</code>, <code>_feat_mean/_feat_std</code> (normalizer arrays). Set by <code>_initialize()</code> on import.</p>
+
+<div class="fn-box purple">
+  <div class="fn-name">_load_labels(labels_path) → dict</div>
+  <div class="fn-desc">Reads <code>labels.json</code> and converts string keys to int: <code>{"0": "hello"} → {0: "hello"}</code>. Logs warning if file missing (predictions still work but return <code>class_N</code> strings).</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_load_model(model_path, meta_path, num_classes) → GestureBridgeLSTM | None</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Returns None if model file does not exist (server starts in degraded mode).</li>
+      <li>Reads <code>model_meta.json</code> to get num_classes, sequence_length, landmark_vector_size overriding module defaults.</li>
+      <li>Instantiates <code>GestureBridgeLSTM(num_classes)</code> and loads the state_dict with <code>weights_only=True</code> (security best practice).</li>
+      <li>Returns None on <code>RuntimeError</code> (size mismatch) with a helpful retrain message.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_initialize()</div>
+  <div class="fn-desc">Orchestrates startup: calls <code>_load_labels()</code>, <code>_load_model()</code>, and loads <code>normalizer.npz</code> if present. Logs summary. Called automatically at module import time (line 111 <code>_initialize()</code>).</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">predict_gesture(landmark_sequence) → dict</div>
+  <div class="fn-sig">landmark_sequence: ndarray or list shape (T, 218)</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Returns error dict if model not loaded.</li>
+      <li>Converts input to float32 ndarray; reshapes 1D to 2D.</li>
+      <li>Calls <code>pad_or_truncate(seq, 45)</code> to ensure exactly 45 frames.</li>
+      <li>Applies z-score normalisation with loaded mean/std (if available).</li>
+      <li>Adds batch dimension, converts to PyTorch tensor.</li>
+      <li>Runs <code>model.forward()</code> under <code>torch.no_grad()</code>.</li>
+      <li>Applies softmax to get probabilities.</li>
+      <li>Returns top-1 word + confidence + top-5 list.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">reload_model()</div>
+  <div class="fn-desc">Calls <code>_initialize()</code> again, replacing module globals. Called by <code>POST /model/reload</code>.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="letter">11. ml/letter_predictor.py — ASL Letter Inference</h2>
+<div class="file-path">backend/ml/letter_predictor.py</div>
+
+<p>Loads a scikit-learn classifier (RandomForest/SVC) for static ASL hand letter classification (A–Z minus J and Z which are dynamic).</p>
+
+<h3>Constants</h3>
+<table class="param-table">
+  <tr><th>Constant</th><th>Value</th><th>Meaning</th></tr>
+  <tr><td><code>LETTER_CONF_THRESH</code></td><td>0.70</td><td>Minimum probability to commit a letter</td></tr>
+  <tr><td><code>STABLE_FRAMES_REQUIRED</code></td><td>4</td><td>Consecutive matching frames before commit</td></tr>
+  <tr><td><code>COOLDOWN_FRAMES</code></td><td>10</td><td>Frames to skip after a commit</td></tr>
+  <tr><td><code>TRAJ_BUFFER_SIZE</code></td><td>15</td><td>Index-tip trajectory window for J/Z detection</td></tr>
+  <tr><td><code>J_PATH_THRESH</code></td><td>0.18</td><td>Path length threshold for J stroke</td></tr>
+  <tr><td><code>Z_PATH_THRESH</code></td><td>0.20</td><td>Path length threshold for Z stroke</td></tr>
+</table>
+
+<div class="fn-box purple">
+  <div class="fn-name">_load()</div>
+  <div class="fn-desc">
+    Tries to load model in two ways:
+    <ol>
+      <li><strong>Split files:</strong> <code>asl_letter_model.joblib</code> + <code>asl_letter_scaler.joblib</code> + <code>asl_letter_meta.json</code></li>
+      <li><strong>Bundle fallback:</strong> <code>asl_letter_bundle.joblib</code> which contains <code>{"model": ..., "label_encoder": ...}</code></li>
+    </ol>
+    Logs warning if neither is found.
+  </div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">predict_letter(raw_landmarks_63) → dict</div>
+  <div class="fn-sig">raw_landmarks_63: list or array of 63 floats</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Validates 63 input features (21 landmarks × 3 coords).</li>
+      <li>Optionally applies StandardScaler transform.</li>
+      <li>Calls <code>model.predict_proba()</code> → softmax probabilities.</li>
+      <li>Returns <code>{letter, confidence, top5[{letter, confidence}], is_dynamic: False}</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_path_length(pts) → float</div>
+  <div class="fn-desc">Sums Euclidean distances between consecutive (x,y) points. Used to measure how much the index fingertip has moved over the last 15 frames.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_bbox_aspect(pts) → float</div>
+  <div class="fn-desc">Returns width/height ratio of the bounding box of trajectory points. J has aspect &lt; 0.8 (vertical curve), Z has aspect &gt; 1.2 (horizontal zigzag).</div>
+</div>
+
+<h3>Class: LetterSession</h3>
+<p>Stateful per-session wrapper for real-time fingerspelling recognition. One instance per active video stream in the browser (instantiated inside SignToText.jsx).</p>
+
+<div class="fn-box">
+  <div class="fn-name">LetterSession.push(raw_landmarks_63, index_tip_xy) → dict | None</div>
+  <div class="fn-desc">
+    Call once per video frame during fingerspelling mode.
+    <ul>
+      <li>Honours cooldown counter (skips frames after a commit).</li>
+      <li>Appends index_tip position to trajectory deque.</li>
+      <li>Calls <code>predict_letter()</code> for the static classification.</li>
+      <li>If trajectory is full (15 frames): computes path_length and aspect ratio; overrides letter to "J" or "Z" if thresholds met.</li>
+      <li>Increments stable counter when same letter appears with conf ≥ 0.70.</li>
+      <li>On <code>stable_count ≥ STABLE_FRAMES_REQUIRED (4)</code>: appends letter to <code>_word</code>, resets counters, starts cooldown, returns commit dict with word and suggestions.</li>
+      <li>Returns None if no letter committed this frame.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">LetterSession.suggest(partial, n=3) → list[str]  [static]</div>
+  <div class="fn-desc">Prefix-matches <code>_WORD_LIST</code> (80+ common words), then fuzzy-matches with cutoff 0.4. Combines both lists deduplicating to return up to n suggestions.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">LetterSession.flush_word() → str</div>
+  <div class="fn-desc">Appends current word to committed words list, clears current word. Called when user presses Space.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="sentgen">12. ml/sentence_generator.py — Rule-Based Sentence Engine</h2>
+<div class="file-path">backend/ml/sentence_generator.py</div>
+
+<p>Converts an ASL gloss sequence + NMM signals into grammatical English when Watsonx is unavailable. Implements core ASL→English grammatical transformations.</p>
+
+<h3>Lookup tables</h3>
+<p><code>_PRONOUNS</code> (I/ME/YOU/HE/SHE/WE/THEY → English), <code>_FUTURE_MARKERS</code> (WILL/GONNA/…), <code>_PAST_MARKERS</code> (FINISH/ALREADY/…), <code>_NEG_MARKERS</code> (NOT/NO/NEVER), <code>_WH_GLOSSES</code> (WHO/WHAT/WHERE/…), <code>_ADJECTIVES</code> (40 adjectives), <code>_VERBS</code> (70 verbs), <code>_CONTRACTIONS</code> (15 pairs like "do not"→"don't"), <code>_ARTICLES</code> (20 countable nouns that get "the").</p>
+
+<div class="fn-box purple">
+  <div class="fn-name">_gloss_to_words(gloss_sequence) → list[str]</div>
+  <div class="fn-desc">Strips whitespace, converts to uppercase, removes empty items. Preserves hyphenated compounds like THANK-YOU.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_map_gloss(gloss) → str</div>
+  <div class="fn-desc">
+    Maps a single uppercase gloss to its English equivalent:
+    <ul>
+      <li>Pronoun lookup (ME → "I")</li>
+      <li>Multi-word compounds (THANK-YOU → "thank you")</li>
+      <li>Fingerspelled abbreviations (A-S-L → "ASL")</li>
+      <li>Default: lowercase the gloss</li>
+    </ul>
+  </div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_apply_contractions(text) → str</div>
+  <div class="fn-desc">Uses regex word-boundary matching to replace all "do not" → "don't", etc. Makes output sound more natural.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_select_copula(subject, is_past) → str</div>
+  <div class="fn-desc">Returns the correct "to be" form: "am" for I, "is" for he/she/it, "are" for you/we/they, and the past forms "was"/"were".</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_split_aux(verb_phrase, subject, is_past) → (aux, bare_verb)</div>
+  <div class="fn-desc">Splits a verb phrase into auxiliary + bare verb for question inversion. If the phrase already starts with a known auxiliary (will, did, do, etc.) it splits there. Otherwise synthesises: "did" for past, "does" for third-person singular, "do" otherwise.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_add_articles(words) → str</div>
+  <div class="fn-desc">Prepends "the " to any word in the <code>_ARTICLES</code> set (common countable nouns), then joins with spaces.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">generate_sentence(gloss_sequence, nmm_summary) → str</div>
+  <div class="fn-desc">
+    Main public function. Full pipeline:
+    <ol>
+      <li>Normalise glosses via <code>_gloss_to_words()</code>.</li>
+      <li>Read NMM thresholds (eyebrow_raise → yes/no question, eyebrow_furrow → WH question, head_shake → negation, head_nod → affirmation, mouth_open → intensifier).</li>
+      <li>Detect tense: FUTURE/WILL → modal "will"; PAST/FINISH → "did".</li>
+      <li>Categorise content tokens: pronouns, verbs, adjectives, nouns.</li>
+      <li>Select subject (first pronoun, then first noun, then first token).</li>
+      <li>Determine copula need (adjective without verb → "is/am/are").</li>
+      <li>Handle negation: invert verb phrase to "won't", "didn't", or "don't".</li>
+      <li>Branch on sentence type: WH-question, yes/no question, or declarative.</li>
+      <li>Apply contractions, clean whitespace, capitalise first letter + standalone I.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="model">13. ml/model.py — LSTM Architecture</h2>
+<div class="file-path">backend/ml/model.py</div>
+
+<h3>class TemporalAttention(nn.Module)</h3>
+<div class="fn-box">
+  <div class="fn-name">__init__(hidden_size)</div>
+  <div class="fn-desc">Creates a single Linear layer <code>attn: Linear(hidden_size → 1, bias=False)</code>. This projects each time step's hidden state to a scalar score.</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">forward(x: Tensor) → Tensor</div>
+  <div class="fn-sig">x shape: (batch, T, H) → out shape: (batch, H)</div>
+  <div class="fn-desc">Computes attention weights via softmax over T dimension, then returns weighted sum of hidden states — a single context vector per sample.</div>
+</div>
+
+<h3>class GestureBridgeLSTM(nn.Module)</h3>
+<div class="fn-box">
+  <div class="fn-name">__init__(num_classes)</div>
+  <div class="fn-desc">
+    Architecture:
+    <ul>
+      <li><code>lstm1</code>: BiLSTM(input=218, hidden=128, bidirectional=True) → output 256 per step</li>
+      <li><code>drop1</code>: Dropout(0.4)</li>
+      <li><code>lstm2</code>: BiLSTM(input=256, hidden=64, bidirectional=True) → output 128 per step</li>
+      <li><code>drop2</code>: Dropout(0.3)</li>
+      <li><code>attention</code>: TemporalAttention(128) → context 128</li>
+      <li><code>fc1</code>: Linear(128 → 256) + BatchNorm1d + Dropout(0.4)</li>
+      <li><code>out</code>: Linear(256 → num_classes)</li>
+    </ul>
+  </div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">forward(x) → Tensor</div>
+  <div class="fn-sig">x: (batch, 45, 218) → logits: (batch, num_classes)</div>
+  <div class="fn-desc">Passes through both BiLSTM layers, temporal attention, FC+BN+Dropout, and final linear projection. Returns raw logits (softmax applied at inference time in predictor.py).</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">build_model(num_classes, learning_rate) → (model, optimizer, criterion)</div>
+  <div class="fn-desc">Factory for training: creates GestureBridgeLSTM, Adam optimizer (lr=1e-3, weight_decay=1e-4), CrossEntropyLoss.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">load_saved_model(model_path, num_classes) → GestureBridgeLSTM</div>
+  <div class="fn-desc">Loads saved weights with <code>weights_only=True</code> and sets eval mode. Used in evaluation scripts.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="landmarks">14. ml/utils/landmarks.py — Feature Extraction</h2>
+<div class="file-path">backend/ml/utils/landmarks.py</div>
+
+<p>Defines all constants for the 218-dim feature vector and functions to extract features from MediaPipe Holistic results.</p>
+
+<h3>Feature vector layout constants</h3>
+<pre>
+SINGLE_HAND_SIZE = 21 × 3 = 63     (wrist-normalised xyz per landmark)
+HANDS_SIZE       = 63 × 2 = 126    (left + right)
+POSE_SIZE        = 8 × 3 = 24      (shoulder-normalised, 8 key joints)
+FACE_SIZE        = 9 × 3 = 27      (nose-anchored, 9 face mesh points)
+VELOCITY_SIZE    = 3                (dominant wrist Δxyz)
+INTERACTION_SIZE = 2                (fingertips→lips dist, fingertips→nondominant palm dist)
+ACCEL_SIZE       = 3                (Δvelocity)
+NMM_SIZE         = 10               (brow raise/furrow, head motion Δ, mouth, smile, depth, asymmetry)
+FINGER_ANGLE_SIZE= 15               (joint angles rad: 3 joints × 5 fingers)
+WRIST_ORIENT_SIZE= 4                (quaternion w,x,y,z)
+BODY_DIST_SIZE   = 4                (fingertips to chin/chest/abdomen/nondominant)
+
+TOTAL            = 218
+</pre>
+
+<div class="fn-box">
+  <div class="fn-name">build_hands_solution(...) → mp.solutions.holistic.Holistic</div>
+  <div class="fn-desc">Creates a MediaPipe Holistic instance. <code>static_image_mode=False</code> enables tracking (faster for video); <code>True</code> for frame-by-frame dataset processing.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_normalize_hand(coords) → ndarray[63]</div>
+  <div class="fn-desc">Subtracts wrist position (landmark 0) to make coordinates relative to wrist. Divides by max absolute coordinate (scale normalisation). Makes representation translation and scale invariant.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_extract_pose(pose_landmarks) → ndarray[24]</div>
+  <div class="fn-desc">Takes 8 upper-body joints (shoulders, elbows, wrists, hips). Centres on the midpoint between shoulders; scales by inter-shoulder distance.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_extract_face(face_landmarks) → ndarray[27]</div>
+  <div class="fn-desc">Takes 9 face mesh points (nose, lips, chin, jaw, forehead). Centres on nose tip; scales by face height (forehead to chin).</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_interaction_features(left_lms, right_lms, face_lms, pose_lms, shoulder_scale) → ndarray[2]</div>
+  <div class="fn-desc">
+    Computes two body-relative distances:
+    <ul>
+      <li><strong>dist_to_lips</strong>: Euclidean distance from dominant-hand fingertip centroid to lips (mouth contact signs).</li>
+      <li><strong>dist_to_palm</strong>: Distance from dominant fingertips to non-dominant palm (two-handed signs).</li>
+    </ul>
+    Both normalised by shoulder scale.
+  </div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_extract_nmm(face_landmarks, prev_head_*, face_scale) → (ndarray[10], yaw, pitch, roll)</div>
+  <div class="fn-desc">
+    Extracts 10 non-manual marker scalars from the face mesh:
+    <ul>
+      <li>[0] Eyebrow raise (eye–brow gap relative to face scale)</li>
+      <li>[1] Eyebrow furrow (inner brow distance vs baseline)</li>
+      <li>[2] Head pitch delta (nodding)</li>
+      <li>[3] Head yaw delta (shaking)</li>
+      <li>[4] Head roll delta (tilting)</li>
+      <li>[5] Mouth open (lip gap)</li>
+      <li>[6] Smile width (corner distance vs face width)</li>
+      <li>[7] Lip protrusion (z-depth)</li>
+      <li>[8] Cheek width</li>
+      <li>[9] Brow asymmetry (left vs right raise difference)</li>
+    </ul>
+    Also returns current yaw/pitch/roll for next-frame delta computation.
+  </div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_extract_finger_angles(hand_landmarks) → ndarray[15]</div>
+  <div class="fn-desc">Computes joint angles (in radians) at 15 joint triplets: 3 joints per finger × 5 fingers. Uses the dot-product cosine formula, clamped to [-1, 1] before arccos.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_extract_wrist_orientation(hand_landmarks) → ndarray[4]</div>
+  <div class="fn-desc">Derives a unit quaternion from the hand plane. Uses wrist→middle-knuckle as forward vector, index-to-pinky as right vector, and their cross product as up. Converts 3×3 rotation matrix to quaternion (Shepperd's method). Encodes hand rotation in 3D space.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">_body_distance_features(dominant_lms, base_lms, face_lms, pose_lms, shoulder_scale) → ndarray[4]</div>
+  <div class="fn-desc">Distance from dominant hand fingertip centroid to: chin [0], chest midpoint [1], abdomen midpoint [2], and non-dominant hand palm [3]. All shoulder-scale normalised.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">extract_landmarks_from_frame(frame_bgr, hands_solution, prev_dominant_wrist, prev_velocity, prev_head_state, dominant_is_right) → (vec218, wrist, velocity, head_state)</div>
+  <div class="fn-desc">
+    Main per-frame feature extraction. Called during training and dataset building.
+    <ol>
+      <li>Converts BGR→RGB, processes with MediaPipe Holistic.</li>
+      <li>Extracts and normalises left/right hand landmarks.</li>
+      <li>Computes shoulder scale for body normalisation.</li>
+      <li>Computes wrist velocity (current wrist − previous wrist).</li>
+      <li>Computes acceleration (current velocity − previous velocity).</li>
+      <li>Calls all 8 feature extraction functions.</li>
+      <li>Concatenates all into a single 218-dim float32 array.</li>
+      <li>Asserts length == 218 (guards against feature size drift).</li>
+      <li>Returns vec + updated state for next frame's delta computation.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">extract_sequence_from_video(video_path, sequence_length, hands_solution, dominant_is_right) → ndarray(sequence_length, 218)</div>
+  <div class="fn-desc">
+    Reads a video file, samples exactly <code>sequence_length</code> frames using <code>np.linspace</code> over the full duration. For each sampled frame, calls <code>extract_landmarks_from_frame()</code>. If a frame produces all zeros (no detection), repeats the last valid frame. Used during dataset preprocessing.
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="preprocess">15. ml/utils/preprocess.py — Inference Preprocessing</h2>
+<div class="file-path">backend/ml/utils/preprocess.py</div>
+
+<div class="fn-box">
+  <div class="fn-name">pad_or_truncate(sequence, length=45) → ndarray</div>
+  <div class="fn-desc">If the sequence has ≥ length frames, returns first <code>length</code> rows. If shorter, pads with zero rows at the end. Ensures fixed temporal dimension for the LSTM.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">normalize_sequence(sequence) → ndarray</div>
+  <div class="fn-desc">Identity function — returns the sequence unchanged (per-frame normalisation already done by landmarks.py at extraction time).</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">preprocess_landmark_sequence(sequence, mean=None, std=None) → ndarray</div>
+  <div class="fn-desc">Full inference pipeline: pad_or_truncate → optional z-score ((seq-mean)/(std+1e-8)) → expand_dims(axis=0) to add batch dimension. Returns (1, 45, 218) float32 array ready for the model.</div>
+</div>
+
+<div class="fn-box orange">
+  <div class="fn-name">preprocess_frame(frame) → ndarray  [DEPRECATED]</div>
+  <div class="fn-desc">Legacy pixel-based preprocessor from an earlier version. Kept only for import compatibility with old scripts. Not used in production path.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="training">16. Training Scripts Overview</h2>
+
+<h3>ml/train.py</h3>
+<p>Trains the <code>GestureBridgeLSTM</code> gesture model. Loads <code>database/asl_data.npz</code> (pre-extracted 218-dim sequences), splits into train/val, trains with Adam optimizer + CrossEntropyLoss, saves <code>gesture_model.pt</code>, <code>labels.json</code>, <code>model_meta.json</code>, <code>normalizer.npz</code>.</p>
+
+<h3>ml/train_asl_letter.py</h3>
+<p>Trains the scikit-learn letter classifier. Loads raw hand landmark CSVs or collected data, fits StandardScaler, trains RandomForest or SVC, evaluates accuracy, saves <code>asl_letter_model.joblib</code> + <code>asl_letter_scaler.joblib</code> + <code>asl_letter_meta.json</code>.</p>
+
+<h3>ml/collect_asl_data.py</h3>
+<p>Interactive OpenCV + MediaPipe tool for recording ASL sign videos. Captures frames, extracts 218-dim sequences per frame, saves to npz dataset.</p>
+
+<h3>ml/build_asl_dataset.py</h3>
+<p>Processes a directory of labelled sign videos using <code>extract_sequence_from_video()</code>, building the training dataset NPZ file.</p>
+
+<h3>ml/preprocess_dataset.py</h3>
+<p>Re-processes the raw dataset to the current 218-dim feature format. Run after changing feature extraction code.</p>
+
+<h3>ml/evaluate.py</h3>
+<p>Loads saved model, runs evaluation on a test split, prints accuracy, confusion matrix, and per-class F1 scores.</p>
+
+<h3>ml/inspect_dataset.py</h3>
+<p>Utility to check dataset dimensions, label distribution, and sample counts per class.</p>
+
+<footer>
+  <p>Made with IBM Bob &nbsp;|&nbsp; GestureBridge Backend Documentation &nbsp;|&nbsp; Document 2 of 3</p>
+</footer>
+</div>
+</body>
+</html>

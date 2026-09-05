@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GestureBridge — System Diagrams</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 14px; line-height: 1.6; background: #ffffff; color: #1f2328; }
+  .page { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 3rem; }
+  h1 { font-size: 1.8rem; font-weight: 800; margin-bottom: .25rem; color: #1f2328; }
+  .subtitle { color: #57606a; font-size: .9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.2rem; font-weight: 700; margin: 2.5rem 0 .75rem; padding-bottom: .4rem; border-bottom: 2px solid #3b82d4; color: #1f2328; }
+  h3 { font-size: 1rem; font-weight: 600; margin: 1.5rem 0 .5rem; color: #3b82d4; }
+  p { color: #57606a; margin-bottom: .6rem; font-size: .88rem; }
+  .diagram-box { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; overflow-x: auto; }
+  pre { font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: .78rem; line-height: 1.55; color: #1f2328; white-space: pre; }
+  .badge { display: inline-block; background: #3b82d4; color: #fff; border-radius: 4px; padding: .1rem .4rem; font-size: .7rem; font-weight: 600; margin-left: .4rem; vertical-align: middle; }
+  .badge-purple { background: #7c5cd8; }
+  .badge-green  { background: #059669; }
+  .badge-orange { background: #d97706; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; font-size: .83rem; }
+  th { background: #f7f8fa; color: #57606a; font-weight: 600; text-align: left; padding: .5rem .75rem; border: 1px solid #e5e7eb; }
+  td { padding: .45rem .75rem; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  svg.diagram { display: block; max-width: 100%; margin: 0 auto; }
+  .toc { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 2rem; }
+  .toc ol { padding-left: 1.2rem; }
+  .toc li { margin: .25rem 0; font-size: .85rem; }
+  .toc a { color: #3b82d4; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  footer { border-top: 1px solid #e5e7eb; margin-top: 3rem; padding-top: 1rem; text-align: center; font-size: .75rem; color: #57606a; }
+  .legend { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; }
+  .legend-item { display: flex; align-items: center; gap: .3rem; font-size: .75rem; color: #57606a; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>GestureBridge — System Diagrams</h1>
+<p class="subtitle">Complete UML, System/Data and Navigation diagrams for the GestureBridge ASL translation platform.</p>
+
+<div class="toc">
+  <strong>Table of Contents</strong>
+  <ol>
+    <li><a href="#usecase">Use Case Diagram</a></li>
+    <li><a href="#activity">Activity Diagram — Sign-to-Text Flow</a></li>
+    <li><a href="#activity2">Activity Diagram — Text-to-Sign Flow</a></li>
+    <li><a href="#class">Class Diagram</a></li>
+    <li><a href="#sequence">Sequence Diagram — Sign Recognition</a></li>
+    <li><a href="#sequence2">Sequence Diagram — Authentication</a></li>
+    <li><a href="#component">Component Diagram</a></li>
+    <li><a href="#package">Package Diagram</a></li>
+    <li><a href="#deployment">Deployment Diagram</a></li>
+    <li><a href="#dfd0">Data Flow Diagram — Level 0 (Context)</a></li>
+    <li><a href="#dfd1">Data Flow Diagram — Level 1</a></li>
+    <li><a href="#datadesign">Data Design Diagram</a></li>
+    <li><a href="#navtree">Navigation Tree</a></li>
+    <li><a href="#statemachine">State Machine — Sign Recognition</a></li>
+  </ol>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="usecase">1. Use Case Diagram</h2>
+<p>Actors and their interactions with the GestureBridge system.</p>
+<div class="diagram-box">
+<pre>
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         «system»  GestureBridge                         │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │  Authentication                                                     │ │
+│  │   (UC-01) Register Account                                          │ │
+│  │   (UC-02) Login with Email/Password                                 │ │
+│  │   (UC-03) Login with Google OAuth                                   │ │
+│  │   (UC-04) Verify OTP via Email                                      │ │
+│  │   (UC-05) Browse as Guest                                           │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │  Sign-to-Text (Camera Mode)                                         │ │
+│  │   (UC-06) Start / Stop Camera                                       │ │
+│  │   (UC-07) Capture & Translate Sign Words (Sign Mode)                │ │
+│  │   (UC-08) Fingerspell Letters (Spell Mode)                          │ │
+│  │   (UC-09) Build Sentence from Glosses                               │ │
+│  │   (UC-10) AI-Improve Raw Translation                                │ │
+│  │   (UC-11) Speak Translation (TTS)                                   │ │
+│  │   (UC-12) Copy Translation to Clipboard                             │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │  Text-to-Sign (Video Playback)                                      │ │
+│  │   (UC-13) Type / Speak Text Input (STT)                             │ │
+│  │   (UC-14) Convert Text to Sign Videos                               │ │
+│  │   (UC-15) Play Sign Videos Word-by-Word                             │ │
+│  │   (UC-16) Loop / Auto-Advance Playback                              │ │
+│  │   (UC-17) View Vocabulary Coverage                                  │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │  AI / Learning Features                                             │ │
+│  │   (UC-18) Get Learning Tip for a Sign                               │ │
+│  │   (UC-19) View Sentence Insights from History                       │ │
+│  │   (UC-20) Gloss → English (Watsonx / Rule-based)                   │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │  Account Management                                                  │ │
+│  │   (UC-21) View Translation History                                  │ │
+│  │   (UC-22) Change Theme (Light/Dark)                                 │ │
+│  │   (UC-23) Change Sign-Language Preference                           │ │
+│  │   (UC-24) Update Profile                                            │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+          ▲                            ▲                    ▲
+          │                            │                    │
+   ┌──────┴──────┐             ┌───────┴──────┐    ┌───────┴──────┐
+   │  Registered │             │  Guest User  │    │  IBM Watsonx │
+   │    User     │             │  (no login)  │    │   (AI API)   │
+   └─────────────┘             └──────────────┘    └──────────────┘
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="activity">2. Activity Diagram — Sign-to-Text Flow</h2>
+<p>Step-by-step process from camera start to final English sentence.</p>
+<div class="diagram-box">
+<pre>
+ [User opens /sign-to-text]
+         │
+         ▼
+ ┌──────────────────┐
+ │ Load MediaPipe   │  ← 4 CDN scripts loaded sequentially
+ │ Holistic via CDN │
+ └────────┬─────────┘
+          │
+          ▼
+ ┌──────────────────┐
+ │  Start Camera    │  ← getUserMedia() → video stream
+ └────────┬─────────┘
+          │
+          ▼
+ ┌───────────────────────────────────────────────┐
+ │  Mode selected?                               │
+ │  ┌──────────────┐        ┌───────────────┐   │
+ │  │  Sign Mode   │        │  Spell Mode   │   │
+ │  │  (word)      │        │  (letter)     │   │
+ │  └──────┬───────┘        └──────┬────────┘   │
+ └─────────┼──────────────────────┼─────────────┘
+           │                      │
+           ▼                      ▼
+  ┌─────────────────┐   ┌──────────────────────┐
+  │ Every 150 ms:   │   │ Every 200 ms:         │
+  │ Capture frame   │   │ Capture frame         │
+  │ → buildFrame    │   │ → extract 63 hand lms │
+  │   Vector(218)   │   │ → POST /predict-letter│
+  └────────┬────────┘   └───────────┬───────────┘
+           │                        │
+           ▼                        ▼
+  ┌────────────────┐      ┌─────────────────────┐
+  │ Detect motion  │      │ Debounce 4 frames   │
+  │ (wrist speed)  │      │ same letter + conf  │
+  │ resting?       │      │ ≥ 0.70              │
+  └────────┬───────┘      └──────────┬──────────┘
+           │                         │
+     ┌─────┴─────┐            ┌──────┴──────┐
+     │ Resting   │            │  Commit     │
+     │ >30 frames│            │  letter to  │
+     │ → close   │            │  word       │
+     │  sentence │            └──────┬──────┘
+     └─────┬─────┘                   │
+           │                         ▼
+           │              ┌──────────────────────┐
+           │              │ Suggest completions  │
+           │              │ from dictionary      │
+           │              └──────────────────────┘
+           │
+           ▼
+  ┌─────────────────────┐
+  │ Sign Mode: build    │
+  │ 218-dim frame       │
+  │ Push to FIFO[45]    │
+  └────────┬────────────┘
+           │
+           ▼
+  ┌──────────────────┐
+  │ Detect NMM from  │
+  │ face landmarks   │
+  │ (eyebrows, nod,  │
+  │  head shake)     │
+  └────────┬─────────┘
+           │
+           ▼
+  ┌──────────────────────────────┐
+  │ POST /predict                │
+  │ { user_id, gesture[45×218],  │
+  │   nmm: {raise,furrow,...} }  │
+  └────────┬─────────────────────┘
+           │
+           ▼
+  ┌──────────────────────────────┐
+  │ Response: predicted_text,    │
+  │ confidence, top5             │
+  └────────┬─────────────────────┘
+           │
+           ▼
+  ┌──────────────────────────────────┐
+  │ Confidence ≥ threshold (0.85)?   │
+  │ AND stable 3 consecutive frames? │
+  └────────┬─────────────────────────┘
+           │ YES
+           ▼
+  ┌───────────────────┐
+  │ Add gloss to      │
+  │ glossSequence[]   │
+  └────────┬──────────┘
+           │
+           ▼
+  ┌───────────────────────────────┐
+  │ Resting 30+ frames detected? │
+  └────────┬──────────────────────┘
+           │ YES
+           ▼
+  ┌───────────────────────────────────────────┐
+  │ POST /generate-sentence (or /ai/gloss-to- │
+  │ english) with glosses + NMM summary       │
+  └────────┬──────────────────────────────────┘
+           │
+           ▼
+  ┌────────────────────┐     ┌─────────────────────┐
+  │ Watsonx available? │─YES─│ LLM generates fluent │
+  │                    │     │ English sentence     │
+  └────────┬───────────┘     └──────────────────────┘
+           │ NO
+           ▼
+  ┌──────────────────────────────────────────────────┐
+  │ Rule-based sentence_generator.generate_sentence()│
+  │ (subject + verb + object + tense + NMM)          │
+  └────────┬─────────────────────────────────────────┘
+           │
+           ▼
+  ┌─────────────────────────┐
+  │ Display in Sentence Box │
+  │ + TTS speak aloud       │
+  └─────────────────────────┘
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="activity2">3. Activity Diagram — Text-to-Sign Flow</h2>
+<div class="diagram-box">
+<pre>
+  [User opens /text-to-sign]
+          │
+          ▼
+  ┌────────────────────────────┐
+  │  User types / speaks text  │  ← STT via Web Speech API (optional)
+  └────────────┬───────────────┘
+               │
+               ▼
+  ┌──────────────────────────────┐
+  │  POST /text-to-sign          │
+  │  { text: "I am happy" }      │
+  └────────────┬─────────────────┘
+               │
+               ▼
+  ┌──────────────────────────────┐
+  │  _tokenise(text)             │
+  │  → ["i","am","happy"]        │
+  └────────────┬─────────────────┘
+               │
+               ▼
+  ┌──────────────────────────────────────────────────┐
+  │  _resolve_tokens() for each token:               │
+  │  1. Check bigram (2-word phrase) in _WORD_LOOKUP │
+  │  2. Exact single-word lookup                     │
+  │  3. _fuzzy_match() → stem candidates             │
+  │     then difflib close-match (cutoff 0.80)       │
+  └────────────┬─────────────────────────────────────┘
+               │
+               ▼
+  ┌──────────────────────────────────────────────────┐
+  │  For each matched word:                          │
+  │  • found=true  → video_url = /video/{id}         │
+  │                  OR external_url (CDN)           │
+  │  • found=false → display "not found" indicator  │
+  └────────────┬─────────────────────────────────────┘
+               │
+               ▼
+  ┌──────────────────────────────────┐
+  │  Response: { words[], coverage,  │
+  │             found_words, total } │
+  └────────────┬─────────────────────┘
+               │
+               ▼
+  ┌──────────────────────────────────────┐
+  │  Frontend: render word chips         │
+  │  Select first available word         │
+  └────────────┬─────────────────────────┘
+               │
+               ▼
+  ┌───────────────────────────────────────┐
+  │  Video player loads mp4               │
+  │  ┌──────────────────────────────────┐ │
+  │  │ local /video/{id} available?     │ │
+  │  │  YES → stream from Flask         │ │
+  │  │  NO  → try external_url (CDN)    │ │
+  │  └──────────────────────────────────┘ │
+  └────────────┬──────────────────────────┘
+               │
+               ▼
+  ┌────────────────────────────────┐
+  │ Auto-advance ON?               │
+  │  YES → onEnded → next word     │
+  │  NO  → user clicks Next        │
+  └────────────────────────────────┘
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="class">4. Class Diagram</h2>
+<p>Key classes and their relationships across backend Python and frontend React contexts.</p>
+<div class="diagram-box">
+<pre>
+┌──────────────────────────────────┐
+│  «module» config.Config          │
+├──────────────────────────────────┤
+│ + MONGO_URI: str                 │
+│ + SECRET_KEY: str                │
+│ + IBM_API_KEY: str               │
+│ + WATSONX_PROJECT_ID: str        │
+│ + GOOGLE_CLIENT_ID: str          │
+│ + GMAIL_USER: str                │
+└──────────────────────────────────┘
+              ▲ uses
+┌─────────────────────────────────────────────────────────────┐
+│  «Flask App» app                                             │
+├─────────────────────────────────────────────────────────────┤
+│ + mongo: PyMongo                                             │
+│ + blueprints: [auth, gesture, history, text_to_sign,        │
+│                ai_bp, otp_bp]                               │
+├─────────────────────────────────────────────────────────────┤
+│ + health() → JSON                                            │
+│ + serve_react(path) → HTML/file                             │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────┐    ┌───────────────────────────────┐
+│  «Blueprint» auth             │    │  «Blueprint» gesture          │
+├───────────────────────────────┤    ├───────────────────────────────┤
+│ + mongo: PyMongo              │    │ + mongo: PyMongo              │
+├───────────────────────────────┤    ├───────────────────────────────┤
+│ + register()                  │    │ + predict()                   │
+│ + login()                     │    │ + generate_sentence_route()   │
+│ + profile()                   │    │ + predict_letter_route()      │
+│ + google_login()              │    │ + generate_letter_sentence()  │
+│ + google_callback()           │    │ + model_status()              │
+│ + token_required(f) [deco]    │    │ + model_reload()              │
+└───────────────────────────────┘    └───────────────────────────────┘
+
+┌───────────────────────────────┐    ┌───────────────────────────────┐
+│  «Blueprint» ai_bp            │    │  «Blueprint» text_to_sign     │
+├───────────────────────────────┤    ├───────────────────────────────┤
+│                               │    │ + _WORD_LOOKUP: dict          │
+├───────────────────────────────┤    │ + _VOCAB_LIST: list           │
+│ + improve_text()              │    ├───────────────────────────────┤
+│ + learning_tip()              │    │ + convert_text()              │
+│ + sentence_insights()         │    │ + serve_video(video_id)       │
+│ + gloss_to_english()          │    │ + vocabulary()                │
+│ + letter_to_sentence()        │    │ + dataset_status()            │
+│ + ai_status()                 │    └───────────────────────────────┘
+└───────────────────────────────┘
+
+┌────────────────────────────────────┐
+│  «module» services.watsonx         │
+├────────────────────────────────────┤
+│ + IBM_API_KEY: str                 │
+│ + MODEL_ID: str                    │
+│ + _cached_token: str               │
+│ + _token_expiry: float             │
+├────────────────────────────────────┤
+│ + _get_iam_token() → str           │
+│ + generate(prompt, ...) → str      │
+│ + is_configured() → bool          │
+└────────────────────────────────────┘
+
+┌────────────────────────────────────┐
+│  «module» ml.predictor             │
+├────────────────────────────────────┤
+│ + _model: GestureBridgeLSTM|None   │
+│ + _labels: dict[int,str]           │
+│ + _num_classes: int                │
+│ + _feat_mean: ndarray              │
+│ + _feat_std: ndarray               │
+├────────────────────────────────────┤
+│ + _initialize()                    │
+│ + predict_gesture(seq) → dict      │
+│ + reload_model()                   │
+└────────────────────────────────────┘
+
+┌────────────────────────────────────┐
+│  «nn.Module» GestureBridgeLSTM     │
+├────────────────────────────────────┤
+│ + lstm1: LSTM(218→128, bidir)      │
+│ + lstm2: LSTM(256→64, bidir)       │
+│ + attention: TemporalAttention     │
+│ + fc1: Linear(128→256)             │
+│ + out: Linear(256→N_classes)       │
+├────────────────────────────────────┤
+│ + forward(x: Tensor) → Tensor      │
+└────────────────────────────────────┘
+          ▲ used by
+┌────────────────────────────────────┐
+│  «nn.Module» TemporalAttention     │
+├────────────────────────────────────┤
+│ + attn: Linear(H→1)                │
+├────────────────────────────────────┤
+│ + forward(x) → context vector      │
+└────────────────────────────────────┘
+
+┌────────────────────────────────────┐
+│  «class» ml.letter_predictor       │
+│           LetterSession            │
+├────────────────────────────────────┤
+│ - _stable_letter: str              │
+│ - _stable_count: int               │
+│ - _cooldown: int                   │
+│ - _word: str                       │
+│ - _traj: deque[(x,y)]              │
+├────────────────────────────────────┤
+│ + push(landmarks, tip_xy) → dict   │
+│ + flush_word() → str               │
+│ + suggest(partial, n) → list[str]  │ [static]
+│ + reset()                          │
+│ + current_word: str [property]     │
+│ + committed_words: list [property] │
+└────────────────────────────────────┘
+
+┌────────────────────────────────────┐
+│  «MongoDB Collections»             │
+├────────────────────────────────────┤
+│ users         { name, email,       │
+│                password, created } │
+│ gesture_history { user_id, gesture,│
+│                   predicted_text,  │
+│                   confidence, top5,│
+│                   nmm, timestamp } │
+│ otp_codes     { email, code,       │
+│                 expires_at,        │
+│                 verified }         │
+└────────────────────────────────────┘
+
+<!-- FRONTEND -->
+┌────────────────────────────────────┐
+│  «React Context» AuthContext       │
+├────────────────────────────────────┤
+│ + user: {name,email}|null          │
+│ + token: string|null               │
+│ + loading: bool                    │
+├────────────────────────────────────┤
+│ + login(token, user)               │
+│ + loginAsGuest()                   │
+│ + logout()                         │
+│ + updateUser(partial)              │
+└────────────────────────────────────┘
+
+┌────────────────────────────────────┐
+│  «React Context» SettingsContext   │
+├────────────────────────────────────┤
+│ + theme: 'light'|'dark'            │
+│ + language: 'ASL'|'ISL'|...        │
+│ + recognitionMode: 'word'|'letter' │
+│ + confidenceThreshold: 0-1         │
+│ + captureInterval: number (ms)     │
+├────────────────────────────────────┤
+│ + toggleTheme()                    │
+│ + updateSettings(partial)          │
+└────────────────────────────────────┘
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="sequence">5. Sequence Diagram — Sign Recognition Pipeline</h2>
+<div class="diagram-box">
+<pre>
+  Browser/React   MediaPipe CDN    Flask API     ml.predictor   MongoDB     Watsonx
+      │               │               │               │             │          │
+      │ loadScript()  │               │               │             │          │
+      │──────────────►│               │               │             │          │
+      │◄─────────────── scripts loaded                │             │          │
+      │               │               │               │             │          │
+      │ getUserMedia() (webcam start) │               │             │          │
+      │               │               │               │             │          │
+      │  every 150ms  │               │               │             │          │
+      │ frame from camera             │               │             │          │
+      │──────────────►│               │               │             │          │
+      │ holistic.process(frame)       │               │             │          │
+      │◄──────────────│ landmarks result              │             │          │
+      │               │               │               │             │          │
+      │ buildFrameVector(results)     │               │             │          │
+      │ → vec[218]    │               │               │             │          │
+      │               │               │               │             │          │
+      │ push vec to FIFO[45]          │               │             │          │
+      │               │               │               │             │          │
+      │ detect NMM from face lms      │               │             │          │
+      │               │               │               │             │          │
+      │ POST /predict {user_id,gesture,nmm}           │             │          │
+      │───────────────────────────────►               │             │          │
+      │               │               │ predict_gesture(seq)        │          │
+      │               │               │───────────────►             │          │
+      │               │               │   pad_or_truncate([45×218]) │          │
+      │               │               │   z-score normalize         │          │
+      │               │               │   model.forward(tensor)     │          │
+      │               │               │   softmax → probs[]         │          │
+      │               │               │◄──────────── {word, conf, top5}        │
+      │               │               │               │             │          │
+      │               │               │ insert gesture_history      │          │
+      │               │               │─────────────────────────────►          │
+      │               │               │               │             │          │
+      │◄─────────────────────────────── {predicted_text, confidence, top5}     │
+      │               │               │               │             │          │
+      │ stable 3 frames same word?    │               │             │          │
+      │               │               │               │             │          │
+      │ [resting 30 frames]           │               │             │          │
+      │ POST /generate-sentence {glosses, nmm}        │             │          │
+      │───────────────────────────────►               │             │          │
+      │               │               │               │             │          │
+      │               │               │ is_configured()?            │          │
+      │               │               │──────────────────────────────────────►│
+      │               │               │◄──────────────────────────── true/false│
+      │               │               │               │             │          │
+      │               │               │ [if Watsonx] generate(prompt)         │
+      │               │               │──────────────────────────────────────►│
+      │               │               │◄────────────────────────── English str│
+      │               │               │               │             │          │
+      │               │               │ [fallback] generate_sentence(glosses,nmm)
+      │               │               │───────────────►             │          │
+      │               │               │◄──────────────rule-based str│          │
+      │               │               │               │             │          │
+      │◄──────────────────────────────── {sentence}   │             │          │
+      │               │               │               │             │          │
+      │ display + TTS speak aloud     │               │             │          │
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="sequence2">6. Sequence Diagram — User Authentication</h2>
+<div class="diagram-box">
+<pre>
+  Browser/React     Flask Auth     MongoDB       Gmail SMTP    Google OAuth
+      │                 │              │               │             │
+      │  [Email Registration]          │               │             │
+      │ POST /otp/send {email}         │               │             │
+      │────────────────►               │               │             │
+      │                │ generate 6-digit code         │             │
+      │                │ upsert otp_codes              │             │
+      │                │──────────────►               │             │
+      │                │ _send_email(email, code)      │             │
+      │                │───────────────────────────────►             │
+      │                │◄────────────────────────── delivered        │
+      │◄─────────────── {message: "OTP sent"}          │             │
+      │                │              │               │             │
+      │ POST /otp/verify {email, code}                 │             │
+      │────────────────►               │               │             │
+      │                │ find otp_codes {email}        │             │
+      │                │──────────────►                │             │
+      │                │◄──────────── record           │             │
+      │                │ check expiry + code match     │             │
+      │                │ set verified=true             │             │
+      │                │──────────────►                │             │
+      │◄─────────────── {valid: true}  │               │             │
+      │                │              │               │             │
+      │ POST /register {name,email,password}           │             │
+      │────────────────►               │               │             │
+      │                │ bcrypt.hashpw(password)       │             │
+      │                │ insert users {name,email,hash}│             │
+      │                │──────────────►                │             │
+      │◄─────────────── {message: "registered"}        │             │
+      │                │              │               │             │
+      │ POST /login {email,password}   │               │             │
+      │────────────────►               │               │             │
+      │                │ find users    │               │             │
+      │                │ bcrypt.checkpw()              │             │
+      │                │ jwt.encode(email, exp=24h)    │             │
+      │◄─────────────── {token: "eyJ..."}              │             │
+      │                │              │               │             │
+      │  [Google OAuth]                │               │             │
+      │ GET /auth/google               │               │             │
+      │────────────────►               │               │             │
+      │                │ Flow.authorization_url()      │             │
+      │◄─────────────── 302 redirect                   │             │
+      │───────────────────────────────────────────────────────────► │
+      │◄─────────────────────────────────────────────── code + state│
+      │ GET /auth/google/callback?code=...             │             │
+      │────────────────►               │               │             │
+      │                │ flow.fetch_token()            │             │
+      │                │ id_token.verify()             │             │
+      │                │ upsert users {email, name}    │             │
+      │                │──────────────►                │             │
+      │                │ jwt.encode(email)             │             │
+      │◄─────────────── 302 /auth/callback?token=...   │             │
+      │ store token in localStorage    │               │             │
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="component">7. Component Diagram</h2>
+<div class="diagram-box">
+<pre>
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         GestureBridge System                                 │
+│                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │                      Frontend (React + Vite)                          │  │
+│  │                                                                       │  │
+│  │  ┌──────────┐  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐ │  │
+│  │  │  pages/  │  │ components/  │  │  context/    │  │ services/   │ │  │
+│  │  │          │  │              │  │              │  │             │ │  │
+│  │  │ Landing  │  │ AppShell     │  │ AuthContext  │  │ api.js      │ │  │
+│  │  │ Auth     │  │ Sidebar      │  │ Settings-    │  │ (Axios)     │ │  │
+│  │  │ Dashboard│  │ Topbar       │  │ Context      │  │             │ │  │
+│  │  │ SignToText│  │ ProtectedRte│  │              │  │             │ │  │
+│  │  │ TextToSign│  │ Alert       │  │              │  │             │ │  │
+│  │  │ History  │  │ LoadingSpin │  │              │  │             │ │  │
+│  │  │ AccountSt│  │              │  │              │  │             │ │  │
+│  │  └─────┬────┘  └──────────────┘  └──────────────┘  └──────┬──────┘ │  │
+│  │        │                                                    │        │  │
+│  │        │ renders via AppShell               API calls via  │        │  │
+│  │        │ (layout)                           axios + JWT    │        │  │
+│  └────────┼────────────────────────────────────────────┬──────┘        │  │
+│           │                                             │               │  │
+│           │  MediaPipe CDN (WebAssembly holistic)       │               │  │
+│           │  ↕ hand/face/pose landmarks                 │               │  │
+│           │                                             │               │  │
+└───────────┼─────────────────────────────────────────────┼───────────────┘  │
+            │                                             │
+            │                    REST API (HTTP/JSON)     │
+            ▼                                             ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      Backend (Flask + Gunicorn)                              │
+│                                                                              │
+│  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐  ┌─────────────────┐  │
+│  │ routes/     │  │ ml/           │  │ services/   │  │ data/           │  │
+│  │             │  │               │  │             │  │                 │  │
+│  │ auth.py     │  │ predictor.py  │  │ watsonx.py  │  │ WLASL/videos/   │  │
+│  │ gesture.py  │  │ letter_       │  │             │  │ curated_WLASL   │  │
+│  │ history.py  │  │ predictor.py  │  │             │  │ .json           │  │
+│  │ text_to_    │  │ sentence_     │  │             │  │                 │  │
+│  │ sign.py     │  │ generator.py  │  │             │  │                 │  │
+│  │ ai.py       │  │ model.py      │  │             │  │                 │  │
+│  │ otp.py      │  │ utils/        │  │             │  │                 │  │
+│  └──────┬──────┘  │  landmarks.py │  └──────┬──────┘  └─────────────────┘  │
+│         │         │  preprocess.py│         │                               │
+│         │         └───────────────┘         │                               │
+│         │                                   │ HTTPS REST                    │
+│         │   ┌────────────────────┐          ▼                               │
+│         │   │  MongoDB Atlas     │   ┌─────────────────────┐               │
+│         │   │  ----------------  │   │  IBM Watsonx.ai      │               │
+│         ▼   │  users             │   │  Llama-3.3-70B       │               │
+│  PyMongo ──►│  gesture_history   │   │  IAM Token Auth      │               │
+│             │  otp_codes         │   └─────────────────────┘               │
+│             └────────────────────┘                                          │
+│                                                                              │
+│  ┌──────────────────────────────────────────────────────────────────────┐  │
+│  │  models/ (scikit-learn joblib files)                                  │  │
+│  │  asl_letter_model.joblib  asl_letter_scaler.joblib                   │  │
+│  │  asl_letter_meta.json     asl_letter_bundle.joblib                   │  │
+│  └──────────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────────┘
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="package">8. Package Diagram</h2>
+<div class="diagram-box">
+<pre>
+┌─────────────────────────────────────────────────────┐
+│  «package» GestureBridge                            │
+│                                                     │
+│  ┌──────────────────────────────────────────────┐  │
+│  │  «package» backend                           │  │
+│  │                                              │  │
+│  │  ┌───────────┐    ┌───────────────────────┐  │  │
+│  │  │  routes   │    │  ml                   │  │  │
+│  │  │  ──────── │    │  ─────────────────    │  │  │
+│  │  │ auth.py   │    │  predictor.py         │  │  │
+│  │  │ gesture.py│    │  letter_predictor.py  │  │  │
+│  │  │ history.py│───►│  sentence_generator.py│  │  │
+│  │  │ text_to_  │    │  model.py             │  │  │
+│  │  │  sign.py  │    │  train.py             │  │  │
+│  │  │ ai.py     │    │  train_asl_letter.py  │  │  │
+│  │  │ otp.py    │    │  evaluate.py          │  │  │
+│  │  └───────────┘    │  utils/               │  │  │
+│  │        │          │    landmarks.py        │  │  │
+│  │        │          │    preprocess.py       │  │  │
+│  │        │          └───────────────────────┘  │  │
+│  │        │                     │               │  │
+│  │        ▼                     ▼               │  │
+│  │  ┌───────────┐    ┌───────────────────────┐  │  │
+│  │  │ services  │    │  models/ (artefacts)  │  │  │
+│  │  │ ───────── │    │  ─────────────────    │  │  │
+│  │  │ watsonx.py│    │  *.joblib  *.json     │  │  │
+│  │  └───────────┘    └───────────────────────┘  │  │
+│  │                                              │  │
+│  │  app.py   config.py   database/   data/     │  │
+│  └──────────────────────────────────────────────┘  │
+│                                                     │
+│  ┌──────────────────────────────────────────────┐  │
+│  │  «package» frontend/src                      │  │
+│  │                                              │  │
+│  │  ┌──────────┐   ┌────────────┐  ┌────────┐  │  │
+│  │  │  pages   │   │ components │  │context │  │  │
+│  │  │ ─────────│   │ ──────────-│  │────────│  │  │
+│  │  │ Landing  │   │ AppShell   │  │ Auth-  │  │  │
+│  │  │ Auth     │   │ Sidebar    │  │ Context│  │  │
+│  │  │ Dashboard│   │ Topbar     │  │ Setting│  │  │
+│  │  │ SignToTxt│   │ Protected  │  │ Context│  │  │
+│  │  │ TextToSgn│   │ Route      │  │        │  │  │
+│  │  │ History  │   │ Alert      │  └────────┘  │  │
+│  │  │ AccountSt│   │ LoadSpin   │              │  │
+│  │  └──────────┘   └────────────┘              │  │
+│  │                                              │  │
+│  │  services/api.js   App.jsx   main.jsx        │  │
+│  └──────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────┘
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="deployment">9. Deployment Diagram</h2>
+<div class="diagram-box">
+<pre>
+┌──────────────────────────────────────────────────────────────────────────┐
+│  «device» User's Browser (Chrome / Firefox / Edge)                        │
+│                                                                           │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │  «execution environment» React SPA (Vite)                          │  │
+│  │  ─────────────────────────────────────────────────────────────     │  │
+│  │  • HTML/CSS/JS served from Flask /static/dist or Vite dev server   │  │
+│  │  • MediaPipe WebAssembly runs entirely client-side                  │  │
+│  │  • Web Speech API (TTS/STT) — browser built-in                     │  │
+│  │  • localStorage: JWT token, user info, settings                     │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+│           │ HTTPS REST (axios)                                            │
+└───────────┼──────────────────────────────────────────────────────────────┘
+            │
+            ▼
+┌──────────────────────────────────────────────────────────────────────────┐
+│  «server» Render.com / local (Linux, Python 3.12)                         │
+│                                                                           │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │  «execution environment» Gunicorn + Flask                          │  │
+│  │  ─────────────────────────────────────────────────────────────     │  │
+│  │  PORT: 5000  (Render sets PORT env var)                            │  │
+│  │  Workers: gunicorn (see Procfile)                                  │  │
+│  │                                                                    │  │
+│  │  app.py — entrypoint, blueprint registration                       │  │
+│  │  routes/ — auth, gesture, history, text_to_sign, ai, otp          │  │
+│  │  ml/     — PyTorch BiLSTM model (CPU inference)                   │  │
+│  │           scikit-learn letter model (joblib)                       │  │
+│  │  data/WLASL/videos/ — optional mp4 dataset                        │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+│           │                   │                    │                      │
+└───────────┼───────────────────┼────────────────────┼──────────────────────┘
+            │                   │                    │
+            ▼                   ▼                    ▼
+┌──────────────────┐  ┌──────────────────┐  ┌─────────────────────────┐
+│ «cloud service»  │  │ «cloud service»  │  │ «cloud service»          │
+│ MongoDB Atlas    │  │ IBM Watsonx.ai   │  │ Google OAuth 2.0        │
+│ ──────────────── │  │ ──────────────── │  │ ─────────────────────── │
+│ users collection │  │ Llama-3.3-70B   │  │ accounts.google.com     │
+│ gesture_history  │  │ IAM token auth  │  │ userinfo.email profile  │
+│ otp_codes        │  │ text generation │  │                         │
+└──────────────────┘  └──────────────────┘  └─────────────────────────┘
+            ▲
+            │ Gmail SMTP SSL:465
+┌──────────────────────┐
+│ «service» Gmail SMTP │
+│ OTP email delivery   │
+└──────────────────────┘
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="dfd0">10. Data Flow Diagram — Level 0 (Context Diagram)</h2>
+<div class="diagram-box">
+<pre>
+                  ┌──────────────────────────────┐
+   sign video ───►│                              │───► English text (TTS)
+   (webcam)       │                              │
+                  │     GestureBridge System     │
+   typed text ───►│                              │───► sign videos (mp4)
+   (keyboard)     │                              │
+                  │                              │───► translation history
+   credentials ──►│                              │
+                  └──────────────────────────────┘
+                          ▲           │
+                          │           ▼
+                    OTP code      AI-improved
+                    (Gmail)       sentences
+                                  (Watsonx)
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="dfd1">11. Data Flow Diagram — Level 1</h2>
+<div class="diagram-box">
+<pre>
+ [User]
+   │
+   ├─ credentials ──────────────►  P1. Authentication
+   │                                  │ store/verify  → D1. users (MongoDB)
+   │◄── JWT token ───────────────────┘
+   │
+   ├─ webcam frames ────────────►  P2. Landmark Extraction (MediaPipe, browser)
+   │                                  │ 218-dim vectors (45 frames)
+   │                                  ▼
+   │                              P3. Gesture Prediction (Flask /predict)
+   │                                  │ GestureBridgeLSTM inference
+   │                                  │ store record  → D2. gesture_history
+   │◄── predicted word + conf ────────┘
+   │
+   ├─ gloss sequence ───────────►  P4. Sentence Generation
+   │                                  │ Watsonx AI  OR  rule-based generator
+   │◄── English sentence ─────────────┘
+   │
+   ├─ typed text ───────────────►  P5. Text-to-Sign Lookup
+   │                                  │ tokenise → stem → fuzzy match
+   │                                  │ curated_WLASL.json  → D3. WLASL videos
+   │◄── word list + video URLs ───────┘
+   │
+   ├─ user_id ──────────────────►  P6. History Retrieval
+   │                                  │ query  → D2. gesture_history
+   │◄── past translations ────────────┘
+   │
+   ├─ word ─────────────────────►  P7. AI Learning Tip
+   │◄── tip + fun_fact (Watsonx) ─────┘
+   │
+   ├─ email ────────────────────►  P8. OTP Flow
+   │◄── verification code ────────────┤ generate + store → D4. otp_codes
+   ├─ OTP code                        │ send via Gmail SMTP
+   │◄── valid: true ──────────────────┘
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="datadesign">12. Data Design Diagram</h2>
+<p>MongoDB collections and their document shapes plus the joblib model artefact relationships.</p>
+<div class="diagram-box">
+<pre>
+MongoDB Atlas
+════════════════════════════════════════════════════════
+
+Collection: users
+┌────────────────────────────────────────────────────────┐
+│ _id        : ObjectId (auto)                           │
+│ name       : String   — display name                  │
+│ email      : String   — unique index                  │
+│ password   : Binary   — bcrypt hash (null if Google)  │
+│ created_at : Date     — UTC timestamp                  │
+└────────────────────────────────────────────────────────┘
+
+Collection: gesture_history
+┌────────────────────────────────────────────────────────┐
+│ _id           : ObjectId (auto)                        │
+│ user_id       : String  — user email                   │
+│ gesture_input : Array   — [[f0_dim0..dim217],...]      │
+│                           45 frames × 218 features     │
+│ predicted_text: String  — top-1 label                  │
+│ confidence    : Float   — 0.0 – 1.0                    │
+│ top5          : Array   — [{word, confidence}, ...]    │
+│ nmm           : Object  — {eyebrow_raise, eyebrow_    │
+│                            furrow, head_shake,         │
+│                            head_nod, mouth_open}       │
+│ timestamp     : Date    — UTC                          │
+└────────────────────────────────────────────────────────┘
+
+Collection: otp_codes
+┌────────────────────────────────────────────────────────┐
+│ _id        : ObjectId (auto)                           │
+│ email      : String  — unique per user                 │
+│ code       : String  — 6-digit numeric                 │
+│ expires_at : Date    — UTC (now + 10 min)              │
+│ verified   : Boolean — false until /otp/verify         │
+└────────────────────────────────────────────────────────┘
+
+Model Artefacts (filesystem: backend/models/)
+════════════════════════════════════════════════════════
+
+asl_letter_model.joblib   — sklearn RandomForest/SVM trained on ASL letters
+asl_letter_scaler.joblib  — StandardScaler fitted on training data
+asl_letter_meta.json      — { classes[26], accuracy, trained_at, n_samples }
+asl_letter_bundle.joblib  — fallback bundle { model, label_encoder }
+
+backend/ml/ (PyTorch gesture model — loaded on startup)
+gesture_model.pt          — GestureBridgeLSTM state_dict (num_classes=N)
+labels.json               — { "0": "hello", "1": "thanks", ... }
+model_meta.json           — { num_classes, sequence_length=45, landmark_vector_size=218 }
+normalizer.npz            — { mean[218], std[218] } z-score params
+
+backend/data/WLASL/
+curated_WLASL.json        — [ { gloss, instances:[{video_id,split,url}] } ]
+videos/00001.mp4 …        — local WLASL mp4 clips (optional, CDN fallback)
+
+Feature Vector Layout (218-dim per frame)
+════════════════════════════════════════════════════════
+ [0-62]    Left hand  (21 lms × 3) — wrist-normalised
+ [63-125]  Right hand (21 lms × 3) — wrist-normalised
+ [126-149] Pose       ( 8 joints × 3) — shoulder-normalised
+ [150-176] Face       ( 9 points × 3) — nose-anchored
+ [177-179] Velocity   (3) — dominant wrist Δxyz / frame
+ [180-181] Interaction(2) — dist to lips, dist to non-dom palm
+ [182-184] Acceleration(3) — Δvelocity
+ [185-194] NMM        (10) — brow raise/furrow, pitch/yaw/roll Δ, mouth, smile, depth, asymmetry
+ [195-209] FingerAngles(15)— joint angles in radians
+ [210-213] WristQuat  (4) — orientation quaternion
+ [214-217] BodyDist   (4) — fingertips to chin/chest/abdomen/non-dom
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="navtree">13. Navigation Tree</h2>
+<p>All routes, guard conditions, and page relationships in the React SPA.</p>
+<div class="diagram-box">
+<pre>
+/ (root)
+├── /                     Landing.jsx           [PUBLIC]
+│     ├── Link → /login
+│     ├── Link → /register
+│     └── Link → /dashboard
+│
+├── /login                Auth.jsx (defaultTab="login")  [PUBLIC]
+│     ├── POST /login     → store token → redirect /dashboard
+│     ├── GET /auth/google → Google OAuth redirect
+│     └── Link ↔ /register
+│
+├── /register             Auth.jsx (defaultTab="register")  [PUBLIC]
+│     ├── POST /otp/send → send email OTP
+│     ├── POST /otp/verify → confirm code
+│     ├── POST /register → create account
+│     └── Link ↔ /login
+│
+├── /auth/callback        AuthCallback.jsx      [PUBLIC]
+│     └── parse ?token=&name=&email= → login() → /dashboard
+│
+├── /dashboard            Dashboard.jsx         [PROTECTED]
+│     ├── GET /history/:email
+│     ├── GET /model/status
+│     ├── Link → /sign-to-text
+│     ├── Link → /text-to-sign
+│     ├── Link → /history
+│     └── Link → /account
+│
+├── /sign-to-text         SignToText.jsx         [PROTECTED]
+│     ├── MediaPipe CDN scripts (dynamically loaded)
+│     ├── POST /predict
+│     ├── POST /predict-letter
+│     ├── POST /generate-sentence
+│     ├── POST /ai/improve-text
+│     └── AppShell → Sidebar + Topbar
+│
+├── /text-to-sign         TextToSign.jsx         [PROTECTED]
+│     ├── POST /text-to-sign
+│     ├── GET /text-to-sign/vocabulary
+│     ├── GET /video/:id
+│     └── AppShell → Sidebar + Topbar
+│
+├── /history              History.jsx            [PROTECTED]
+│     ├── GET /history/:userId
+│     ├── POST /ai/sentence-insights
+│     └── AppShell
+│
+├── /account              AccountSettings.jsx    [PROTECTED]
+│     ├── GET /profile
+│     ├── Settings: theme, language, recognitionMode
+│     ├── Confidence threshold slider
+│     └── AppShell
+│
+├── /profile              → redirect /account    [legacy]
+├── /settings             → redirect /account    [legacy]
+└── /*                    → redirect /           [fallback]
+
+Guard: ProtectedRoute
+  • Reads token from AuthContext
+  • While loading=true → show spinner
+  • If no token → navigate to /login
+  • If token → render children
+
+AppShell layout:
+  ┌──────────────────────────────────────┐
+  │  Topbar (logo + user menu + theme)   │
+  ├────────────┬─────────────────────────┤
+  │  Sidebar   │  <children> (page)      │
+  │  (nav links│                         │
+  │   + logout)│                         │
+  └────────────┴─────────────────────────┘
+</pre>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<h2 id="statemachine">14. State Machine — Sign Recognition Engine</h2>
+<p>The motion states managed inside SignToText.jsx during live prediction.</p>
+<div class="diagram-box">
+<pre>
+                       [camera starts]
+                              │
+                              ▼
+                    ┌─────────────────┐
+               ┌───►│     IDLE        │◄──── [no hands detected]
+               │    │ (no hands)      │
+               │    └────────┬────────┘
+               │             │ hands detected
+               │             ▼
+               │    ┌─────────────────┐
+               │    │   SIGNING       │◄──── wrist speed > VELOCITY_REST_THRESH
+               │    │ (motion active) │
+               │    └────────┬────────┘
+               │             │ speed < VELOCITY_REST_THRESH
+               │             ▼
+               │    ┌─────────────────┐
+               │    │    HOLDING      │  ←  brief pause mid-sign
+               │    │ (still, <30fr) │
+               │    └────────┬────────┘
+               │             │ >30 consecutive rest frames
+               │             ▼
+               │    ┌─────────────────┐
+               │    │   RESTING       │  ← sentence boundary detected
+               │    │ (sentence end)  │
+               │    └────────┬────────┘
+               │             │ triggers POST /generate-sentence
+               └─────────────┘ then resets glossSequence
+
+Prediction commit logic (Sign Mode):
+  ┌──────────────────────────────────────────────────────┐
+  │  Per-inference-tick:                                  │
+  │  1. Confidence ≥ 0.85 ?                              │
+  │     NO  → do not commit                              │
+  │     YES → compare to lastCommitted word              │
+  │  2. Same as lastCommitted?                           │
+  │     YES → stableCount++                             │
+  │     NO  → stableCount = 1, update candidate          │
+  │  3. stableCount ≥ STABLE_FRAMES (3)?                │
+  │     YES → commit gloss to glossSequence[]           │
+  │            → start cooldown 800ms                    │
+  │            → reset stableCount                       │
+  └──────────────────────────────────────────────────────┘
+
+Fingerspelling auto-detect (Spell Mode auto-switch):
+  baseHand stable (>10 frames) AND
+  dominantHand micro-motion (0.025 > speed < 0.06)
+  → fsMode = true (purple UI tint)
+  
+  baseHand moves (bSpeed > 0.03) → fsMode = false
+</pre>
+</div>
+
+<footer>
+  <p>Made with IBM Bob &nbsp;|&nbsp; GestureBridge System Diagrams &nbsp;|&nbsp; Document 1 of 3</p>
+</footer>
+</div>
+</body>
+</html>

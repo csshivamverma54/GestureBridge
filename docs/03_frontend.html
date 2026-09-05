@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GestureBridge — Frontend Deep Dive</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Segoe UI", system-ui, sans-serif; font-size: 14px; line-height: 1.65; background: #ffffff; color: #1f2328; }
+  .page { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 3.5rem; }
+  h1 { font-size: 1.85rem; font-weight: 800; margin-bottom: .2rem; }
+  .subtitle { color: #57606a; font-size: .9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.25rem; font-weight: 700; margin: 2.8rem 0 .6rem; padding-bottom: .4rem; border-bottom: 2px solid #3b82d4; color: #1f2328; }
+  h3 { font-size: 1rem; font-weight: 700; margin: 1.6rem 0 .4rem; color: #3b82d4; }
+  h4 { font-size: .9rem; font-weight: 700; margin: 1rem 0 .3rem; color: #7c5cd8; }
+  p { color: #57606a; margin-bottom: .55rem; font-size: .88rem; }
+  code { font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: .82rem; background: #f0f3f7; padding: .1rem .35rem; border-radius: 4px; color: #1f2328; }
+  pre { font-family: "Cascadia Code", "Fira Code", Consolas, monospace; font-size: .78rem; background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem; margin: .75rem 0 1rem; overflow-x: auto; line-height: 1.5; color: #1f2328; }
+  .fn-box { background: #f7f8fa; border: 1px solid #e5e7eb; border-left: 4px solid #3b82d4; border-radius: 6px; padding: .85rem 1rem; margin: .75rem 0 1.1rem; }
+  .fn-box.purple { border-left-color: #7c5cd8; }
+  .fn-box.green  { border-left-color: #059669; }
+  .fn-box.orange { border-left-color: #d97706; }
+  .fn-box.red    { border-left-color: #dc2626; }
+  .fn-name { font-family: monospace; font-size: .85rem; font-weight: 700; color: #1f2328; margin-bottom: .3rem; }
+  .fn-sig  { font-family: monospace; font-size: .78rem; color: #57606a; margin-bottom: .45rem; }
+  .fn-desc { font-size: .85rem; color: #57606a; }
+  .fn-desc ul, .fn-desc ol { padding-left: 1.2rem; margin-top: .3rem; }
+  .fn-desc li  { margin: .2rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: .82rem; margin: .5rem 0 .8rem; }
+  th { background: #eef2f8; font-weight: 600; text-align: left; padding: .4rem .65rem; border: 1px solid #e5e7eb; }
+  td { padding: .38rem .65rem; border: 1px solid #e5e7eb; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  .badge { display: inline-block; border-radius: 4px; padding: .1rem .4rem; font-size: .68rem; font-weight: 700; margin-left: .3rem; vertical-align: middle; }
+  .b-hook { background: #dbeafe; color: #1e40af; }
+  .b-ctx  { background: #d1fae5; color: #065f46; }
+  .b-page { background: #ede9fe; color: #5b21b6; }
+  .b-api  { background: #fef3c7; color: #92400e; }
+  .b-comp { background: #fce7f3; color: #9d174d; }
+  .toc { background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 2rem; columns: 2; }
+  .toc ol { padding-left: 1.2rem; }
+  .toc li { margin: .2rem 0; font-size: .83rem; }
+  .toc a { color: #3b82d4; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .file-path { font-family: monospace; font-size: .82rem; background: #1f2328; color: #a5f3fc; padding: .3rem .7rem; border-radius: 4px; display: inline-block; margin-bottom: .8rem; }
+  footer { border-top: 1px solid #e5e7eb; margin-top: 3rem; padding-top: 1rem; text-align: center; font-size: .75rem; color: #57606a; }
+  .note { background: #fffbeb; border-left: 4px solid #f59e0b; padding: .6rem .9rem; border-radius: 4px; font-size: .83rem; color: #78350f; margin: .5rem 0 1rem; }
+  .state-table { width: 100%; border-collapse: collapse; font-size: .82rem; margin: .5rem 0; }
+  .state-table th { background: #eef2f8; padding: .4rem .7rem; border: 1px solid #e5e7eb; font-weight: 600; text-align: left; }
+  .state-table td { padding: .38rem .7rem; border: 1px solid #e5e7eb; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>GestureBridge — Frontend Deep Dive</h1>
+<p class="subtitle">Complete explanation of every React file, every function, every hook, and every component in the frontend.</p>
+
+<div class="toc">
+  <ol>
+    <li><a href="#overview">Architecture Overview</a></li>
+    <li><a href="#main">main.jsx — Entry Point</a></li>
+    <li><a href="#app">App.jsx — Router</a></li>
+    <li><a href="#api">services/api.js — API Layer</a></li>
+    <li><a href="#auth-ctx">context/AuthContext.jsx</a></li>
+    <li><a href="#settings-ctx">context/SettingsContext.jsx</a></li>
+    <li><a href="#appshell">components/AppShell.jsx</a></li>
+    <li><a href="#sidebar">components/Sidebar.jsx</a></li>
+    <li><a href="#topbar">components/Topbar.jsx</a></li>
+    <li><a href="#protected">components/ProtectedRoute.jsx</a></li>
+    <li><a href="#alert">components/Alert.jsx</a></li>
+    <li><a href="#spinner">components/LoadingSpinner.jsx</a></li>
+    <li><a href="#landing">pages/Landing.jsx</a></li>
+    <li><a href="#auth">pages/Auth.jsx</a></li>
+    <li><a href="#authcb">pages/AuthCallback.jsx</a></li>
+    <li><a href="#dashboard">pages/Dashboard.jsx</a></li>
+    <li><a href="#s2t">pages/SignToText.jsx</a></li>
+    <li><a href="#t2s">pages/TextToSign.jsx</a></li>
+    <li><a href="#history">pages/History.jsx</a></li>
+    <li><a href="#account">pages/AccountSettings.jsx</a></li>
+  </ol>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="overview">1. Architecture Overview</h2>
+
+<pre>
+frontend/src/
+├── main.jsx                 ← React DOM mount, global CSS import
+├── App.jsx                  ← BrowserRouter + all routes
+├── index.css                ← CSS variables, global styles, utility classes
+│
+├── context/
+│   ├── AuthContext.jsx      ← JWT + user state (persisted in localStorage)
+│   └── SettingsContext.jsx  ← Theme, language, recognition settings
+│
+├── services/
+│   └── api.js              ← Axios instance + every API call function
+│
+├── components/
+│   ├── AppShell.jsx         ← Layout wrapper: Sidebar + Topbar + main
+│   ├── Sidebar.jsx          ← Left navigation panel
+│   ├── Topbar.jsx           ← Top bar with title, user menu, theme toggle
+│   ├── ProtectedRoute.jsx   ← Auth guard for private routes
+│   ├── Alert.jsx            ← Dismissible notification banner
+│   └── LoadingSpinner.jsx   ← Spinner + skeleton card loaders
+│
+└── pages/
+    ├── Landing.jsx          ← Public marketing page
+    ├── Auth.jsx             ← Login + Register (tabbed, OTP flow)
+    ├── AuthCallback.jsx     ← Google OAuth callback handler
+    ├── Dashboard.jsx        ← Authenticated home with stats
+    ├── SignToText.jsx        ← Main camera + ML translation page (largest file)
+    ├── TextToSign.jsx        ← Text input → sign video playback
+    ├── History.jsx           ← Translation history with search/filter/export
+    └── AccountSettings.jsx  ← Profile + appearance + privacy settings
+</pre>
+
+<p><strong>Data flow:</strong> Every page reads auth state from <code>AuthContext</code> via <code>useAuth()</code> and settings from <code>SettingsContext</code> via <code>useSettings()</code>. API calls go through <code>services/api.js</code> which automatically attaches JWT from localStorage. The JWT is set/cleared via <code>AuthContext.login()</code> / <code>logout()</code>.</p>
+
+<!-- ══════════════════════════ -->
+<h2 id="main">2. main.jsx — Entry Point</h2>
+<div class="file-path">frontend/src/main.jsx</div>
+<p>Mounts the React app to <code>#root</code> (defined in <code>index.html</code>). Imports <code>index.css</code> for global CSS custom properties (design tokens). Uses <code>React.StrictMode</code> for development warnings. No custom logic here.</p>
+
+<!-- ══════════════════════════ -->
+<h2 id="app">3. App.jsx — Router</h2>
+<div class="file-path">frontend/src/App.jsx</div>
+
+<p>Root component. Wraps everything in <code>&lt;SettingsProvider&gt;</code> then <code>&lt;AuthProvider&gt;</code> then <code>&lt;BrowserRouter&gt;</code>. Order matters: Settings must wrap Auth because Auth may read settings in the future.</p>
+
+<h3>Route table</h3>
+<table>
+  <tr><th>Path</th><th>Component</th><th>Guard</th><th>Notes</th></tr>
+  <tr><td><code>/</code></td><td>Landing</td><td>Public</td><td>Marketing homepage</td></tr>
+  <tr><td><code>/login</code></td><td>Auth (defaultTab="login")</td><td>Public</td><td></td></tr>
+  <tr><td><code>/register</code></td><td>Auth (defaultTab="register")</td><td>Public</td><td></td></tr>
+  <tr><td><code>/auth/callback</code></td><td>AuthCallback</td><td>Public</td><td>Google OAuth landing</td></tr>
+  <tr><td><code>/dashboard</code></td><td>Dashboard</td><td>ProtectedRoute</td><td></td></tr>
+  <tr><td><code>/sign-to-text</code></td><td>SignToText</td><td>ProtectedRoute</td><td></td></tr>
+  <tr><td><code>/text-to-sign</code></td><td>TextToSign</td><td>ProtectedRoute</td><td></td></tr>
+  <tr><td><code>/history</code></td><td>History</td><td>ProtectedRoute</td><td></td></tr>
+  <tr><td><code>/account</code></td><td>AccountSettings</td><td>ProtectedRoute</td><td></td></tr>
+  <tr><td><code>/profile</code></td><td>Navigate → /account</td><td>—</td><td>Legacy redirect</td></tr>
+  <tr><td><code>/settings</code></td><td>Navigate → /account</td><td>—</td><td>Legacy redirect</td></tr>
+  <tr><td><code>/*</code></td><td>Navigate → /</td><td>—</td><td>Catch-all fallback</td></tr>
+</table>
+
+<!-- ══════════════════════════ -->
+<h2 id="api">4. services/api.js — API Layer</h2>
+<div class="file-path">frontend/src/services/api.js</div>
+
+<p>All backend communication goes through this file. Uses Axios with a single instance. All functions return Axios Promises.</p>
+
+<h3>Axios instance setup</h3>
+<p><code>BASE_URL = import.meta.env.VITE_API_URL || ''</code> — empty in dev (Vite proxy handles routing to Flask:5000) and production (same origin). Only set explicitly for external CDN/Render split deployment. 30-second timeout.</p>
+
+<h3>Interceptors</h3>
+<div class="fn-box purple">
+  <div class="fn-name">Request interceptor</div>
+  <div class="fn-desc">Before every request, reads <code>gb_token</code> from localStorage and injects <code>Authorization: Bearer &lt;token&gt;</code> header. This means no component needs to manually attach auth headers.</div>
+</div>
+
+<div class="fn-box red">
+  <div class="fn-name">Response interceptor (error handler)</div>
+  <div class="fn-desc">On any 401 response, clears <code>gb_token</code> and <code>gb_user</code> from localStorage and redirects to <code>/login</code>. Handles expired or invalidated JWTs globally without per-page error handling.</div>
+</div>
+
+<h3>Helper functions</h3>
+<div class="fn-box">
+  <div class="fn-name">getErrorMessage(error) → string</div>
+  <div class="fn-desc">Extracts the most useful message from an Axios error. Priority: <code>error.response.data.error</code> → <code>.data.message</code> → <code>error.message</code> → fallback string.</div>
+</div>
+
+<h3>Auth functions</h3>
+<div class="fn-box green">
+  <div class="fn-name">registerUser(data) — POST /register</div>
+  <div class="fn-desc">data: <code>{ name, email, password }</code>. Returns 201 on success.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">loginUser(data) — POST /login</div>
+  <div class="fn-desc">data: <code>{ email, password }</code>. Returns <code>{ token, message }</code>.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">getProfile() — GET /profile</div>
+  <div class="fn-desc">Returns <code>{ name, email }</code> for the authenticated user. Requires JWT.</div>
+</div>
+
+<h3>Gesture prediction functions</h3>
+<div class="fn-box green">
+  <div class="fn-name">predictGesture(userId, gesture, nmm) — POST /predict</div>
+  <div class="fn-desc">gesture: 2D array (T×218). nmm: <code>{ eyebrow_raise, eyebrow_furrow, head_shake, head_nod, mouth_open }</code>. Returns <code>{ predicted_text, confidence, top5, warning? }</code>.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">predictLetter(landmarks, indexTipXY) — POST /predict-letter</div>
+  <div class="fn-desc">landmarks: 63-element flat array. indexTipXY: optional [x,y] for J/Z trajectory detection. Returns <code>{ letter, confidence, top5, is_dynamic }</code>.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">generateSentence(glosses, nmm) — POST /generate-sentence</div>
+  <div class="fn-desc">glosses: string[]. Returns <code>{ sentence, source }</code>.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">generateLetterSentence(letters) — POST /generate-letter-sentence</div>
+  <div class="fn-desc">letters: string (e.g. "hlo"). Returns <code>{ sentence, suggestions[] }</code>.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">getModelStatus() — GET /model/status</div>
+  <div class="fn-desc">Returns <code>{ model_loaded, num_classes, sample_labels, letter_model_loaded, letter_classes, letter_accuracy }</code>.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">reloadModel() — POST /model/reload</div>
+  <div class="fn-desc">Hot-reloads ML models from disk. Returns success/error JSON.</div>
+</div>
+
+<h3>History & Text-to-Sign functions</h3>
+<div class="fn-box green">
+  <div class="fn-name">getHistory(userId) — GET /history/:userId</div>
+  <div class="fn-desc">userId is the user's email. Returns array of translation records.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">textToSign(text, language) — POST /text-to-sign</div>
+  <div class="fn-desc">Returns <code>{ words[], coverage, total_words, found_words }</code>.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">getVocabulary() — GET /text-to-sign/vocabulary</div>
+  <div class="fn-desc">Returns full WLASL supported word list.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">videoUrl(videoPath) → string | null</div>
+  <div class="fn-desc">Prepends BASE_URL if set (external deploy); otherwise returns the path as-is for same-origin resolution.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">bestVideoUrl(wordEntry) → string | null</div>
+  <div class="fn-desc">Selects the best video URL from a word entry: prefers local Flask stream (<code>video_url</code>), falls back to CDN (<code>external_url</code>).</div>
+</div>
+
+<h3>AI (Watsonx) functions</h3>
+<div class="fn-box green">
+  <div class="fn-name">improveText(text) — POST /ai/improve-text</div>
+  <div class="fn-desc">Polishes a raw sign-to-text result into fluent English. Returns <code>{ improved }</code>.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">getLearningTip(word) — POST /ai/learning-tip</div>
+  <div class="fn-desc">Returns <code>{ word, tip, fun_fact }</code> from Watsonx Llama-3.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">getSentenceInsights(translations) — POST /ai/sentence-insights</div>
+  <div class="fn-desc">translations: string[]. Returns <code>{ insights }</code> — a prose paragraph of learning observations.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">getAiStatus() — GET /ai/status</div>
+  <div class="fn-desc">Returns <code>{ configured: bool, model: string|null }</code>.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="auth-ctx">5. context/AuthContext.jsx</h2>
+<div class="file-path">frontend/src/context/AuthContext.jsx</div>
+
+<p>Global authentication state. Persisted to <code>localStorage</code> keys <code>gb_token</code> and <code>gb_user</code>.</p>
+
+<h3>State</h3>
+<table class="state-table">
+  <tr><th>State</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>user</code></td><td>object | null</td><td>{ name, email } or { name, email, isGuest: true }</td></tr>
+  <tr><td><code>token</code></td><td>string | null</td><td>JWT string or "guest-session"</td></tr>
+  <tr><td><code>loading</code></td><td>boolean</td><td>True while re-hydrating from localStorage on mount</td></tr>
+</table>
+
+<div class="fn-box">
+  <div class="fn-name">useEffect (mount) — re-hydration</div>
+  <div class="fn-desc">On first render, reads <code>gb_token</code> and <code>gb_user</code> from localStorage. If present and parseable, restores session. Catches JSON parse errors and clears corrupted data. Sets <code>loading=false</code> when done.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">login(newToken, newUser)</div>
+  <div class="fn-desc">Called after a successful /login or Google OAuth. Sets React state and persists both values to localStorage.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">loginAsGuest()</div>
+  <div class="fn-desc">Sets hardcoded GUEST_USER and GUEST_TOKEN. Intentionally does NOT persist to localStorage — resets on page refresh. Guest users can use Sign-to-Text and Text-to-Sign but history is not saved.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">logout()</div>
+  <div class="fn-desc">Clears React state and removes both localStorage keys. Does not redirect (handled by ProtectedRoute or individual pages).</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">updateUser(partial)</div>
+  <div class="fn-desc">Merges partial update into user object (e.g. after profile name change). Persists updated user to localStorage immediately.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">useAuth() — hook</div>
+  <div class="fn-desc">Convenience hook that calls <code>useContext(AuthContext)</code> and throws a descriptive error if used outside the provider.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="settings-ctx">6. context/SettingsContext.jsx</h2>
+<div class="file-path">frontend/src/context/SettingsContext.jsx</div>
+
+<p>Stores user preferences. Initialised from <code>localStorage['gb_settings']</code> on mount; all changes auto-persisted.</p>
+
+<h3>Settings state (DEFAULTS)</h3>
+<table>
+  <tr><th>Setting</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>theme</code></td><td>'light'</td><td>'light' | 'dark' — applied to html[data-theme]</td></tr>
+  <tr><td><code>language</code></td><td>'ASL'</td><td>Sign language: ASL | ISL | Hindi | Marathi</td></tr>
+  <tr><td><code>ttsLanguage</code></td><td>'en-US'</td><td>BCP-47 locale for Web Speech API TTS/STT</td></tr>
+  <tr><td><code>recognitionMode</code></td><td>'letter'</td><td>'word' (full signs) | 'letter' (fingerspelling)</td></tr>
+  <tr><td><code>notifications</code></td><td>true</td><td>Show in-app notification banners</td></tr>
+  <tr><td><code>privacyMode</code></td><td>false</td><td>Suppress certain logging/analytics</td></tr>
+  <tr><td><code>captureInterval</code></td><td>200</td><td>ms between webcam inference polls</td></tr>
+  <tr><td><code>confidenceThreshold</code></td><td>0.60</td><td>Minimum ML confidence to accept a prediction</td></tr>
+</table>
+
+<div class="fn-box">
+  <div class="fn-name">useEffect — theme sync</div>
+  <div class="fn-desc">Whenever <code>settings.theme</code> changes, sets <code>document.documentElement.setAttribute('data-theme', theme)</code>. The CSS file reads this attribute to apply dark/light variables.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">updateSettings(partial)</div>
+  <div class="fn-desc">Merges partial object into settings, saves to localStorage. Used by AccountSettings and SignToText to change any preference.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">toggleTheme()</div>
+  <div class="fn-desc">Convenience wrapper: flips between 'light' and 'dark'.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">SUPPORTED_LANGUAGES — constant array</div>
+  <div class="fn-desc">Four entries: ASL (en-US), ISL (en-IN), Hindi (hi-IN), Marathi (mr-IN). Each has: value (stored), label (shown in UI), ttsLocale (BCP-47), nativeName.</div>
+</div>
+
+<div class="fn-box purple">
+  <div class="fn-name">getTTSLocale(language) → string</div>
+  <div class="fn-desc">Looks up the BCP-47 locale for a language value. Exported for use in SignToText (TTS speak) and TextToSign (STT input).</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="appshell">7. components/AppShell.jsx</h2>
+<div class="file-path">frontend/src/components/AppShell.jsx</div>
+
+<p>Layout shell used by all protected pages. Manages mobile sidebar open/close state.</p>
+
+<div class="fn-box">
+  <div class="fn-name">AppShell({ children })</div>
+  <div class="fn-desc">
+    <ul>
+      <li>State: <code>sidebarOpen</code> (boolean) for mobile.</li>
+      <li>Reads current route from <code>useLocation()</code> to derive page title from <code>PAGE_TITLES</code> map.</li>
+      <li>Renders: <code>&lt;Sidebar open={sidebarOpen} onClose={...}/&gt;</code>, <code>&lt;Topbar title={title} onMenuClick={...}/&gt;</code>, then <code>&lt;main className="page-wrapper fade-in"&gt;{children}&lt;/main&gt;</code>.</li>
+      <li>Inlines responsive CSS: on mobile (&lt;768px) sidebar starts off-screen and slides in via CSS transition; on desktop it is always visible.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="sidebar">8. components/Sidebar.jsx</h2>
+<div class="file-path">frontend/src/components/Sidebar.jsx</div>
+
+<p>Left navigation panel with brand logo, navigation links, and logout button.</p>
+
+<div class="fn-box">
+  <div class="fn-name">Sidebar({ open, onClose })</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Reads <code>user</code> and <code>logout</code> from AuthContext.</li>
+      <li>Reads <code>theme</code> from SettingsContext for dark/light icon tinting.</li>
+      <li>Maps NAV_ITEMS array (path, label, SVG icon path) to <code>&lt;NavLink&gt;</code> elements. Active link gets a highlighted background.</li>
+      <li>On mobile: receives <code>open</code> prop, adds <code>sidebar-open</code> class to slide in. Each nav click calls <code>onClose()</code> to collapse.</li>
+      <li>Logout button calls <code>logout()</code> then navigates to <code>/</code>.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="topbar">9. components/Topbar.jsx</h2>
+<div class="file-path">frontend/src/components/Topbar.jsx</div>
+
+<p>Top bar displayed on all protected pages.</p>
+
+<div class="fn-box">
+  <div class="fn-name">Topbar({ title, onMenuClick })</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Displays <code>title</code> (page name) on the left.</li>
+      <li>On mobile: shows hamburger button (<code>topbar-hamburger</code>) that calls <code>onMenuClick()</code> to open sidebar.</li>
+      <li>Right side: theme toggle button (calls <code>toggleTheme()</code>), user avatar circle with first letter of username, user name, and logout icon.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="protected">10. components/ProtectedRoute.jsx</h2>
+<div class="file-path">frontend/src/components/ProtectedRoute.jsx</div>
+
+<div class="fn-box">
+  <div class="fn-name">ProtectedRoute({ children })</div>
+  <div class="fn-desc">
+    <ul>
+      <li>Reads <code>{ token, loading }</code> from AuthContext.</li>
+      <li>While <code>loading=true</code> (re-hydrating from localStorage): shows a full-screen spinner — prevents flash of redirect on hard reload.</li>
+      <li>If no <code>token</code>: redirects to <code>/login</code> using <code>&lt;Navigate replace /&gt;</code>.</li>
+      <li>Otherwise: renders children.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="alert">11. components/Alert.jsx</h2>
+<div class="file-path">frontend/src/components/Alert.jsx</div>
+
+<div class="fn-box">
+  <div class="fn-name">Alert({ type, message, onClose })</div>
+  <div class="fn-desc">
+    type: 'error' | 'warning' | 'info' | 'success'. Renders a coloured banner with an icon, message text, and optional close button. If <code>onClose</code> is provided, shows an × button. Uses CSS variables for theming. Animation: fade-in via CSS class.
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="spinner">12. components/LoadingSpinner.jsx</h2>
+<div class="file-path">frontend/src/components/LoadingSpinner.jsx</div>
+
+<div class="fn-box">
+  <div class="fn-name">Spinner({ size }) — inline spinner</div>
+  <div class="fn-desc">SVG animated spinning circle. size: "sm" | "md" | "lg". Used inside buttons (loading state) and the auth guard.</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">CardLoader — skeleton placeholder</div>
+  <div class="fn-desc">Shows a 4-card grid of grey animated placeholder blocks while page data loads. Used by Dashboard and History.</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">PageLoader — full-page spinner</div>
+  <div class="fn-desc">Centred spinner used by ProtectedRoute while auth state is loading.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="landing">13. pages/Landing.jsx</h2>
+<div class="file-path">frontend/src/pages/Landing.jsx</div>
+
+<p>Public marketing homepage. No auth required.</p>
+
+<div class="fn-box">
+  <div class="fn-name">Landing()</div>
+  <div class="fn-desc">
+    Sections rendered:
+    <ul>
+      <li><strong>Hero:</strong> Brand name, tagline "Bridging communication one sign at a time", CTA buttons to /login and /register.</li>
+      <li><strong>Feature cards:</strong> Sign to Text, Text to Sign, AI-Powered (Watsonx), Multi-language.</li>
+      <li><strong>How it works:</strong> 3-step numbered guide (Camera → ML → English).</li>
+      <li><strong>Footer:</strong> Year, links to Login/Register.</li>
+    </ul>
+    Reads <code>theme</code> from SettingsContext to apply dark/light gradient backgrounds. Includes a theme-toggle button in the nav bar (calls <code>toggleTheme()</code>).
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="auth">14. pages/Auth.jsx</h2>
+<div class="file-path">frontend/src/pages/Auth.jsx</div>
+
+<p>Handles both login and registration in a single tabbed component (~1500 lines). Implements email OTP verification, Google OAuth, and guest access.</p>
+
+<h3>Internal sub-components</h3>
+<div class="fn-box purple">
+  <div class="fn-name">MoonIcon / SunIcon</div>
+  <div class="fn-desc">SVG icon components used in the theme toggle button on the auth page.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">GoogleIcon</div>
+  <div class="fn-desc">Google multicolour SVG logo used in the "Continue with Google" button.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">BrandLogo({ size, white })</div>
+  <div class="fn-desc">GestureBridge icon (hand + text SVG). white=true renders in white for dark backgrounds.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">OtpInput({ value, onChange, disabled })</div>
+  <div class="fn-desc">
+    A custom 6-cell OTP input component. Renders six individual single-character text inputs. Features:
+    <ul>
+      <li>Auto-focus next cell on character entry.</li>
+      <li>Backspace moves focus to previous cell.</li>
+      <li>Paste of 6 digits fills all cells automatically.</li>
+      <li>Calls <code>onChange</code> with the full 6-char string.</li>
+    </ul>
+  </div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">useCountdown(seconds, active) — custom hook</div>
+  <div class="fn-desc">
+    Counts down from <code>seconds</code> to 0 when <code>active=true</code> using <code>setInterval</code>. Returns <code>timeLeft</code> (number). Used to show "Resend in 45s" during OTP flow. Cleans up interval on unmount.
+  </div>
+</div>
+
+<h3>Main component: Auth({ defaultTab })</h3>
+<h4>State variables</h4>
+<table>
+  <tr><th>State</th><th>Description</th></tr>
+  <tr><td><code>tab</code></td><td>'login' | 'register' — active tab, initialised from defaultTab prop</td></tr>
+  <tr><td><code>name, email, password</code></td><td>Form field values for both login and register</td></tr>
+  <tr><td><code>showPwd</code></td><td>Toggle password visibility</td></tr>
+  <tr><td><code>loading</code></td><td>Submission in progress</td></tr>
+  <tr><td><code>error</code></td><td>Error message to display</td></tr>
+  <tr><td><code>success</code></td><td>Success message to display</td></tr>
+  <tr><td><code>otpStep</code></td><td>0=form, 1=OTP sent, 2=OTP verified</td></tr>
+  <tr><td><code>otpValue</code></td><td>6-char OTP string from OtpInput</td></tr>
+  <tr><td><code>resendActive</code></td><td>bool — whether countdown timer is running</td></tr>
+  <tr><td><code>countdownSecs</code></td><td>passed to useCountdown</td></tr>
+</table>
+
+<h4>Registration flow (3 steps)</h4>
+<div class="fn-box green">
+  <div class="fn-name">handleRegisterStep1()</div>
+  <div class="fn-desc">
+    Validates name/email/password are non-empty. Calls <code>api.post('/otp/send', {email})</code>. On success, sets <code>otpStep=1</code> and starts the 45-second resend countdown.
+  </div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">handleVerifyOtp()</div>
+  <div class="fn-desc">
+    Calls <code>api.post('/otp/verify', {email, code: otpValue})</code>. On success (valid=true), sets <code>otpStep=2</code> (verified, show register form submit).
+  </div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">handleFinalRegister()</div>
+  <div class="fn-desc">
+    Calls <code>registerUser({name, email, password})</code>. On success, auto-calls <code>loginUser({email, password})</code> to get a JWT, stores via <code>login(token, user)</code>, navigates to <code>/dashboard</code>.
+  </div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">handleResendOtp()</div>
+  <div class="fn-desc">Resends OTP and resets countdown. Disabled while countdown is active.</div>
+</div>
+
+<h4>Login flow</h4>
+<div class="fn-box green">
+  <div class="fn-name">handleLogin()</div>
+  <div class="fn-desc">
+    Calls <code>loginUser({email, password})</code>. On success, calls <code>login(data.token, {name, email})</code> from AuthContext, then navigates to <code>/dashboard</code>.
+  </div>
+</div>
+
+<h4>Google OAuth</h4>
+<div class="fn-box green">
+  <div class="fn-name">handleGoogleLogin()</div>
+  <div class="fn-desc">Redirects browser to <code>/auth/google</code> (Flask endpoint). The response is a 302 to Google's consent screen. After consent, Google redirects back to <code>/auth/google/callback</code> (Flask) which issues JWT and redirects to <code>/auth/callback</code> (React AuthCallback page).</div>
+</div>
+
+<h4>Guest login</h4>
+<div class="fn-box">
+  <div class="fn-name">handleGuestLogin()</div>
+  <div class="fn-desc">Calls <code>loginAsGuest()</code> from AuthContext (sets in-memory only state), navigates to <code>/dashboard</code>.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="authcb">15. pages/AuthCallback.jsx</h2>
+<div class="file-path">frontend/src/pages/AuthCallback.jsx</div>
+
+<div class="fn-box">
+  <div class="fn-name">AuthCallback()</div>
+  <div class="fn-desc">
+    Reads <code>?token=&amp;name=&amp;email=</code> from the URL search params (placed there by Flask's <code>google_callback()</code>). If token present, calls <code>login(token, {name, email})</code> then navigates to <code>/dashboard</code>. On error (missing token or URL has <code>?error=</code>), navigates to <code>/login?error=...</code>. Shows a loading spinner while processing.
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="dashboard">16. pages/Dashboard.jsx</h2>
+<div class="file-path">frontend/src/pages/Dashboard.jsx</div>
+
+<h3>Helper components (file-local)</h3>
+<div class="fn-box purple">
+  <div class="fn-name">Icon({ d, size })</div>
+  <div class="fn-desc">Thin SVG wrapper. <code>d</code> is an SVG path string or array of path strings. Renders a consistent stroke-based icon.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">getGreeting() → string</div>
+  <div class="fn-desc">Returns "Good Morning" / "Good Afternoon" / "Good Evening" based on current hour. Used in the welcome banner.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">InfoRow({ label, value })</div>
+  <div class="fn-desc">Flex row displaying a label on the left and bold value on the right. Used inside the ML Model card.</div>
+</div>
+
+<h3>Main component: Dashboard()</h3>
+<h4>State</h4>
+<table>
+  <tr><th>State</th><th>Description</th></tr>
+  <tr><td><code>historyCount</code></td><td>Total translation count fetched from /history</td></tr>
+  <tr><td><code>modelStatus</code></td><td>Object from /model/status</td></tr>
+  <tr><td><code>recentItems</code></td><td>Last 5 history records for activity feed</td></tr>
+  <tr><td><code>loading</code></td><td>Shows CardLoader skeleton while fetching</td></tr>
+  <tr><td><code>error</code></td><td>Error message for failed fetches</td></tr>
+</table>
+
+<div class="fn-box">
+  <div class="fn-name">useEffect → loadStats()</div>
+  <div class="fn-desc">
+    On mount (and when user changes), runs <code>Promise.allSettled([getHistory(email), getModelStatus()])</code> concurrently. Uses <code>allSettled</code> so one failure doesn't prevent the other from showing. Guest users skip this and go straight to <code>loading=false</code>.
+  </div>
+</div>
+
+<h4>Rendered sections</h4>
+<ul style="color:#57606a; font-size:.88rem; padding-left:1.4rem;">
+  <li><strong>Welcome banner:</strong> Time-based greeting, user's first name, today's date, quick-action buttons.</li>
+  <li><strong>Warning alerts:</strong> Model not loaded warning; guest mode info.</li>
+  <li><strong>Stat cards (STAT_CARDS):</strong> 4 cards — Translations, Model Status, Sign Classes, Sign Language. Each has a coloured accent stripe, icon, and value.</li>
+  <li><strong>Quick Actions (QUICK_ACTIONS):</strong> 4 link cards — Sign to Text, Text to Sign, History, Account. Hover lifts card (translateY + shadow).</li>
+  <li><strong>ML Model card:</strong> Shows loaded/not-loaded badge, class count, sample labels.</li>
+  <li><strong>Recent Activity:</strong> Last 5 translated signs with confidence badges, or empty-state illustration.</li>
+</ul>
+
+<!-- ══════════════════════════ -->
+<h2 id="s2t">17. pages/SignToText.jsx</h2>
+<div class="file-path">frontend/src/pages/SignToText.jsx</div>
+
+<p>The most complex component (~1500 lines). Camera capture, MediaPipe integration, real-time ML inference, sentence building, TTS. Supports two modes: Sign Mode (full gestures → words) and Spell Mode (fingerspelling → letters).</p>
+
+<h3>Module-level constants</h3>
+<table>
+  <tr><th>Constant</th><th>Value</th><th>Purpose</th></tr>
+  <tr><td>SEQUENCE_LENGTH</td><td>45</td><td>Primary FIFO buffer depth (frames)</td></tr>
+  <tr><td>MAX_SEQUENCE_LENGTH</td><td>60</td><td>Upper window for temporal overlap</td></tr>
+  <tr><td>STABLE_FRAMES</td><td>3</td><td>Consecutive matching predictions to commit a word</td></tr>
+  <tr><td>CAPTURE_MS</td><td>150</td><td>Inference poll interval (~6.7 Hz)</td></tr>
+  <tr><td>CONFIDENCE_THRESHOLD</td><td>0.85</td><td>Min probability to commit a sign word</td></tr>
+  <tr><td>REST_FRAMES</td><td>30</td><td>Rest frames to trigger sentence end</td></tr>
+  <tr><td>VELOCITY_REST_THRESH</td><td>0.010</td><td>Wrist speed below this = resting</td></tr>
+  <tr><td>COOLDOWN_MS</td><td>800</td><td>Post-commit pause before next prediction</td></tr>
+  <tr><td>LETTER_CONF_THRESH</td><td>0.70</td><td>Min probability to commit a letter</td></tr>
+  <tr><td>LETTER_STABLE_FRAMES</td><td>4</td><td>Consecutive letter frames before commit</td></tr>
+  <tr><td>LETTER_COOLDOWN_FRAMES</td><td>10</td><td>Frames to skip after letter commit</td></tr>
+</table>
+
+<h3>Module-level feature vector constants</h3>
+<p>Mirrors the Python <code>landmarks.py</code> layout: <code>SINGLE_HAND_SIZE=63, HANDS_SIZE=126, POSE_SIZE=24, FACE_SIZE=27, VELOCITY_SIZE=3, INTERACTION_SIZE=2, ACCEL_SIZE=3, NMM_SIZE=10, FINGER_ANGLE_SIZE=15, WRIST_ORIENT_SIZE=4, BODY_DIST_SIZE=4, LANDMARK_VECTOR_SIZE=218</code>. Offsets <code>OFF_VEL, OFF_ACCEL, OFF_NMM</code> are derived from these.</p>
+
+<h3>Utility functions (module-level)</h3>
+<div class="fn-box purple">
+  <div class="fn-name">speakText(text, locale)</div>
+  <div class="fn-desc">Uses <code>window.speechSynthesis</code> Web Speech API. Cancels any current speech, creates a new <code>SpeechSynthesisUtterance</code> with the given locale. Does nothing if synthesis is unavailable.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">normalizeHand(lms) → Float32Array[63]</div>
+  <div class="fn-desc">Browser-side mirror of Python's <code>_normalize_hand()</code>. Takes MediaPipe hand landmark array, subtracts wrist, divides by max absolute coordinate.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">mirrorHandLandmarks(lms) → array</div>
+  <div class="fn-desc">Negates the x-coordinates to handle mirrored webcam display. Applied when dominant hand is determined to be left.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">extractPose(plms) → Float32Array[24]</div>
+  <div class="fn-desc">Browser mirror of <code>_extract_pose()</code>. 8 upper-body joints, shoulder-centred and scaled.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">extractFaceSpatial(flms) → Float32Array[27]</div>
+  <div class="fn-desc">Browser mirror of <code>_extract_face()</code>. 9 face points, nose-anchored.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">computeInteraction(domLms, baseLms, flms, sc) → Float32Array[2]</div>
+  <div class="fn-desc">Fingertip-to-lips and fingertip-to-palm distances. Same logic as Python.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">computeBodyDist(domLms, baseLms, flms, plms, sc) → Float32Array[4]</div>
+  <div class="fn-desc">Distances to chin/chest/abdomen/non-dominant palm.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">extractFingerAngles(lms) → Float32Array[15]</div>
+  <div class="fn-desc">15 joint angles using dot-product cosine formula.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">extractWristQuat(lms) → Float32Array[4]</div>
+  <div class="fn-desc">Orientation quaternion from hand plane (Shepperd's method).</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">extractNMM(flms, prevYaw, prevPitch, prevRoll) → {vec[10], yaw, pitch, roll}</div>
+  <div class="fn-desc">10 non-manual marker scalars from face mesh: eyebrow raise/furrow, head motion deltas, mouth open, smile, lip protrusion, cheek width, brow asymmetry.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">buildFrameVector(results, dominantIsRight, prevWrist, prevVel, headState) → {vec218, wrist, vel, headState}</div>
+  <div class="fn-desc">Main per-frame assembly function. Calls all the above helpers and concatenates into the full 218-dim Float32Array. Returns updated state for next frame's deltas.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">vecSpeed(vec) → number</div>
+  <div class="fn-desc">Reads the velocity slice <code>[OFF_VEL..OFF_VEL+3]</code> and returns L2 norm (wrist speed). Used for motion state detection.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">nmm2label(nmm) → string</div>
+  <div class="fn-desc">Converts NMM summary object to a human-readable string like "Raised eyebrows (Y/N question) + Head nod" for the UI overlay.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">loadScript(src) → Promise</div>
+  <div class="fn-desc">Dynamically injects a <code>&lt;script&gt;</code> tag and returns a Promise that resolves on load or rejects on error. Used to lazily load MediaPipe CDN scripts.</div>
+</div>
+
+<h3>Main component: SignToText()</h3>
+<h4>Refs (do not trigger re-renders)</h4>
+<table>
+  <tr><th>Ref</th><th>Purpose</th></tr>
+  <tr><td>videoRef</td><td>The &lt;video&gt; element (webcam stream)</td></tr>
+  <tr><td>canvasRef</td><td>The &lt;canvas&gt; overlay for drawing landmarks</td></tr>
+  <tr><td>holisticRef</td><td>MediaPipe Holistic instance</td></tr>
+  <tr><td>cameraRef</td><td>MediaPipe Camera helper instance</td></tr>
+  <tr><td>sequenceRef</td><td>Float32Array buffer — FIFO of 60 frames × 218 features</td></tr>
+  <tr><td>prevWristRef, prevVelRef, headStateRef</td><td>State for frame-to-frame delta computation</td></tr>
+  <tr><td>restFrameCount</td><td>Counter of consecutive resting frames</td></tr>
+  <tr><td>stableCountRef, lastCommittedRef</td><td>For commit debounce logic</td></tr>
+  <tr><td>cooldownRef</td><td>Timestamp of last commit (for COOLDOWN_MS)</td></tr>
+  <tr><td>nmmWindowRef</td><td>Sliding window of NMM values for averaging</td></tr>
+  <tr><td>captureTimerRef</td><td>setInterval handle for inference polling</td></tr>
+  <tr><td>letterStableCountRef, letterCooldownRef, letterWordRef</td><td>Letter mode debounce state</td></tr>
+  <tr><td>baseStableRef</td><td>Counts frames where base hand is stable (FS detection)</td></tr>
+  <tr><td>calibrationCountRef, rightCountRef</td><td>Handedness auto-detection during calibration</td></tr>
+  <tr><td>dominantIsRightRef</td><td>True if right hand is dominant (auto-calibrated)</td></tr>
+</table>
+
+<h4>React state</h4>
+<table>
+  <tr><th>State</th><th>Description</th></tr>
+  <tr><td>prediction / confidence / top5</td><td>Latest ML prediction result for display</td></tr>
+  <tr><td>glossSequence</td><td>Accumulated committed sign words (Array)</td></tr>
+  <tr><td>sentence</td><td>Completed sentences: Array of {raw, improved, source}</td></tr>
+  <tr><td>motionState</td><td>'idle' | 'signing' | 'holding' | 'resting'</td></tr>
+  <tr><td>nmmLabel</td><td>Human-readable NMM description string</td></tr>
+  <tr><td>cameraActive / mpReady</td><td>Camera running state; MediaPipe ready flag</td></tr>
+  <tr><td>dominant</td><td>'right' | 'left' | 'calibrating'</td></tr>
+  <tr><td>fsMode</td><td>Boolean — fingerspelling auto-mode active</td></tr>
+  <tr><td>letterPrediction / letterConf / letterTop5</td><td>Current letter prediction from /predict-letter</td></tr>
+  <tr><td>letterWord / letterStableCount</td><td>Building word and stability progress</td></tr>
+  <tr><td>letterSuggestions</td><td>Array of word suggestions for partial spelling</td></tr>
+  <tr><td>stableDots</td><td>Visual stability indicator (0-3)</td></tr>
+  <tr><td>loadStep</td><td>0-4 loading phase for progress bar</td></tr>
+</table>
+
+<h4>Key functions</h4>
+<div class="fn-box green">
+  <div class="fn-name">startCamera() — async, useCallback</div>
+  <div class="fn-desc">
+    Main initialization function. Steps:
+    <ol>
+      <li>Calls <code>loadScript()</code> for holistic.js, camera_utils.js, drawing_utils.js CDN scripts (loadStep 1→3).</li>
+      <li>Creates <code>new window.Holistic({...})</code> with onResults callback.</li>
+      <li>Creates <code>new window.Camera(videoRef.current, { onFrame, width:640, height:480 })</code>.</li>
+      <li>Sets loadStep=4 (Ready).</li>
+      <li>Starts <code>setInterval(captureLoop, CAPTURE_MS)</code> for inference polling.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">onResults callback (inside startCamera)</div>
+  <div class="fn-desc">
+    Called by MediaPipe Holistic on every processed frame. Steps:
+    <ol>
+      <li>Calls <code>buildFrameVector(results, ...)</code> to get 218-dim vec.</li>
+      <li>Runs handedness calibration: counts which hand is more often dominant over first CALIBRATION_FRAMES=20 frames.</li>
+      <li>Detects fingerspelling mode: checks if base hand is stable AND dominant hand has micro-motion.</li>
+      <li>Computes wrist speed and updates <code>motionState</code>.</li>
+      <li>Pushes vec to the 60-frame FIFO buffer via typed array rotation.</li>
+      <li>Draws landmark overlays (hand + face + pose connections) onto canvas.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">captureLoop (setInterval body)</div>
+  <div class="fn-desc">
+    Runs every CAPTURE_MS=150ms:
+    <ol>
+      <li>In <strong>Sign Mode</strong>: If motion state is 'resting' for REST_FRAMES → trigger <code>generateSentenceFromGlosses()</code>. Otherwise, slice the FIFO to get 45 frames and call <code>predictGesture(user.email, sequence, nmmSummary)</code>. On success, check confidence ≥ threshold and stable count. If 3 consecutive same-word confident predictions → commit to glossSequence.</li>
+      <li>In <strong>Spell Mode / FS Mode</strong>: Extracts dominant hand's 63 landmarks, calls <code>predictLetter(landmarks63, indexTipXY)</code>. Debounces same letter over LETTER_STABLE_FRAMES. On commit, appends letter to letterWord.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">generateSentenceFromGlosses() — async</div>
+  <div class="fn-desc">Called when resting. Posts to <code>/generate-sentence</code> (or falls back to <code>/ai/gloss-to-english</code>). On success, appends <code>{raw: glosses.join(" "), improved: null, source}</code> to sentence state. Speaks the result via <code>speakText()</code>. Clears glossSequence for next sentence.</div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">teardown()</div>
+  <div class="fn-desc">Cleans up on camera stop or unmount: clears the capture interval, calls <code>camera.stop()</code>, calls <code>holistic.close()</code>, stops all MediaStream tracks from the video element.</div>
+</div>
+
+<div class="fn-box green">
+  <div class="fn-name">stopCamera() — useCallback</div>
+  <div class="fn-desc">Calls teardown() then sets cameraActive=false.</div>
+</div>
+
+<h4>Handler functions</h4>
+<div class="fn-box">
+  <div class="fn-name">handleImprove(idx) — async</div>
+  <div class="fn-desc">Calls <code>improveText(sentence[idx].raw)</code> (POST /ai/improve-text). Updates the specific sentence entry with <code>improved</code> text from Watsonx.</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">handleUndoGloss()</div>
+  <div class="fn-desc">Removes the last item from glossSequence (slice 0,-1).</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">handleClearGloss()</div>
+  <div class="fn-desc">Clears the entire glossSequence array.</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">handleUndoSentence()</div>
+  <div class="fn-desc">Removes the last completed sentence from the sentence array.</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">handleClearAll()</div>
+  <div class="fn-desc">Clears both glossSequence and sentence arrays.</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">handleCopy()</div>
+  <div class="fn-desc">Copies all completed sentences (improved text preferred, then raw) joined with spaces to clipboard via <code>navigator.clipboard.writeText()</code>.</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">flushFsBuffer()</div>
+  <div class="fn-desc">Finalises current fingerspelled word: calls <code>generateLetterSentence(letterWord)</code> to get AI word match, appends to sentence, resets letterWord.</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">handleLetterCommitWord()</div>
+  <div class="fn-desc">Manual trigger for flushFsBuffer (when user clicks "Commit Word").</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">handleLetterClearWord()</div>
+  <div class="fn-desc">Erases current letter buffer without committing.</div>
+</div>
+<div class="fn-box">
+  <div class="fn-name">handleApplySuggestion(suggestion)</div>
+  <div class="fn-desc">Replaces current letterWord with a clicked suggestion from the autocomplete list.</div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="t2s">18. pages/TextToSign.jsx</h2>
+<div class="file-path">frontend/src/pages/TextToSign.jsx</div>
+
+<h3>Module-level constants</h3>
+<p><code>QUICK_PHRASES</code> — array of 6 common phrases for one-click input (e.g. "Hello, how are you?", "Thank you", "I need help"). <code>SpeechRecognition</code> — browser STT API, set to <code>window.SpeechRecognition || window.webkitSpeechRecognition</code>. <code>synth</code> — <code>window.speechSynthesis</code>.</p>
+
+<div class="fn-box purple">
+  <div class="fn-name">speak(text, locale, onEnd)</div>
+  <div class="fn-desc">TTS helper. Creates utterance, sets locale, calls <code>synth.speak()</code>. Calls onEnd callback when speech finishes (used to auto-advance to next word video).</div>
+</div>
+
+<h3>Main component: TextToSign()</h3>
+<h4>State</h4>
+<table>
+  <tr><th>State</th><th>Description</th></tr>
+  <tr><td><code>inputText</code></td><td>Current text input value</td></tr>
+  <tr><td><code>words</code></td><td>Array of word entries from /text-to-sign response</td></tr>
+  <tr><td><code>currentIdx</code></td><td>Index of word currently being played</td></tr>
+  <tr><td><code>isPlaying</code></td><td>True when auto-playback is active</td></tr>
+  <tr><td><code>loop</code></td><td>Boolean — loop the entire sequence</td></tr>
+  <tr><td><code>autoAdvance</code></td><td>Boolean — auto-advance to next word on video end</td></tr>
+  <tr><td><code>videoError</code></td><td>True if current video fails to load</td></tr>
+  <tr><td><code>coverage / foundWords / totalWords</code></td><td>Stats from API response</td></tr>
+  <tr><td><code>loading / error</code></td><td>Request state</td></tr>
+  <tr><td><code>isListening</code></td><td>STT microphone active</td></tr>
+  <tr><td><code>vocab / showVocab</code></td><td>Vocabulary list and show/hide toggle</td></tr>
+</table>
+
+<h4>Key functions</h4>
+<div class="fn-box green">
+  <div class="fn-name">handleConvert(textOverride)</div>
+  <div class="fn-desc">Calls <code>textToSign(text)</code>. On success, sets words array, resets currentIdx to 0, resets video error. Shows coverage stats.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">handleMicToggle()</div>
+  <div class="fn-desc">Toggles Web Speech Recognition. Creates a <code>SpeechRecognition</code> instance with user's ttsLanguage locale. On result, fills inputText and auto-submits. On error/end, stops listening.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">handleVideoEnd()</div>
+  <div class="fn-desc">Called by the video player's <code>onEnded</code> event. If autoAdvance: advances to next word. If at last word and loop: resets to idx 0. Otherwise stops playback.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">handleVideoError()</div>
+  <div class="fn-desc">Called when video fails to load. Sets videoError=true. The UI shows "Video not available" and attempts to display the external_url as a fallback link.</div>
+</div>
+<div class="fn-box green">
+  <div class="fn-name">loadVocabulary()</div>
+  <div class="fn-desc">Calls <code>getVocabulary()</code> and sets vocab state. Called on first click of "Browse Vocabulary".</div>
+</div>
+
+<h4>Video playback logic</h4>
+<p>The current word entry is <code>words[currentIdx]</code>. The video source URL is determined by <code>bestVideoUrl(currentWord)</code> which prefers local Flask streaming over CDN URLs. The <code>&lt;video&gt;</code> element uses <code>key={currentIdx}</code> to force React to remount and reload on word change. <code>conditional=True</code> on Flask side enables HTTP Range for seek.</p>
+
+<!-- ══════════════════════════ -->
+<h2 id="history">19. pages/History.jsx</h2>
+<div class="file-path">frontend/src/pages/History.jsx</div>
+
+<h3>State</h3>
+<table>
+  <tr><th>State</th><th>Description</th></tr>
+  <tr><td><code>records</code></td><td>Full translation history (sorted newest first)</td></tr>
+  <tr><td><code>filtered</code></td><td>Filtered subset based on search + confidence band</td></tr>
+  <tr><td><code>searchTerm</code></td><td>Text search string</td></tr>
+  <tr><td><code>band</code></td><td>Index into CONFIDENCE_BANDS (All/High/Medium/Low)</td></tr>
+  <tr><td><code>insights / insightsLoading / insightsError</code></td><td>AI insights from Watsonx</td></tr>
+</table>
+
+<div class="fn-box">
+  <div class="fn-name">loadHistory — useCallback</div>
+  <div class="fn-desc">Calls <code>getHistory(user.email)</code>, sorts by timestamp descending, sets records.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">useEffect — filter effect</div>
+  <div class="fn-desc">Re-runs whenever searchTerm, records, or band changes. Filters records by text match (case-insensitive) AND confidence range.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">exportCSV()</div>
+  <div class="fn-desc">Builds CSV string from filtered records (Predicted Text, Confidence %, Timestamp). Creates a Blob, object URL, clicks a temp &lt;a&gt; element to download. Filename includes today's date.</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">exportJSON()</div>
+  <div class="fn-desc">Same pattern but serialises filtered records to JSON (pretty-printed).</div>
+</div>
+
+<div class="fn-box">
+  <div class="fn-name">fetchInsights()</div>
+  <div class="fn-desc">Takes first 30 predicted_text values, calls <code>getSentenceInsights(translations)</code>. Displays the returned AI prose in a highlighted panel.</div>
+</div>
+
+<h3>Sub-component: HistoryCard({ record })</h3>
+<div class="fn-box purple">
+  <div class="fn-name">HistoryCard({ record })</div>
+  <div class="fn-desc">
+    Renders one history entry as a card:
+    <ul>
+      <li>Left: blue icon circle.</li>
+      <li>Predicted text (bold) + confidence badge (green/yellow/red based on value).</li>
+      <li>Confidence bar (visual fill).</li>
+      <li>Timestamp in locale format.</li>
+      <li><code>&lt;details&gt;</code> accordion: "View Top-5 Alternatives" — shows mini bar charts for each of the top-5 predictions.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══════════════════════════ -->
+<h2 id="account">20. pages/AccountSettings.jsx</h2>
+<div class="file-path">frontend/src/pages/AccountSettings.jsx</div>
+
+<p>4-tab settings page: Profile | Security | Appearance | Privacy.</p>
+
+<h3>Internal sub-components</h3>
+<div class="fn-box purple">
+  <div class="fn-name">SectionHeader({ title, desc })</div>
+  <div class="fn-desc">H3 heading with muted description and bottom border. Used to divide settings sections.</div>
+</div>
+<div class="fn-box purple">
+  <div class="fn-name">SettingRow({ label, desc, children })</div>
+  <div class="fn-desc">Flex row: label+desc on left, control (toggle/select/slider) on right. Bottom-bordered. Standard layout for each setting.</div>
+</div>
+
+<h3>Main component: AccountSettings()</h3>
+<h4>State</h4>
+<table>
+  <tr><th>State</th><th>Description</th></tr>
+  <tr><td><code>activeTab</code></td><td>'profile' | 'security' | 'appearance' | 'privacy'</td></tr>
+  <tr><td><code>name, email</code></td><td>Profile form fields</td></tr>
+  <tr><td><code>oldPass, newPass, confirmPass</code></td><td>Password change fields (Security tab)</td></tr>
+  <tr><td><code>loading, error, success</code></td><td>Form submission state</td></tr>
+</table>
+
+<h4>Profile tab</h4>
+<p>Loads user data from <code>getProfile()</code> on mount (if not guest). Shows name and email. Submits changes via <code>updateUser(partial)</code> (AuthContext). Guest users see a read-only view.</p>
+
+<h4>Security tab</h4>
+<p>Password change form. Validates new password ≥ 8 chars and matches confirmation. Sends change request to backend (PATCH /profile or similar). Not applicable for Google OAuth users (shows notice).</p>
+
+<h4>Appearance tab</h4>
+<p>Uses <code>SettingRow</code> for each option:</p>
+<ul style="color:#57606a; font-size:.88rem; padding-left:1.4rem;">
+  <li><strong>Theme:</strong> Toggle switch, calls <code>toggleTheme()</code>.</li>
+  <li><strong>Sign Language:</strong> <code>&lt;select&gt;</code> dropdown (ASL/ISL/Hindi/Marathi), calls <code>updateSettings({language})</code>.</li>
+  <li><strong>Recognition Mode:</strong> Radio-style toggle (Word / Letter), calls <code>updateSettings({recognitionMode})</code>.</li>
+  <li><strong>Capture Interval:</strong> Range slider 100–500ms, calls <code>updateSettings({captureInterval})</code>.</li>
+  <li><strong>Confidence Threshold:</strong> Range slider 0.3–0.99, calls <code>updateSettings({confidenceThreshold})</code>.</li>
+</ul>
+
+<h4>Privacy tab</h4>
+<p>Toggle for <code>notifications</code> and <code>privacyMode</code> settings, each via <code>updateSettings()</code>. Privacy mode note: currently suppresses history saving (future feature).</p>
+
+<footer>
+  <p>Made with IBM Bob &nbsp;|&nbsp; GestureBridge Frontend Documentation &nbsp;|&nbsp; Document 3 of 3</p>
+</footer>
+</div>
+</body>
+</html>

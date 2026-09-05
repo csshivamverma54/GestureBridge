@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request
 
 from services.watsonx import generate, is_configured, MODEL_ID
 
@@ -27,7 +27,7 @@ def improve_text():
     prompt = (
         "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
         "You are an expert ASL (American Sign Language) interpreter and English editor. "
-        "You receive raw sign-to-text translations â€” these may have awkward word order "
+        "You receive raw sign-to-text translations  - these may have awkward word order "
         "(topic-comment structure), missing articles, or missing punctuation. "
         "Your task is to rewrite the input as a single, fluent, natural English sentence. "
         "Output ONLY the improved sentence. No explanations, no extra lines.\n"
@@ -111,7 +111,7 @@ def sentence_insights():
         "2) Any signs that appear multiple times (frequency note). "
         "3) One specific, actionable improvement suggestion. "
         "4) One motivational observation. "
-        "Be concise â€” aim for 4â€“6 short sentences total. "
+        "Be concise  - aim for 4 -6 short sentences total. "
         "Output plain text, no bullet points, no headings.\n"
         "<|eot_id|><|start_header_id|>user<|end_header_id|>\n"
         f"Recent translations: {joined}\n"
@@ -166,7 +166,7 @@ def gloss_to_english():
         "Convert the ASL gloss sequence into a single fluent English sentence. "
         "ASL uses topic-comment word order; reorder to natural English SVO. "
         "Apply any NMM (non-manual marker) cues provided. "
-        "Output ONLY the English sentence â€” no explanations.\n"
+        "Output ONLY the English sentence  - no explanations.\n"
         "<|eot_id|><|start_header_id|>user<|end_header_id|>\n"
         f"ASL glosses: {gloss_str}.{nmm_ctx}\n"
         "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n"

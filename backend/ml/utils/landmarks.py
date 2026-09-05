@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 import cv2
 from pathlib import Path
 
@@ -87,7 +87,7 @@ def _normalize_hand(coords: np.ndarray) -> np.ndarray:
     return coords.flatten().astype(np.float32)
 
 
-# Extract shoulder-normalised upper-body pose landmarks (8 joints Ã— 3)
+# Extract shoulder-normalised upper-body pose landmarks (8 joints x 3)
 def _extract_pose(pose_landmarks) -> np.ndarray:
     out = np.zeros(POSE_SIZE, dtype=np.float32)
     if pose_landmarks is None:
@@ -112,7 +112,7 @@ def _extract_pose(pose_landmarks) -> np.ndarray:
     return np.array(coords, dtype=np.float32).flatten()
 
 
-# Extract nose-anchored face spatial landmarks (9 points Ã— 3)
+# Extract nose-anchored face spatial landmarks (9 points x 3)
 def _extract_face(face_landmarks) -> np.ndarray:
     out = np.zeros(FACE_SIZE, dtype=np.float32)
     if face_landmarks is None:
@@ -255,7 +255,7 @@ _FINGER_TRIPLETS = [
 ]
 
 
-# Angle at vertex b in the a-b-c triplet, in [0, Ï€]
+# Angle at vertex b in the a-b-c triplet, in [0,  -]
 def _joint_angle(a, b, c) -> float:
     ba = a - b
     bc = c - b
@@ -527,6 +527,6 @@ def extract_sequence_from_video(
     return sequence
 
 
-# Legacy stub â€” returns zeros for backward compatibility
+# Legacy stub  - returns zeros for backward compatibility
 def extract_landmarks_from_result(result) -> np.ndarray:
     return np.zeros(LANDMARK_VECTOR_SIZE, dtype=np.float32)

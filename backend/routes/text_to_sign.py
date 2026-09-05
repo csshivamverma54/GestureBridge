@@ -1,4 +1,4 @@
-﻿import json
+import json
 import os
 import re
 from difflib import get_close_matches
@@ -16,7 +16,7 @@ text_to_sign = Blueprint("text_to_sign", __name__)
 _SPLIT_ORDER = {"val": 0, "train": 1, "test": 2}
 
 
-# Build word â†’ video entry lookup from curated_WLASL.json at import time
+# Build word -> video entry lookup from curated_WLASL.json at import time
 def _build_lookup() -> dict:
     if not _JSON_PATH.exists():
         return {}

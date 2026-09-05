@@ -1,24 +1,24 @@
-﻿/**
- * SignToText â€” Real-time Continuous Sign Language Recognition (CSLR) v2
+/**
+ * SignToText  - Real-time Continuous Sign Language Recognition (CSLR) v2
  *
  * Upgrades implemented in this version:
- *  1. Non-Manual Markers (NMM) â€” eyebrow raise/furrow, head nod/shake/tilt,
+ *  1. Non-Manual Markers (NMM)  - eyebrow raise/furrow, head nod/shake/tilt,
  *     mouth morphemes detected from Holistic face mesh; passed to backend.
- *  2. Fingerspelling branch â€” activates when one hand is spatially stable
- *     while showing rapid finger micro-motion; recognized Aâ€“Z letters are
+ *  2. Fingerspelling branch  - activates when one hand is spatially stable
+ *     while showing rapid finger micro-motion; recognized A -Z letters are
  *     concatenated into words before entering the gloss sequence.
- *  3. Dynamic handedness â€” calibration window measures movement energy on
+ *  3. Dynamic handedness  - calibration window measures movement energy on
  *     both wrists; dominant hand is auto-assigned, landmarks mirrored if
  *     the signer is left-handed so the model always receives normalised input.
- *  4. Adaptive latency â€” if the previous Holistic frame hasn't finished
+ *  4. Adaptive latency  - if the previous Holistic frame hasn't finished
  *     processing when the next arrives the new frame is skipped; a skip
  *     counter prevents queue overflow on low-end hardware.
- *  5. Extended features (218 dims) â€” acceleration(3), NMM(10),
+ *  5. Extended features (218 dims)  - acceleration(3), NMM(10),
  *     finger joint angles(15), wrist orientation quaternion(4),
  *     body distances(4) added to the existing 182-dim vector.
- *  6. Sliding window inference â€” FIFO of 45â€“60 frames with temporal overlap;
+ *  6. Sliding window inference  - FIFO of 45 -60 frames with temporal overlap;
  *     inference runs every CAPTURE_MS regardless of sign boundaries.
- *  7. Improved sign boundary detection â€” dual criteria: velocity drop AND
+ *  7. Improved sign boundary detection  - dual criteria: velocity drop AND
  *     wrist-near-waist position; duplicate suppression via cooldown + hash.
  *
  * Feature vector layout per frame (218 dims):
@@ -27,7 +27,7 @@
  *
  * Backend contract:
  *   POST /predict  { user_id, gesture: number[][], nmm: object }
- *   â†’ { predicted_text, confidence, top5[], nmm }
+ *   -> { predicted_text, confidence, top5[], nmm }
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -38,7 +38,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSettings, getTTSLocale } from '../context/SettingsContext';
 import { predictGesture, generateSentence, predictLetter, generateLetterSentence, improveText } from '../services/api';
 
-/* â”€â”€ TTS helper (Web Speech API) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- TTS helper (Web Speech API) - */
 const _synth = window.speechSynthesis || null;
 
 function speakText(text, locale) {
@@ -54,29 +54,29 @@ function speakText(text, locale) {
   _synth.speak(utt);
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
    Constants
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- */
 const SEQUENCE_LENGTH      = 45;    // primary FIFO depth
 const MAX_SEQUENCE_LENGTH  = 60;    // upper window bound (temporal overlap)
 const STABLE_FRAMES        = 3;     // consecutive matching predictions to commit
-const CAPTURE_MS           = 150;   // inference interval (â‰ˆ 6.7 Hz)
+const CAPTURE_MS           = 150;   // inference interval (- 6.7 Hz)
 const CONFIDENCE_THRESHOLD = 0.85;  // minimum confidence to commit
-const REST_FRAMES          = 30;    // frames of rest â†’ sentence end
+const REST_FRAMES          = 30;    // frames of rest -> sentence end
 const VELOCITY_REST_THRESH = 0.010; // wrist speed below this = resting
 const COOLDOWN_MS          = 800;   // post-commit cooldown
 const CALIBRATION_FRAMES   = 20;    // frames to measure handedness
 const FS_STABLE_THRESH     = 0.008; // fingerspelling: base-hand stable threshold
 const FS_MOTION_THRESH     = 0.025; // fingerspelling: dominant-hand micro-motion
 
-/* â”€â”€ Letter-model constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Letter-model constants - */
 const LETTER_CONF_THRESH    = 0.70;  // min confidence to count a letter frame
                                      // (matches backend LETTER_CONF_THRESH; RF top-out ~0.87)
-const LETTER_STABLE_FRAMES  = 4;     // consecutive frames â†’ commit letter
+const LETTER_STABLE_FRAMES  = 4;     // consecutive frames -> commit letter
 const LETTER_COOLDOWN_FRAMES= 10;    // frames to skip after commit
 const LETTER_CAPTURE_MS     = 200;   // letter inference poll interval (ms)
 
-/* â”€â”€ Feature sizes (218 total, matching backend/ml/utils/landmarks.py) â”€â”€ */
+/* -- Feature sizes (218 total, matching backend/ml/utils/landmarks.py) -- */
 const SINGLE_HAND_SIZE    = 63;
 const HANDS_SIZE          = 126;
 const POSE_SIZE           = 24;
@@ -92,34 +92,34 @@ const LANDMARK_VECTOR_SIZE =
   HANDS_SIZE + POSE_SIZE + FACE_SIZE + VELOCITY_SIZE + INTERACTION_SIZE +
   ACCEL_SIZE + NMM_SIZE + FINGER_ANGLE_SIZE + WRIST_ORIENT_SIZE + BODY_DIST_SIZE; // 218
 
-/* â”€â”€ Feature vector offsets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Feature vector offsets - */
 const OFF_VEL    = HANDS_SIZE + POSE_SIZE + FACE_SIZE;              // 180
 const OFF_ACCEL  = OFF_VEL + VELOCITY_SIZE + INTERACTION_SIZE;      // 185
 const OFF_NMM    = OFF_ACCEL + ACCEL_SIZE;                          // 188
 
-/* â”€â”€ MediaPipe CDN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- MediaPipe CDN - */
 const MP_HOLISTIC_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629/holistic.js';
 const MP_CAMERA_CDN   = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js';
 const MP_DRAWING_CDN  = 'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js';
 
-/* â”€â”€ Skeleton connections for canvas overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Skeleton connections for canvas overlay - */
 const HAND_CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],
   [5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],
   [13,17],[17,18],[18,19],[19,20],[0,17],
 ];
 
-/* â”€â”€ Zero arrays â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Zero arrays - */
 const ZERO_VEC = new Float32Array(LANDMARK_VECTOR_SIZE);
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
    Feature extraction helpers (mirror backend/ml/utils/landmarks.py)
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- */
 
 /** L2 norm of a 3-element array. */
 const norm3 = (x, y, z) => Math.sqrt(x * x + y * y + z * z);
 
-/** Wrist-origin, max-abs-scaled hand landmarks â†’ Float32Array(63). */
+/** Wrist-origin, max-abs-scaled hand landmarks -> Float32Array(63). */
 function normalizeHand(lms) {
   const out = new Float32Array(SINGLE_HAND_SIZE);
   if (!lms || lms.length < 21) return out;
@@ -144,7 +144,7 @@ function mirrorHandLandmarks(lms) {
   return lms.map(lm => ({ x: 1 - lm.x, y: lm.y, z: lm.z }));
 }
 
-/** Shoulder-midpoint-origin, shoulder-width-scale pose â†’ Float32Array(24). */
+/** Shoulder-midpoint-origin, shoulder-width-scale pose -> Float32Array(24). */
 const POSE_IDX = [11, 12, 13, 14, 15, 16, 23, 24];
 function extractPose(plms) {
   const out = new Float32Array(POSE_SIZE);
@@ -161,7 +161,7 @@ function extractPose(plms) {
   return out;
 }
 
-/** Nose-bridge-origin, forehead-to-chin-scale face spatial â†’ Float32Array(27). */
+/** Nose-bridge-origin, forehead-to-chin-scale face spatial -> Float32Array(27). */
 const FACE_IDX = [0, 13, 14, 17, 61, 291, 199, 10, 152];
 function extractFaceSpatial(flms) {
   const out = new Float32Array(FACE_SIZE);
@@ -177,7 +177,7 @@ function extractFaceSpatial(flms) {
   return out;
 }
 
-/** Interaction distances: [fingertipsâ†’lips, fingertipsâ†’base palm] / shoulder_scale. */
+/** Interaction distances: [fingertips->lips, fingertips->base palm] / shoulder_scale. */
 const FTIP_IDX = [4, 8, 12, 16, 20];
 function computeInteraction(domLms, baseLms, flms, sc) {
   const out = new Float32Array(INTERACTION_SIZE);
@@ -198,7 +198,7 @@ function computeInteraction(domLms, baseLms, flms, sc) {
   return out;
 }
 
-/** Body distances: [â†’chin, â†’chest, â†’abdomen, â†’base_palm_from_wrist] / sc. */
+/** Body distances: [->chin, ->chest, ->abdomen, ->base_palm_from_wrist] / sc. */
 function computeBodyDist(domLms, baseLms, flms, plms, sc) {
   const out = new Float32Array(BODY_DIST_SIZE);
   const scale = sc || 1;
@@ -276,7 +276,7 @@ function extractWristQuat(lms) {
 }
 
 /**
- * NMM extraction â€” 10 scalars from face mesh.
+ * NMM extraction  - 10 scalars from face mesh.
  * Returns { vec: Float32Array(10), yaw, pitch, roll, summary: {} }
  */
 function extractNMM(flms, prevYaw, prevPitch, prevRoll) {
@@ -357,13 +357,14 @@ function buildFrameVector(results, dominantIsRight, prevWrist, prevVel, headStat
     baseRaw = baseRaw ? mirrorHandLandmarks(baseRaw) : null;
   }
 
-  // Hands â€” always store left in slot-0, right in slot-1 (post-mirror both)
-  const leftHand  = dominantIsRight
-    ? (rawLeft  ? normalizeHand(rawLeft)  : new Float32Array(SINGLE_HAND_SIZE))
-    : (domRaw   ? normalizeHand(domRaw)   : new Float32Array(SINGLE_HAND_SIZE));
-  const rightHand = dominantIsRight
-    ? (rawRight ? normalizeHand(rawRight) : new Float32Array(SINGLE_HAND_SIZE))
-    : (baseRaw  ? normalizeHand(baseRaw)  : new Float32Array(SINGLE_HAND_SIZE));
+  // Hands  - always store left in slot-0, right in slot-1 (post-mirror both)
+const leftHand = dominantIsRight
+  ? (rawLeft ? normalizeHand(rawLeft) : new Float32Array(SINGLE_HAND_SIZE))
+  : (domRaw ? normalizeHand(domRaw) : new Float32Array(SINGLE_HAND_SIZE));
+
+const rightHand = dominantIsRight
+  ? (rawRight ? normalizeHand(rawRight) : new Float32Array(SINGLE_HAND_SIZE))
+  : (baseRaw ? normalizeHand(baseRaw) : new Float32Array(SINGLE_HAND_SIZE));
 
   // Shoulder scale + dominant wrist position
   let shoulderScale = 1, wristX = 0, wristY = 0, wristZ = 0;
@@ -377,14 +378,22 @@ function buildFrameVector(results, dominantIsRight, prevWrist, prevVel, headStat
   const curWrist = { x: wristX, y: wristY, z: wristZ };
 
   // Velocity
-  const vel = prevWrist
-    ? new Float32Array([wristX - prevWrist.x, wristY - prevWrist.y, wristZ - prevWrist.z])
-    : new Float32Array(VELOCITY_SIZE);
+const vel = prevWrist
+  ? new Float32Array([
+      wristX - prevWrist.x,
+      wristY - prevWrist.y,
+      wristZ - prevWrist.z
+    ])
+  : new Float32Array(VELOCITY_SIZE);
 
-  // Acceleration
-  const accel = prevVel
-    ? new Float32Array([vel[0] - prevVel[0], vel[1] - prevVel[1], vel[2] - prevVel[2]])
-    : new Float32Array(ACCEL_SIZE);
+// Acceleration
+const accel = prevVel
+  ? new Float32Array([
+      vel[0] - prevVel[0],
+      vel[1] - prevVel[1],
+      vel[2] - prevVel[2]
+    ])
+  : new Float32Array(ACCEL_SIZE);
 
   const poseVec    = poseLandmarks ? extractPose(poseLandmarks) : new Float32Array(POSE_SIZE);
   const faceSpatial = faceLandmarks ? extractFaceSpatial(faceLandmarks) : new Float32Array(FACE_SIZE);
@@ -396,7 +405,7 @@ function buildFrameVector(results, dominantIsRight, prevWrist, prevVel, headStat
   const { yaw = 0, pitch = 0, roll = 0 } = headState || {};
   const nmmResult = extractNMM(faceLandmarks, yaw, pitch, roll);
 
-  // Assemble â†’ 218
+  // Assemble -> 218
   const vec = new Float32Array(LANDMARK_VECTOR_SIZE);
   let off = 0;
   vec.set(leftHand,         off); off += SINGLE_HAND_SIZE;
@@ -432,15 +441,15 @@ function vecSpeed(vec) {
 function nmm2label(nmm) {
   if (!nmm) return '';
   const tags = [];
-  if (nmm.eyebrow_raise  > 0.18) tags.push('â“ Q-mark');
-  if (nmm.eyebrow_furrow > 0.45) tags.push('ðŸ˜® Emph');
-  if (Math.abs(nmm.head_nod)   > 0.04) tags.push(nmm.head_nod > 0 ? 'â†• Nod' : 'â†• Shake');
-  if (Math.abs(nmm.head_shake) > 0.04) tags.push('â†” Shake');
-  if (nmm.mouth_open     > 0.15) tags.push('ðŸ˜® Open');
-  return tags.join(' Â· ');
+  if (nmm.eyebrow_raise  > 0.18) tags.push('? Q-mark');
+  if (nmm.eyebrow_furrow > 0.45) tags.push('! Emph');
+  if (Math.abs(nmm.head_nod)   > 0.04) tags.push(nmm.head_nod > 0 ? '^ Nod' : '~ Shake');
+  if (Math.abs(nmm.head_shake) > 0.04) tags.push('~ Shake');
+  if (nmm.mouth_open     > 0.15) tags.push('O Open');
+  return tags.join(' - ');
 }
 
-/* â”€â”€ Script loader â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Script loader - */
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
@@ -450,9 +459,9 @@ function loadScript(src) {
   });
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
    Component
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- */
 export default function SignToText() {
   const { user }  = useAuth();
   const { confidenceThreshold: settingsThreshold, privacyMode, recognitionMode, updateSettings, language } = useSettings();
@@ -462,7 +471,7 @@ export default function SignToText() {
   const recognitionModeRef = useRef(recognitionMode);
   useEffect(() => { recognitionModeRef.current = recognitionMode; }, [recognitionMode]);
 
-  /* â”€â”€ UI state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- UI state - */
   const [mpReady,       setMpReady]       = useState(false);
   const [camActive,     setCamActive]     = useState(false);
   const [starting,      setStarting]      = useState(false);
@@ -483,10 +492,10 @@ export default function SignToText() {
   const [improvedSentences,setImprovedSentences]= useState([]);  // AI-improved versions
   const [skipRate,         setSkipRate]         = useState(0);   // adaptive frame skip
 
-  /* â”€â”€ AI improve state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- AI improve state - */
   const [improvingIdx,  setImprovingIdx]  = useState(-1);  // index being improved
 
-  /* â”€â”€ Letter-model UI state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Letter-model UI state - */
   const [letterPrediction,  setLetterPrediction]  = useState('');   // current frame letter
   const [letterConf,        setLetterConf]        = useState(0);
   const [letterTop5,        setLetterTop5]        = useState([]);
@@ -496,7 +505,7 @@ export default function SignToText() {
   const [letterStableDots,  setLetterStableDots]  = useState(0);
   const [letterSentence,    setLetterSentence]    = useState('');   // generated sentence
 
-  /* â”€â”€ Refs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Refs - */
   const videoRef        = useRef(null);
   const canvasRef       = useRef(null);
   const holisticRef     = useRef(null);
@@ -509,7 +518,7 @@ export default function SignToText() {
   const prevVelRef      = useRef(null);
   const headStateRef    = useRef({ yaw: 0, pitch: 0, roll: 0 });
   const nmmSummaryRef   = useRef({});
-  // Running NMM accumulator for the current gloss window â†’ used by sentence generator
+  // Running NMM accumulator for the current gloss window -> used by sentence generator
   const nmmWindowRef    = useRef({
     eyebrow_raise: 0, eyebrow_furrow: 0,
     head_nod: 0, head_shake: 0, mouth_open: 0,
@@ -526,7 +535,7 @@ export default function SignToText() {
   const lastCommitTime  = useRef(0);
   const lastCommitWord  = useRef('');          // duplicate hash
 
-  // Adaptive frame skip â€” only update state every N skips to avoid re-renders
+  // Adaptive frame skip  - only update state every N skips to avoid re-renders
   const frameSkipCount  = useRef(0);
   const holisticBusy    = useRef(false);
 
@@ -542,14 +551,14 @@ export default function SignToText() {
   const baseStableRef   = useRef(0);           // frames base-hand has been stable
   const retrainWarnedRef = useRef(false);       // show retrain error once
 
-  // Letter-model inference state â€” processed inside onResults, no second timer
+  // Letter-model inference state  - processed inside onResults, no second timer
   const letterStableLetterRef = useRef('');
   const letterStableCountRef  = useRef(0);
   const letterCooldownRef     = useRef(0);
   const letterWordRef         = useRef('');
   const letterWordsRef        = useRef([]);
   const letterSendingRef      = useRef(false);
-  // Cached dominant-hand vector (63 floats) â€” set inside onResults
+  // Cached dominant-hand vector (63 floats)  - set inside onResults
   const lastDomHandRef        = useRef(null);
   const lastIndexTipRef       = useRef(null);
   // Previous UI values to skip no-op setState calls
@@ -562,7 +571,7 @@ export default function SignToText() {
   const thresholdRef    = useRef(effectiveThreshold);
   useEffect(() => { thresholdRef.current = Math.max(settingsThreshold, CONFIDENCE_THRESHOLD); }, [settingsThreshold]);
 
-  /* â”€â”€ Load CDN libraries (sequential so progress is meaningful) â”€â”€â”€â”€ */
+  /* -- Load CDN libraries (sequential so progress is meaningful) - */
   const [loadStep, setLoadStep] = useState(0); // 0=idle 1=holistic 2=camera 3=drawing 4=done
   useEffect(() => {
     setLoadStep(1);
@@ -574,7 +583,7 @@ export default function SignToText() {
   }, []);
   useEffect(() => () => teardown(), []);
 
-  /* â”€â”€ Canvas overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Canvas overlay - */
   const drawOverlay = useCallback((results) => {
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -599,14 +608,14 @@ export default function SignToText() {
     const baseColor = dominantRef.current ? '#F59E0B' : '#14B8A6';
     drawHand(dominantRef.current ? results.rightHandLandmarks : results.leftHandLandmarks, domColor);
     drawHand(dominantRef.current ? results.leftHandLandmarks  : results.rightHandLandmarks, baseColor);
-    if (results.poseLandmarks?.[16]) {
+    if (results.poseLandmarks[16]) {
       const rw = results.poseLandmarks[16];
       ctx.beginPath(); ctx.arc(rw.x * canvas.width, rw.y * canvas.height, 7, 0, 2 * Math.PI);
       ctx.fillStyle = 'rgba(234,179,8,.7)'; ctx.fill();
     }
   }, []);
 
-  /* â”€â”€ Start camera + Holistic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Start camera + Holistic - */
   const startCamera = useCallback(async () => {
     setError(''); setStarting(true);
     try {
@@ -617,7 +626,7 @@ export default function SignToText() {
         locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629/${f}`,
       });
       holisticRef.current.setOptions({
-        modelComplexity: 0,              // 0 = lite â€” much faster to initialise
+        modelComplexity: 0,              // 0 = lite  - much faster to initialise
         smoothLandmarks: true,
         enableSegmentation: false,
         refineFaceLandmarks: false,
@@ -638,7 +647,7 @@ export default function SignToText() {
           setHandsVisible(hasHands);
         }
 
-        /* â”€â”€ Dynamic handedness calibration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* -- Dynamic handedness calibration - */
         if (calibFrames.current < CALIBRATION_FRAMES) {
           if (results.poseLandmarks) {
             const lw = results.poseLandmarks[15], rw = results.poseLandmarks[16];
@@ -658,7 +667,7 @@ export default function SignToText() {
           }
         }
 
-        /* â”€â”€ Build 218-dim feature vector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* -- Build 218-dim feature vector - */
         const { vec, wrist, vel, headState, nmmSummary, domRaw, baseRaw } =
           buildFrameVector(results, dominantRef.current, prevWristRef.current, prevVelRef.current, headStateRef.current);
 
@@ -667,10 +676,10 @@ export default function SignToText() {
         headStateRef.current  = headState;
         nmmSummaryRef.current = nmmSummary;
 
-        /* â”€â”€ Capture raw dominant hand for letter model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-        const domLms = dominantRef.current
-          ? results.rightHandLandmarks
-          : results.leftHandLandmarks;
+        /* -- Capture raw dominant hand for letter model - */
+       const domLms = dominantRef.current
+  ? results.rightHandLandmarks
+  : results.leftHandLandmarks;
         if (domLms && domLms.length === 21) {
           const flat = new Array(63);
           for (let i = 0; i < 21; i++) {
@@ -685,7 +694,7 @@ export default function SignToText() {
           lastIndexTipRef.current = null;
         }
 
-        /* â”€â”€ Inline letter-model debounce (no second timer) â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* -- Inline letter-model debounce (no second timer) - */
         if (recognitionModeRef.current !== 'word' && hasHands && lastDomHandRef.current && !letterSendingRef.current) {
           if (letterCooldownRef.current > 0) {
             letterCooldownRef.current--;
@@ -696,9 +705,9 @@ export default function SignToText() {
             const tipSnap       = lastIndexTipRef.current;
             predictLetter(landmarksSnap, tipSnap)
               .then(({ data: ld }) => {
-                const lt   = ld.letter     ?? 'â€”';
-                const lc   = ld.confidence ?? 0;
-                const top5l = ld.top5      ?? [];
+                const lt   = ld.letter      ?? '…';
+                const lc   = ld.confidence  ?? 0;
+                const top5l = ld.top5       ?? [];
 
                 // Only update letter display state when value changes
                 if (lt !== prevLetterRef.current) {
@@ -712,49 +721,55 @@ export default function SignToText() {
                 }
 
                 // Debounce: require LETTER_STABLE_FRAMES consecutive same-letter frames
-                if (lt !== 'â€”' && lc >= LETTER_CONF_THRESH) {
-                  if (lt === letterStableLetterRef.current) {
-                    letterStableCountRef.current++;
-                    setLetterStableDots(letterStableCountRef.current);
-                  } else {
-                    letterStableLetterRef.current = lt;
-                    letterStableCountRef.current  = 1;
-                    setLetterStableDots(1);
-                  }
-                  if (letterStableCountRef.current >= LETTER_STABLE_FRAMES) {
-                    const newWord = letterWordRef.current + lt;
-                    letterWordRef.current = newWord;
-                    setLetterWord(newWord);
-                    letterStableCountRef.current  = 0;
-                    letterStableLetterRef.current = '';
-                    setLetterStableDots(0);
-                    letterCooldownRef.current = LETTER_COOLDOWN_FRAMES;
-                    // Only fetch suggestions on commit â€” not every frame
-                    generateLetterSentence(newWord)
-                      .then(({ data: sd }) => setLetterSuggestions(sd.suggestions ?? []))
-                      .catch(() => {});
-                  }
-                } else {
-                  if (letterStableCountRef.current !== 0) {
-                    letterStableLetterRef.current = lt;
-                    letterStableCountRef.current  = 0;
-                    setLetterStableDots(0);
-                  }
-                }
-              })
-              .catch(() => {})
-              .finally(() => { letterSendingRef.current = false; });
-          }
-        } else if (!hasHands) {
-          // Reset letter debounce when hand leaves frame
-          if (letterStableCountRef.current !== 0) {
-            letterStableLetterRef.current = '';
-            letterStableCountRef.current  = 0;
-            setLetterStableDots(0);
-          }
-        }
+                if (lt !== '->' && lc >= LETTER_CONF_THRESH) {
+  if (lt === letterStableLetterRef.current) {
+    letterStableCountRef.current++;
+    setLetterStableDots(letterStableCountRef.current);
+  } else {
+    letterStableLetterRef.current = lt;
+    letterStableCountRef.current = 1;
+    setLetterStableDots(1);
+  }
+}
+                 if (letterStableCountRef.current >= LETTER_STABLE_FRAMES) {
+  const newWord = letterWordRef.current + lt;
+  letterWordRef.current = newWord;
+  setLetterWord(newWord);
 
-        /* â”€â”€ NMM accumulator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  letterStableCountRef.current = 0;
+  letterStableLetterRef.current = '';
+  setLetterStableDots(0);
+
+  letterCooldownRef.current = LETTER_COOLDOWN_FRAMES;
+
+  // Only fetch suggestions on commit - not every frame
+  generateLetterSentence(newWord)
+    .then(({ data: sd }) => setLetterSuggestions(sd.suggestions ?? []))
+    .catch(() => {});
+} else {
+  if (letterStableCountRef.current !== 0) {
+    letterStableLetterRef.current = lt;
+    letterStableCountRef.current = 0;
+    setLetterStableDots(0);
+  }
+}
+})
+.catch(() => {})
+.finally(() => {
+  letterSendingRef.current = false;
+});
+}
+
+} else if (!hasHands) {
+  // Reset letter debounce when hand leaves frame
+  if (letterStableCountRef.current !== 0) {
+    letterStableLetterRef.current = '';
+    letterStableCountRef.current = 0;
+    setLetterStableDots(0);
+  }
+}
+
+        /* -- NMM accumulator - */
         if (nmmSummary && typeof nmmSummary === 'object') {
           const w = nmmWindowRef.current;
           w._frames++;
@@ -763,11 +778,11 @@ export default function SignToText() {
           }
         }
 
-        /* â”€â”€ Sliding FIFO push â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* -- Sliding FIFO push - */
         frameBuffer.current.push(Array.from(vec));
         if (frameBuffer.current.length > MAX_SEQUENCE_LENGTH) frameBuffer.current.shift();
 
-        /* â”€â”€ Sign boundary detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* -- Sign boundary detection - */
         const speed = vecSpeed(vec);
         if (!hasHands && speed < VELOCITY_REST_THRESH) {
           restFrameCount.current = Math.min(restFrameCount.current + 1, REST_FRAMES + 5);
@@ -775,12 +790,17 @@ export default function SignToText() {
           restFrameCount.current = 0;
         }
 
-        /* â”€â”€ Fingerspelling branch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* -- Fingerspelling branch - */
         if (hasHands && baseRaw) {
-          const baseWrist = baseRaw[0];
-          const bSpeed = prevWristRef.current
-            ? norm3(baseWrist.x - prevWristRef.current.x, baseWrist.y - prevWristRef.current.y, 0)
-            : 0;
+  const baseWrist = baseRaw[0];
+
+  const bSpeed = prevWristRef.current
+    ? norm3(
+        baseWrist.x - prevWristRef.current.x,
+        baseWrist.y - prevWristRef.current.y,
+        0
+      )
+    : 0;
           if (bSpeed < FS_STABLE_THRESH) baseStableRef.current++;
           else baseStableRef.current = 0;
           const inFS = baseStableRef.current > 10 && speed > FS_MOTION_THRESH && speed < 0.06;
@@ -793,7 +813,7 @@ export default function SignToText() {
           baseStableRef.current = 0;
         }
 
-        /* â”€â”€ Motion badge (only re-render on change) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* -- Motion badge (only re-render on change) - */
         const isResting  = restFrameCount.current >= REST_FRAMES;
         const nextMotion = hasHands
           ? (speed < VELOCITY_REST_THRESH ? 'holding' : 'signing')
@@ -803,7 +823,7 @@ export default function SignToText() {
           setMotionState(nextMotion);
         }
 
-        /* â”€â”€ NMM label (only re-render on change) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        /* -- NMM label (only re-render on change) - */
         const nextLabel = nmm2label(nmmSummary);
         if (nextLabel !== prevNmmLabelRef.current) {
           prevNmmLabelRef.current = nextLabel;
@@ -813,7 +833,7 @@ export default function SignToText() {
 
       await holisticRef.current.initialize();
 
-      /* Adaptive latency â€” skip frames when Holistic is still busy */
+      /* Adaptive latency  - skip frames when Holistic is still busy */
       cameraRef.current = new window.Camera(videoRef.current, {
         onFrame: async () => {
           if (!holisticRef.current) return;
@@ -838,7 +858,7 @@ export default function SignToText() {
         if (recognitionModeRef.current === 'letter') return;
         if (frameBuffer.current.length < SEQUENCE_LENGTH || isSending.current) return;
 
-        // End-of-sentence on rest â€” translate gloss â†’ English then clear window
+        // End-of-sentence on rest  - translate gloss -> English then clear window
         if (restFrameCount.current >= REST_FRAMES) {
           setGlossSequence(prev => {
             if (prev.length > 0) {
@@ -877,7 +897,7 @@ export default function SignToText() {
         try {
           const snapshot = frameBuffer.current.slice(-SEQUENCE_LENGTH);
           const { data }  = await predictGesture(
-            user?.email ?? 'anonymous',
+            user.email ?? 'anonymous',
             snapshot,
             nmmSummaryRef.current
           );
@@ -885,7 +905,7 @@ export default function SignToText() {
           // Surface retrain warning once (ref avoids stale closure on `error`)
           if (data.needs_retrain && !retrainWarnedRef.current) {
             retrainWarnedRef.current = true;
-            setError('Model needs retraining (feature size changed 182â†’218). Run: python -m ml.preprocess_dataset && python -m ml.train');
+            setError('Model needs retraining (feature size changed 182->218). Run: python -m ml.preprocess_dataset && python -m ml.train');
           }
 
           const word = data.predicted_text;
@@ -934,19 +954,23 @@ export default function SignToText() {
         finally { isSending.current = false; }
       }, CAPTURE_MS);
 
-      setCamActive(true);
-    } catch (err) {
-      setError(err.name === 'NotAllowedError'
-        ? 'Camera access denied. Please allow camera permissions.'
-        : err.message || 'Failed to start camera.');
-    } finally { setStarting(false); }
-  }, [user, drawOverlay]);
+     setCamActive(true);
+} catch (err) {
+  setError(
+    err.name === 'NotAllowedError'
+      ? 'Camera access denied. Please allow camera permissions.'
+      : err.message || 'Failed to start camera.'
+  );
+} finally {
+  setStarting(false);
+}
+}, [user, drawOverlay]);
 
-  /* â”€â”€ Teardown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Teardown - */
   function teardown() {
     clearInterval(captureTimerRef.current); captureTimerRef.current = null;
-    try { cameraRef.current?.stop(); }    catch {}
-    try { holisticRef.current?.close(); } catch {}
+    try { cameraRef.current.stop(); }    catch {}
+    try { holisticRef.current.close(); } catch {}
     cameraRef.current  = null; holisticRef.current = null;
     frameBuffer.current     = []; prevWristRef.current  = null;
     prevVelRef.current      = null; headStateRef.current = { yaw: 0, pitch: 0, roll: 0 };
@@ -983,7 +1007,7 @@ export default function SignToText() {
     setImprovedSentences([]); setImprovingIdx(-1);
   }, []);
 
-  /* â”€â”€ Gloss / sentence helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Gloss / sentence helpers - */
   const flushFsBuffer = () => {
     if (!fsBufferRef.current) return;
     setGlossSequence(prev => [...prev, fsBufferRef.current.toUpperCase()]);
@@ -1019,20 +1043,22 @@ export default function SignToText() {
         return next;
       });
     } catch {
-      /* silently ignore â€” keep existing text */
+      /* silently ignore  - keep existing text */
     } finally {
       setImprovingIdx(-1);
     }
   };
-  const handleCopy         = () => {
-    // Copy English translations if available, else raw glosses
-    const englishText = englishSentences.length > 0
+  const handleCopy = () => {
+  // Copy English translations if available, else raw glosses
+  const englishText =
+    englishSentences.length > 0
       ? englishSentences.join(' ')
       : [...sentence, glossSequence.join(' ')].filter(Boolean).join(' ');
-    navigator.clipboard?.writeText(englishText);
-  };
 
-  /* â”€â”€ Letter-model helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  navigator.clipboard.writeText(englishText);
+};
+
+  /* -- Letter-model helpers - */
   const handleLetterCommitWord = () => {
     const w = letterWordRef.current;
     if (!w) return;
@@ -1044,10 +1070,12 @@ export default function SignToText() {
     setLetterSuggestions([]);
     // Generate sentence from all committed words joined by space
     const joined = next.join(' ');
-    generateLetterSentence(joined)
-      .then(({ data }) => setLetterSentence(data.sentence ?? joined))
-      .catch(() => setLetterSentence(joined));
-  };
+
+generateLetterSentence(joined)
+  .then(({ data }) => setLetterSentence(data.sentence ?? joined))
+  .catch(() => setLetterSentence(joined));
+
+};
   const handleLetterClearWord = () => {
     letterWordRef.current = '';
     setLetterWord('');
@@ -1063,7 +1091,7 @@ export default function SignToText() {
   };
   const handleLetterCopy = () => {
     const text = letterSentence || letterWords.join(' ') || letterWord;
-    navigator.clipboard?.writeText(text);
+    navigator.clipboard.writeText(text);
   };
   const handleApplySuggestion = (suggestion) => {
     letterWordRef.current = suggestion.toUpperCase();
@@ -1071,29 +1099,29 @@ export default function SignToText() {
     setLetterSuggestions([]);
   };
 
-  /* â”€â”€ Motion badge colours â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Motion badge colours - */
   const motionColor = { idle: '#64748B', resting: '#F59E0B', signing: '#10B981', holding: '#3B82F6' }[motionState] ?? '#64748B';
   const motionLabel = { idle: 'Idle', resting: 'Resting', signing: 'Signing', holding: 'Holding' }[motionState] ?? 'Idle';
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  /* -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
      Render
-     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-  /* â”€â”€ CDN loading labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const loadLabels = ['', 'Loading hand trackerâ€¦', 'Loading camera utilsâ€¦', 'Loading drawing utilsâ€¦', 'Ready'];
+     -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- */
+  /* -- CDN loading labels - */
+  const loadLabels = ['', 'Loading hand tracker…', 'Loading camera utils…', 'Loading drawing utils…', 'Ready'];
   const loadPct    = loadStep === 0 ? 0 : loadStep >= 4 ? 100 : Math.round((loadStep / 3) * 100);
 
   return (
     <AppShell>
       <div className="page-header">
         <h1>Sign to Text</h1>
-        <p>Point your camera at the signer â€” GestureBridge translates signs into spoken language in real time.</p>
+        <p>Point your camera at the signer  - GestureBridge translates signs into spoken language in real time.</p>
       </div>
 
-      {/* â”€â”€ Mode selector tabs â€” right on the page, no Settings needed â”€â”€ */}
+      {/* -- Mode selector tabs  - right on the page, no Settings needed -- */}
       <div style={{ display: 'flex', gap: '.5rem', marginBottom: '1.25rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', padding: '.3rem', width: 'fit-content' }}>
         {[
-          { value: 'word',   label: 'ðŸ¤Ÿ Sign Mode',   desc: 'Full signs â†’ words' },
-          { value: 'letter', label: 'ðŸ”¤ Spell Mode',  desc: 'Finger-spell letters' },
+          { value: 'word',   label: '🤟 Sign Mode',   desc: 'Full signs → words' },
+          { value: 'letter', label: '🔤 Spell Mode',  desc: 'Finger-spell letters' },
         ].map((m) => {
           const active = recognitionMode === m.value;
           return (
@@ -1122,7 +1150,7 @@ export default function SignToText() {
       {!mpReady && !error && (
         <div style={{ marginBottom: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '.78rem', color: 'var(--text-muted)', marginBottom: '.35rem' }}>
-            <span>âš™ï¸ {loadLabels[loadStep] || 'Initialisingâ€¦'}</span>
+            <span>⟳ {loadLabels[loadStep] || 'Initialising…'}</span>
             <span>{loadPct}%</span>
           </div>
           <div style={{ height: 4, background: 'var(--border)', borderRadius: 999 }}>
@@ -1131,11 +1159,11 @@ export default function SignToText() {
         </div>
       )}
 
-      {privacyMode && <Alert type="info" message="Privacy Mode â€” translations not saved to history." />}
+      {privacyMode && <Alert type="info" message="Privacy Mode  - translations not saved to history." />}
 
       <div className="stt-grid">
 
-        {/* â”€â”€ Left â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* -- Left - */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
           {/* Video card */}
@@ -1148,7 +1176,7 @@ export default function SignToText() {
               {!camActive && (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '.75rem' }}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-light)" strokeWidth="1.25"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-                  <p style={{ color: '#94A3B8', fontSize: '.9rem' }}>{mpReady ? 'Tap Start Camera to begin' : 'Preparingâ€¦'}</p>
+                  <p style={{ color: '#94A3B8', fontSize: '.9rem' }}>{mpReady ? 'Tap Start Camera to begin' : 'Preparing…'}</p>
                 </div>
               )}
 
@@ -1157,22 +1185,22 @@ export default function SignToText() {
                 <div style={{ position: 'absolute', top: '.75rem', left: '.75rem', display: 'flex', alignItems: 'center', gap: '.4rem', background: 'rgba(0,0,0,.7)', padding: '.3rem .75rem', borderRadius: 999, fontSize: '.72rem', color: '#fff', backdropFilter: 'blur(4px)' }}>
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: motionColor, boxShadow: motionState === 'signing' ? `0 0 6px ${motionColor}` : 'none' }} />
                   {motionLabel}
-                  {handsVisible ? ' Â· Hands' : ''}
-                  {fsMode ? ' Â· Fingerspelling' : ''}
+                  {handsVisible ? ' · Hands' : ''}
+                  {fsMode ? ' · Fingerspelling' : ''}
                 </div>
               )}
 
               {/* Handedness badge */}
               {camActive && (
                 <div style={{ position: 'absolute', top: '.75rem', right: '.75rem', background: 'rgba(0,0,0,.7)', padding: '.3rem .65rem', borderRadius: 999, fontSize: '.72rem', color: dominant === 'calibrating' ? '#F59E0B' : '#10B981', backdropFilter: 'blur(4px)' }}>
-                  {dominant === 'calibrating' ? 'Calibratingâ€¦' : `${dominant === 'right' ? 'R' : 'L'}-dominant`}
+                  {dominant === 'calibrating' ? 'Calibrating…' : `${dominant === 'right' ? 'R' : 'L'}-dominant`}
                 </div>
               )}
 
               {/* Live prediction overlay */}
               {camActive && prediction && (
                 <div style={{ position: 'absolute', bottom: '.75rem', left: '50%', transform: 'translateX(-50%)', background: 'rgba(37,99,235,.88)', padding: '.45rem 1.25rem', borderRadius: 999, color: '#fff', fontSize: '1.05rem', fontWeight: 700, backdropFilter: 'blur(4px)', whiteSpace: 'nowrap' }}>
-                  {fsMode ? `âœ ${prediction}` : prediction}
+                  {fsMode ? `✦ ${prediction}` : prediction}
                 </div>
               )}
 
@@ -1188,7 +1216,7 @@ export default function SignToText() {
             <div style={{ display: 'flex', gap: '.75rem', marginTop: '1rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
               {!camActive ? (
                 <button className="btn btn-primary btn-lg" onClick={startCamera} disabled={starting || !mpReady}>
-                  {starting ? <><Spinner size="sm" /> Startingâ€¦</> : mpReady ? 'Start Camera' : 'Loadingâ€¦'}
+                  {starting ? <><Spinner size="sm" /> Starting…</> : mpReady ? 'Start Camera' : 'Loading…'}
                 </button>
               ) : (
                 <>
@@ -1200,7 +1228,7 @@ export default function SignToText() {
                   )}
                   {skipRate > 0 && (
                     <span style={{ fontSize: '.72rem', color: 'var(--color-warning)' }}>
-                      âš  Skipped {skipRate} frames (low-end mode)
+                      -- Skipped {skipRate} frames (low-end mode)
                     </span>
                   )}
                 </>
@@ -1208,7 +1236,7 @@ export default function SignToText() {
             </div>
           </div>
 
-          {/* Detected Signs â€” word mode only */}
+          {/* Detected Signs  - word mode only */}
           {recognitionMode === 'word' && (
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
@@ -1228,18 +1256,18 @@ export default function SignToText() {
                         {w}
                       </span>
                     ))
-                  : <span style={{ color: 'var(--text-light)', fontSize: '.875rem' }}>Signs will appear hereâ€¦</span>
+                  : <span style={{ color: 'var(--text-light)', fontSize: '.875rem' }}>Signs will appear here…</span>
                 }
                 {fsBuffer && (
                   <span style={{ padding: '.25rem .65rem', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 15%, transparent)', border: '1px solid var(--color-secondary,#7c5cd8)', borderRadius: 999, fontSize: '.875rem', fontWeight: 700, color: 'var(--color-secondary,#7c5cd8)', letterSpacing: '.08em' }}>
-                    âœ {fsBuffer}
+                    -- {fsBuffer}
                   </span>
                 )}
               </div>
             </div>
           )}
 
-          {/* Translation â€” word mode only */}
+          {/* Translation  - word mode only */}
           {recognitionMode === 'word' && (
             <div className="card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
@@ -1263,25 +1291,25 @@ export default function SignToText() {
                       disabled={!sentence.length && !glossSequence.length}
                       title="Speak translation aloud"
                     >
-                      ðŸ”Š
+                      -"
                     </button>
                   )}
                 </div>
               </div>
               <div style={{ minHeight: 80, padding: '1rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
                 {sentence.length === 0
-                  ? <span style={{ color: 'var(--text-light)', fontSize: '1rem' }}>Translation will appear here â€” start signing.</span>
+                  ? <span style={{ color: 'var(--text-light)', fontSize: '1rem' }}>Translation will appear here — start signing.</span>
                   : sentence.map((rawGloss, i) => {
                       const displayText = improvedSentences[i] || englishSentences[i];
                       const isImproved  = !!improvedSentences[i];
                       return (
                         <div key={i}>
-                          {/* Translation text â€” large and clear */}
+                          {/* Translation text  - large and clear */}
                           {displayText && (
                             <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.5 }}>
                               {displayText}
                               {isImproved && (
-                                <span style={{ marginLeft: '.4rem', fontSize: '.7rem', fontWeight: 500, color: 'var(--color-secondary,#7c5cd8)', verticalAlign: 'middle' }}>âœ¨ AI</span>
+                                <span style={{ marginLeft: '.4rem', fontSize: '.7rem', fontWeight: 500, color: 'var(--color-secondary,#7c5cd8)', verticalAlign: 'middle' }}>-- AI</span>
                               )}
                             </div>
                           )}
@@ -1298,7 +1326,7 @@ export default function SignToText() {
                               disabled={improvingIdx === i}
                               title="Polish with IBM Watsonx AI"
                             >
-                              {improvingIdx === i ? <Spinner size="sm" /> : 'âœ¨'} {isImproved ? 'Re-improve' : 'Improve with AI'}
+                              {improvingIdx === i ? <Spinner size="sm" /> : '✨'} {isImproved ? 'Re-improve' : 'Improve with AI'}
                             </button>
                           )}
                         </div>
@@ -1310,15 +1338,15 @@ export default function SignToText() {
           )}
         </div>
 
-        {/* â”€â”€ Right: prediction panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* -- Right: prediction panel - */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
-          {/* Current sign being read â€” word mode only */}
+          {/* Current sign being read  - word mode only */}
           {recognitionMode === 'word' && (
             <div className="card" style={{ textAlign: 'center' }}>
               <h4 style={{ color: 'var(--text-muted)', marginBottom: '.75rem' }}>Reading Now</h4>
               <div style={{ fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-.02em', color: prediction ? (fsMode ? 'var(--color-secondary,#7c5cd8)' : 'var(--color-primary)') : 'var(--text-light)', minHeight: '2.8rem' }}>
-                {prediction || 'â€”'}
+                {prediction || '…'}
               </div>
               {fsMode && <div style={{ fontSize: '.72rem', color: 'var(--color-secondary,#7c5cd8)', marginTop: '.2rem' }}>Spelling mode active</div>}
 
@@ -1364,7 +1392,7 @@ export default function SignToText() {
             </div>
           )}
 
-          {/* NMM card â€” word mode only */}
+          {/* NMM card  - word mode only */}
           {recognitionMode === 'word' && camActive && nmmLabel && (
             <div className="card" style={{ background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 8%, var(--bg-card))', borderColor: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 30%, var(--border))' }}>
               <h4 style={{ marginBottom: '.5rem', fontSize: '.85rem' }}>Non-Manual Markers</h4>
@@ -1375,7 +1403,7 @@ export default function SignToText() {
             </div>
           )}
 
-          {/* Top-5 â€” word mode only */}
+          {/* Top-5  - word mode only */}
           {recognitionMode === 'word' && top5.length > 0 && (
             <div className="card">
               <h4 style={{ marginBottom: '.75rem' }}>Top 5 Predictions</h4>
@@ -1393,16 +1421,31 @@ export default function SignToText() {
             </div>
           )}
 
-          {/* â•â• Letter-to-Sentence Panel â€” letter mode only â•â•â•â•â•â•â•â•â•â• */}
+          {/* -*-*- Letter-to-Sentence Panel  - letter mode only -*-*-*-*-*-*-*-*-*-*- */}
           {recognitionMode === 'letter' && (
           <div className="card" style={{ borderColor: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 35%, var(--border))', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 4%, var(--bg-card))' }}>
 
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem' }}>
-              <h4 style={{ margin: 0, color: 'var(--color-secondary,#7c5cd8)', fontSize: '.9rem' }}>
-                Letter â†’ Sentence
-                <span style={{ marginLeft: '.4rem', fontSize: '.7rem', fontWeight: 400, color: 'var(--text-muted)' }}>ASL fingerspelling</span>
-              </h4>
+              <h4
+  style={{
+    margin: 0,
+    color: 'var(--color-secondary, #7c5cd8)',
+    fontSize: '.9rem'
+  }}
+>
+  Letter → Sentence
+  <span
+    style={{
+      marginLeft: '.4rem',
+      fontSize: '.7rem',
+      fontWeight: 400,
+      color: 'var(--text-muted)'
+    }}
+  >
+    ASL fingerspelling
+  </span>
+</h4>
               <div style={{ display: 'flex', gap: '.3rem' }}>
                 <button className="btn btn-ghost btn-sm" onClick={handleLetterClearAll} disabled={!letterWord && !letterWords.length && !letterSentence}>Clear</button>
                 <button className="btn btn-subtle btn-sm" onClick={handleLetterCopy} disabled={!letterWord && !letterWords.length}>Copy</button>
@@ -1413,7 +1456,7 @@ export default function SignToText() {
                     disabled={!letterSentence && !letterWords.length && !letterWord}
                     title="Speak fingerspelling result aloud"
                   >
-                    ðŸ”Š
+                    -"
                   </button>
                 )}
               </div>
@@ -1421,8 +1464,8 @@ export default function SignToText() {
 
             {/* Live letter prediction */}
             <div style={{ textAlign: 'center', padding: '.75rem 0 .5rem' }}>
-              <div style={{ fontSize: '2.8rem', fontWeight: 900, letterSpacing: '.08em', color: letterPrediction && letterPrediction !== 'â€”' ? 'var(--color-secondary,#7c5cd8)' : 'var(--text-light)', minHeight: '3.2rem', fontFamily: 'monospace' }}>
-                {letterPrediction || 'â€”'}
+              <div style={{ fontSize: '2.8rem', fontWeight: 900, letterSpacing: '.08em', color: letterPrediction && letterPrediction !== '…' ? 'var(--color-secondary,#7c5cd8)' : 'var(--text-light)', minHeight: '3.2rem', fontFamily: 'monospace' }}>
+                {letterPrediction || '…'}
               </div>
               {letterConf > 0 && (
                 <div style={{ marginTop: '.4rem' }}>
@@ -1470,10 +1513,10 @@ export default function SignToText() {
             <div style={{ marginTop: '.85rem', padding: '.6rem .85rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', minHeight: 38 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.2rem' }}>
                 <span style={{ fontSize: '.72rem', color: 'var(--text-muted)' }}>Building word</span>
-                <button className="btn btn-ghost btn-sm" style={{ padding: '0 .4rem', fontSize: '.72rem' }} onClick={handleLetterClearWord} disabled={!letterWord}>âœ•</button>
+                <button className="btn btn-ghost btn-sm" style={{ padding: '0 .4rem', fontSize: '.72rem' }} onClick={handleLetterClearWord} disabled={!letterWord}>-*</button>
               </div>
               <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '1.1rem', letterSpacing: '.12em', color: letterWord ? 'var(--text-main)' : 'var(--text-light)' }}>
-                {letterWord || 'â€¦'}
+                {letterWord || '…'}
               </div>
               {letterWord && (
                 <button
@@ -1531,7 +1574,7 @@ export default function SignToText() {
                       onClick={() => speakText(letterSentence, ttsLocale)}
                       title="Speak sentence aloud"
                     >
-                      ðŸ”Š Speak
+                      - Speak
                     </button>
                   )}
                 </div>
@@ -1554,7 +1597,7 @@ export default function SignToText() {
             {recognitionMode === 'word' ? (
               <ul style={{ paddingLeft: '1.1rem', fontSize: '.875rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
                 <li>Keep your <strong>full upper body</strong> in the frame.</li>
-                <li>Sign at a <strong>natural pace</strong> â€” pause briefly between words.</li>
+                <li>Sign at a <strong>natural pace</strong>  - pause briefly between words.</li>
                 <li>Drop hands to waist level to finish a sentence.</li>
                 <li>Use <strong>Copy</strong> to send the translation to any other app.</li>
               </ul>

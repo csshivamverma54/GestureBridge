@@ -1,18 +1,18 @@
-﻿/**
- * SettingsContext â€” theme, sign-language preference, and misc settings.
+/**
+ * SettingsContext  - theme, sign-language preference, and misc settings.
  *
  * Settings are persisted to localStorage so they survive page reloads.
  *
  * Exposes:
- *   theme               â€” 'light' | 'dark'
- *   language            â€” 'ASL' | 'ISL' | 'Hindi' | 'Marathi'
- *   ttsLanguage         â€” BCP-47 locale used for Web Speech API TTS/STT
+ *   theme                - 'light' | 'dark'
+ *   language             - 'ASL' | 'ISL' | 'Hindi' | 'Marathi'
+ *   ttsLanguage          - BCP-47 locale used for Web Speech API TTS/STT
  *                          e.g. 'en-US', 'hi-IN', 'mr-IN'
- *   recognitionMode     â€” 'word' | 'letter'
- *   notifications       â€” boolean
- *   privacyMode         â€” boolean
- *   captureInterval     â€” number (ms between webcam frame captures)
- *   confidenceThreshold â€” 0â€“1 minimum confidence to accept a prediction
+ *   recognitionMode      - 'word' | 'letter'
+ *   notifications        - boolean
+ *   privacyMode          - boolean
+ *   captureInterval      - number (ms between webcam frame captures)
+ *   confidenceThreshold  - 0-1 minimum confidence to accept a prediction
  *   toggleTheme()
  *   updateSettings(partial)
  */
@@ -25,7 +25,7 @@ const DEFAULTS = {
   theme:               'light',
   language:            'ASL',
   ttsLanguage:         'en-US',   // BCP-47 for Web Speech API
-  recognitionMode:     'letter',  // 'word' | 'letter'  â€” letter-to-sentence is default
+  recognitionMode:     'letter',  // 'word' | 'letter'   - letter-to-sentence is default
   notifications:       true,
   privacyMode:         false,
   captureInterval:     200,   // ms
@@ -35,16 +35,16 @@ const DEFAULTS = {
 /**
  * Supported display languages.
  * Each entry includes:
- *   value      â€” stored in settings.language
- *   label      â€” shown in UI dropdowns
- *   ttsLocale  â€” BCP-47 passed to SpeechSynthesis / SpeechRecognition
- *   sttLangs   â€” alternative BCP-47 codes that browsers accept for STT
+ *   value       - stored in settings.language
+ *   label       - shown in UI dropdowns
+ *   ttsLocale   - BCP-47 passed to SpeechSynthesis / SpeechRecognition
+ *   sttLangs    - alternative BCP-47 codes that browsers accept for STT
  */
 export const SUPPORTED_LANGUAGES = [
   { value: 'ASL',     label: 'ASL (American)',   ttsLocale: 'en-US',  nativeName: 'English' },
   { value: 'ISL',     label: 'ISL (Indian)',      ttsLocale: 'en-IN',  nativeName: 'English (IN)' },
-  { value: 'Hindi',   label: 'Hindi (à¤¹à¤¿à¤¨à¥à¤¦à¥€)',     ttsLocale: 'hi-IN',  nativeName: 'à¤¹à¤¿à¤¨à¥à¤¦à¥€' },
-  { value: 'Marathi', label: 'Marathi (à¤®à¤°à¤¾à¤ à¥€)',   ttsLocale: 'mr-IN',  nativeName: 'à¤®à¤°à¤¾à¤ à¥€' },
+  { value: 'Hindi',   label: 'Hindi (hi-IN)',   ttsLocale: 'hi-IN',  nativeName: 'Hindi' },
+  { value: 'Marathi', label: 'Marathi (mr-IN)', ttsLocale: 'mr-IN',  nativeName: 'Marathi' },
 ];
 
 /** Return the BCP-47 locale for a given language value. */

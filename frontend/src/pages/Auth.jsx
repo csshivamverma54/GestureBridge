@@ -1,10 +1,10 @@
-﻿/**
- * Auth Page â€” Login Â· Register Â· OTP Verification Â· Guest access.
+/**
+ * Auth Page  - Login - Register - OTP Verification - Guest access.
  *
  * Flow:
- *   Login    â†’ credentials â†’ dashboard
- *   Register â†’ credentials â†’ POST /otp/send (real Gmail SMTP) â†’ OTP screen â†’ POST /otp/verify â†’ dashboard
- *   Guest    â†’ instant dashboard (no persistence)
+ *   Login    -> credentials -> dashboard
+ *   Register -> credentials -> POST /otp/send (real Gmail SMTP) -> OTP screen -> POST /otp/verify -> dashboard
+ *   Guest    -> instant dashboard (no persistence)
  *
  * Google OAuth: redirects to VITE_BACKEND_URL/auth/google (backend handles the OAuth dance).
  */
@@ -18,7 +18,7 @@ import Alert from '../components/Alert';
 import { Spinner } from '../components/LoadingSpinner';
 import { useSettings } from '../context/SettingsContext';
 
-/* â”€â”€ Icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Icons - */
 const MoonIcon = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
@@ -75,7 +75,7 @@ const BRAND_BULLETS = [
   { icon: 'M12 8v4l3 3M3.05 11a9 9 0 110 2', text: 'Full translation history saved to account' },
 ];
 
-/* â”€â”€ OTP digit input â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- OTP digit input - */
 function OtpInput({ value, onChange, disabled }) {
   const refs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
   const digits = (value + '      ').slice(0, 6).split('');
@@ -84,17 +84,17 @@ function OtpInput({ value, onChange, disabled }) {
     if (e.key === 'Backspace') {
       const next = value.slice(0, i) + value.slice(i + 1);
       onChange(next);
-      if (i > 0) refs[i - 1].current?.focus();
+      if (i > 0) refs[i - 1].current.focus();
       return;
     }
 
     if (e.key === 'ArrowLeft' && i > 0) {
-      refs[i - 1].current?.focus();
+      refs[i - 1].current.focus();
       return;
     }
 
     if (e.key === 'ArrowRight' && i < 5) {
-      refs[i + 1].current?.focus();
+      refs[i + 1].current.focus();
       return;
     }
 
@@ -103,7 +103,7 @@ function OtpInput({ value, onChange, disabled }) {
     const next = value.slice(0, i) + e.key + value.slice(i + 1);
     onChange(next.slice(0, 6));
 
-    if (i < 5) refs[i + 1].current?.focus();
+    if (i < 5) refs[i + 1].current.focus();
   };
 
   const handlePaste = (e) => {
@@ -111,7 +111,7 @@ function OtpInput({ value, onChange, disabled }) {
 
     if (pasted) {
       onChange(pasted);
-      refs[Math.min(pasted.length, 5)].current?.focus();
+      refs[Math.min(pasted.length, 5)].current.focus();
     }
 
     e.preventDefault();
@@ -165,7 +165,7 @@ function OtpInput({ value, onChange, disabled }) {
   );
 }
 
-/* â”€â”€ Countdown timer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Countdown timer - */
 function useCountdown(seconds, active) {
   const [remaining, setRemaining] = useState(seconds);
 
@@ -185,9 +185,9 @@ function useCountdown(seconds, active) {
   return remaining;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
    Main Auth component
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- */
 export default function Auth({ defaultTab = 'login' }) {
   const [screen, setScreen] = useState(
     defaultTab === 'register' ? 'register' : 'login'
@@ -220,7 +220,7 @@ export default function Auth({ defaultTab = 'login' }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state.from.pathname || '/dashboard';
   const dark = theme === 'dark';
 
   const clearMessages = () => {
@@ -234,7 +234,7 @@ export default function Auth({ defaultTab = 'login' }) {
     setOtpValue('');
   };
 
-  /* â”€â”€ Login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Login - */
   const handleLogin = async (e) => {
     e.preventDefault();
     clearMessages();
@@ -280,7 +280,7 @@ export default function Auth({ defaultTab = 'login' }) {
     }
   };
 
-  /* â”€â”€ Register â€” only sends OTP; does NOT create the account yet â”€ */
+  /* -- Register  - only sends OTP; does NOT create the account yet - */
   const handleRegister = async (e) => {
     e.preventDefault();
     clearMessages();
@@ -303,7 +303,7 @@ export default function Auth({ defaultTab = 'login' }) {
     setLoading(true);
 
     try {
-      // Send OTP FIRST â€” only move to OTP screen if the email was delivered.
+      // Send OTP FIRST  - only move to OTP screen if the email was delivered.
       // The account is created in handleVerifyOtp after the code is confirmed.
       await api.post('/otp/send', { email: regEmail });
 
@@ -318,9 +318,9 @@ export default function Auth({ defaultTab = 'login' }) {
     }
   };
 
-  /* â”€â”€ OTP verify â†’ create account only after code is confirmed â”€â”€ */
+  /* -- OTP verify -> create account only after code is confirmed -- */
   const handleVerifyOtp = async (e) => {
-    e?.preventDefault();
+    e.preventDefault();
     clearMessages();
 
     if (otpValue.length !== 6) {
@@ -342,7 +342,7 @@ export default function Auth({ defaultTab = 'login' }) {
         return;
       }
 
-      // OTP confirmed â€” NOW create the account
+      // OTP confirmed  - NOW create the account
       await registerUser({
         name: regName,
         email: regEmail,
@@ -381,7 +381,7 @@ export default function Auth({ defaultTab = 'login' }) {
     }
   };
 
-  /* â”€â”€ Resend OTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Resend OTP - */
   const handleResend = async () => {
     if (countdown > 0) return;
 
@@ -406,7 +406,7 @@ export default function Auth({ defaultTab = 'login' }) {
     }
   };
 
-  /* â”€â”€ Guest â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Guest - */
   const handleGuest = async () => {
     setGuestLoad(true);
 
@@ -419,7 +419,7 @@ export default function Auth({ defaultTab = 'login' }) {
     });
   };
 
-  /* â”€â”€ Google OAuth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Google OAuth - */
   const handleGoogle = () => {
     const backendOrigin =
       import.meta.env.VITE_BACKEND_URL || '';
@@ -428,7 +428,7 @@ export default function Auth({ defaultTab = 'login' }) {
       `${backendOrigin}/auth/google`;
   };
 
-  /* â”€â”€ Auto-submit OTP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Auto-submit OTP - */
   useEffect(() => {
     if (
       otpValue.length === 6 &&
@@ -450,7 +450,7 @@ export default function Auth({ defaultTab = 'login' }) {
       }}
     >
 
-      {/* â”€â”€ Top nav â”€â”€ */}
+      {/* -- Top nav -- */}
       <nav
         style={{
           padding: '.8rem clamp(1rem, 4vw, 2rem)',
@@ -524,7 +524,7 @@ export default function Auth({ defaultTab = 'login' }) {
         }
       </nav>
 
-      {/* â”€â”€ Split layout â”€â”€ */}
+      {/* -- Split layout -- */}
       <div
         className="auth-main-layout"
         style={{
@@ -535,7 +535,7 @@ export default function Auth({ defaultTab = 'login' }) {
         }}
       >
 
-        {/* â”€â”€ Brand panel â”€â”€ */}
+        {/* -- Brand panel -- */}
         <div
           className="auth-brand-panel"
           style={{
@@ -589,7 +589,7 @@ export default function Auth({ defaultTab = 'login' }) {
                 lineHeight: 1.75,
               }}
             >
-              The AI-powered bridge between ASL and English â€”
+              The AI-powered bridge between ASL and English  -
               entirely in your browser.
             </p>
           </div>
@@ -666,7 +666,7 @@ export default function Auth({ defaultTab = 'login' }) {
                 marginBottom: '.25rem',
               }}
             >
-              Just exploring?
+              Just exploring
             </div>
 
             <div
@@ -682,7 +682,7 @@ export default function Auth({ defaultTab = 'login' }) {
           </div>
         </div>
 
-        {/* â”€â”€ Form panel â”€â”€ */}
+        {/* -- Form panel -- */}
         <div
           className="auth-form-panel"
           style={{
@@ -713,9 +713,9 @@ export default function Auth({ defaultTab = 'login' }) {
             }}
           >
 
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+            {/* -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
                 OTP VERIFICATION SCREEN
-            â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- */}
             {screen === 'otp' && (
               <>
                 <button
@@ -845,7 +845,7 @@ export default function Auth({ defaultTab = 'login' }) {
                     {loading ? (
                       <>
                         <Spinner size="sm" />
-                        Verifyingâ€¦
+                        Verifying…
                       </>
                     ) : (
                       <>
@@ -880,7 +880,7 @@ export default function Auth({ defaultTab = 'login' }) {
                       marginBottom: '.4rem',
                     }}
                   >
-                    Didn't receive the code?
+                    Didn't receive the code
                   </p>
 
                   {countdown > 0 ? (
@@ -964,9 +964,9 @@ export default function Auth({ defaultTab = 'login' }) {
               </>
             )}
 
-            {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+            {/* -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
                 LOGIN / REGISTER SCREENS
-            â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+            -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- */}
             {screen !== 'otp' && (
               <>
                 <div style={{ marginBottom: '1.5rem' }}>
@@ -977,7 +977,7 @@ export default function Auth({ defaultTab = 'login' }) {
                     }}
                   >
                     {screen === 'login'
-                      ? 'Welcome back'
+                       ? 'Welcome back'
                       : 'Create your account'}
                   </h2>
 
@@ -988,8 +988,8 @@ export default function Auth({ defaultTab = 'login' }) {
                     }}
                   >
                     {screen === 'login'
-                      ? 'Sign in to continue to GestureBridge'
-                      : 'Join GestureBridge â€” free, no card required'}
+                       ? 'Sign in to continue to GestureBridge'
+                      : 'Join GestureBridge  - free, no card required'}
                   </p>
                 </div>
 
@@ -1106,7 +1106,7 @@ export default function Auth({ defaultTab = 'login' }) {
                   />
                 </div>
 
-                {/* â”€â”€ LOGIN form â”€â”€ */}
+                {/* -- LOGIN form -- */}
                 {screen === 'login' && (
                   <form
                     onSubmit={handleLogin}
@@ -1150,7 +1150,7 @@ export default function Auth({ defaultTab = 'login' }) {
                           id="login-password"
                           type={showPwd ? 'text' : 'password'}
                           className="form-input"
-                          placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                          placeholder=" - - - - - - - --"
                           value={loginPassword}
                           onChange={e => setLoginPassword(e.target.value)}
                           autoComplete="current-password"
@@ -1224,16 +1224,16 @@ export default function Auth({ defaultTab = 'login' }) {
                       {loading ? (
                         <>
                           <Spinner size="sm" />
-                          Signing Inâ€¦
+                          Signing In…
                         </>
                       ) : (
-                        'Sign In â†’'
+                        'Sign In →'
                       )}
                     </button>
                   </form>
                 )}
 
-                {/* â”€â”€ REGISTER form â”€â”€ */}
+                {/* -- REGISTER form -- */}
                 {screen === 'register' && (
                   <form
                     onSubmit={handleRegister}
@@ -1338,10 +1338,10 @@ export default function Auth({ defaultTab = 'login' }) {
                       {loading ? (
                         <>
                           <Spinner size="sm" />
-                          Creating Accountâ€¦
+                          Creating Account…
                         </>
                       ) : (
-                        'Create Account & Verify Email â†’'
+                        'Create Account & Verify Email →'
                       )}
                     </button>
 
@@ -1359,7 +1359,7 @@ export default function Auth({ defaultTab = 'login' }) {
                   </form>
                 )}
 
-                {/* â”€â”€ Guest login â”€â”€ */}
+                {/* -- Guest login -- */}
                 <div
                   style={{
                     marginTop: '1rem',
@@ -1381,7 +1381,7 @@ export default function Auth({ defaultTab = 'login' }) {
                     {guestLoad ? (
                       <>
                         <Spinner size="sm" />
-                        Loading Guest Sessionâ€¦
+                        Loading Guest Session…
                       </>
                     ) : (
                       <>
@@ -1411,12 +1411,12 @@ export default function Auth({ defaultTab = 'login' }) {
                       color: 'var(--text-light)',
                     }}
                   >
-                    Guest sessions are temporary â€”
+                    Guest sessions are temporary  -
                     history won't be saved.
                   </p>
                 </div>
 
-                {/* â”€â”€ Switch link â”€â”€ */}
+                {/* -- Switch link -- */}
                 <p
                   style={{
                     textAlign: 'center',
@@ -1427,7 +1427,7 @@ export default function Auth({ defaultTab = 'login' }) {
                 >
                   {screen === 'login' ? (
                     <>
-                      Don't have an account?{' '}
+                      Don't have an account{' '}
                       <button
                         onClick={() => switchScreen('register')}
                         style={{
@@ -1444,7 +1444,7 @@ export default function Auth({ defaultTab = 'login' }) {
                     </>
                   ) : (
                     <>
-                      Already have an account?{' '}
+                      Already have an account{' '}
                       <button
                         onClick={() => switchScreen('login')}
                         style={{
@@ -1468,13 +1468,13 @@ export default function Auth({ defaultTab = 'login' }) {
       </div>
 
             <style>{`
-        /* â”€â”€ Desktop / normal computer â”€â”€ */
+        /* -- Desktop / normal computer -- */
         .auth-brand-panel {
           width: 380px;
           flex-shrink: 0;
         }
 
-        /* â”€â”€ Tablet / smaller computer â”€â”€ */
+        /* -- Tablet / smaller computer -- */
         @media (max-width: 1050px) and (min-width: 821px) {
           .auth-brand-panel {
             width: 34vw;
@@ -1492,7 +1492,7 @@ export default function Auth({ defaultTab = 'login' }) {
           }
         }
 
-        /* â”€â”€ Mobile / smaller screens â”€â”€ */
+        /* -- Mobile / smaller screens -- */
         @media (max-width: 820px) {
           .auth-brand-panel {
             display: none !important;
@@ -1518,7 +1518,7 @@ export default function Auth({ defaultTab = 'login' }) {
           }
         }
 
-        /* â”€â”€ Very small phones â”€â”€ */
+        /* -- Very small phones -- */
         @media (max-width: 380px) {
           .auth-form-panel {
             padding: .75rem .5rem !important;

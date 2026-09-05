@@ -1,5 +1,5 @@
-﻿/**
- * AccountSettings â€” merged Profile + Settings page.
+/**
+ * AccountSettings  - merged Profile + Settings page.
  * Tabbed layout: Profile | Security | Appearance | Privacy
  */
 
@@ -21,8 +21,8 @@ const TABS = [
 const LANGUAGES = [
   { value: 'ASL',     label: 'American Sign Language (ASL)' },
   { value: 'ISL',     label: 'Indian Sign Language (ISL)' },
-  { value: 'Hindi',   label: 'Hindi â€” à¤¹à¤¿à¤¨à¥à¤¦à¥€ (hi-IN)' },
-  { value: 'Marathi', label: 'Marathi â€” à¤®à¤°à¤¾à¤ à¥€ (mr-IN)' },
+  { value: 'Hindi',   label: 'Hindi (hi-IN)' },
+  { value: 'Marathi', label: 'Marathi (mr-IN)' },
 ];
 
 const Icon = ({ d, size = 16 }) => (
@@ -68,8 +68,8 @@ export default function AccountSettings() {
   const dark = theme === 'dark';
 
   // Profile fields
-  const [name,      setName]      = useState(user?.name || '');
-  const [email,     setEmail]     = useState(user?.email || '');
+  const [name,      setName]      = useState(user.name || '');
+  const [email,     setEmail]     = useState(user.email || '');
 
   // Security fields
   const [oldPass,     setOldPass]     = useState('');
@@ -77,7 +77,7 @@ export default function AccountSettings() {
   const [confirmPass, setConfirmPass] = useState('');
 
   useEffect(() => {
-    if (user?.isGuest) return;
+    if (user.isGuest) return;
     getProfile().then(r => { setName(r.data.name); setEmail(r.data.email); }).catch(() => {});
   }, [user]);
 
@@ -112,8 +112,8 @@ export default function AccountSettings() {
   // Avatar initials
   const initials = (name || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
-  const guestBanner = user?.isGuest && (
-    <Alert type="info" message="You're in guest mode â€” profile changes are not persisted." />
+  const guestBanner = user.isGuest && (
+    <Alert type="info" message="You're in guest mode  - profile changes are not persisted." />
   );
 
   return (
@@ -130,7 +130,7 @@ export default function AccountSettings() {
 
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
 
-        {/* â”€â”€ Left tab nav â”€â”€ */}
+        {/* -- Left tab nav -- */}
         <div style={{
           width: 200, flexShrink: 0,
           background: 'var(--bg-card)',
@@ -155,7 +155,7 @@ export default function AccountSettings() {
             <div style={{ fontSize: '.73rem', color: 'var(--text-muted)', wordBreak: 'break-all' }}>
               {email}
             </div>
-            {user?.isGuest && (
+            {user.isGuest && (
               <span className="badge badge-warning" style={{ marginTop: '.5rem' }}>Guest</span>
             )}
           </div>
@@ -181,7 +181,7 @@ export default function AccountSettings() {
           </nav>
         </div>
 
-        {/* â”€â”€ Right content panel â”€â”€ */}
+        {/* -- Right content panel -- */}
         <div style={{ flex: 1, minWidth: 0 }}>
 
           {/* PROFILE tab */}
@@ -200,7 +200,7 @@ export default function AccountSettings() {
                 </div>
                 <div>
                   <button type="submit" className="btn btn-primary" disabled={loading} style={{ gap: '.4rem' }}>
-                    {loading ? <><Spinner size="sm" /> Savingâ€¦</> : <>
+                    {loading ? <><Spinner size="sm" /> Saving…</> : <>
                       <Icon d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" size={14} />
                       Save Changes
                     </>}
@@ -229,7 +229,7 @@ export default function AccountSettings() {
                 </div>
                 <div>
                   <button type="submit" className="btn btn-primary" disabled={loading} style={{ gap: '.4rem' }}>
-                    {loading ? <><Spinner size="sm" /> Updatingâ€¦</> : <>
+                    {loading ? <><Spinner size="sm" /> Updating…</> : <>
                       <Icon d={['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z']} size={14} />
                       Change Password
                     </>}
@@ -261,7 +261,7 @@ export default function AccountSettings() {
 
               <div style={{ padding: '.875rem 0', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ fontWeight: 600, fontSize: '.9rem', marginBottom: '.3rem' }}>
-                  Frame Capture Interval â€” <span style={{ color: 'var(--color-primary)' }}>{captureInterval} ms</span>
+                  Frame Capture Interval  - <span style={{ color: 'var(--color-primary)' }}>{captureInterval} ms</span>
                 </div>
                 <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', marginBottom: '.75rem' }}>Lower = faster but more CPU intensive. Higher = slower but more stable.</p>
                 <input type="range" min="100" max="500" step="50" value={captureInterval}
@@ -274,7 +274,7 @@ export default function AccountSettings() {
 
               <div style={{ padding: '.875rem 0' }}>
                 <div style={{ fontWeight: 600, fontSize: '.9rem', marginBottom: '.3rem' }}>
-                  Confidence Threshold â€” <span style={{ color: 'var(--color-primary)' }}>{(confidenceThreshold * 100).toFixed(0)}%</span>
+                  Confidence Threshold  - <span style={{ color: 'var(--color-primary)' }}>{(confidenceThreshold * 100).toFixed(0)}%</span>
                 </div>
                 <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', marginBottom: '.75rem' }}>Only auto-commit predictions above this confidence level.</p>
                 <input type="range" min="0.3" max="0.95" step="0.05" value={confidenceThreshold}
@@ -317,7 +317,7 @@ export default function AccountSettings() {
                 </p>
                 <button
                   className="btn btn-danger btn-sm"
-                  onClick={() => { if (window.confirm('Reset all settings to defaults?')) { localStorage.removeItem('gb_settings'); window.location.reload(); } }}
+                  onClick={() => { if (window.confirm('Reset all settings to defaults')) { localStorage.removeItem('gb_settings'); window.location.reload(); } }}
                   style={{ gap: '.4rem' }}
                 >
                   <Icon d="M1 4v6h6M23 20v-6h-6" size={13} />

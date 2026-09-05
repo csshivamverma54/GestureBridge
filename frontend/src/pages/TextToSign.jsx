@@ -1,26 +1,26 @@
-﻿/**
+/**
  * TextToSign Page
- * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+ * ---------------
  * Sends typed text to POST /text-to-sign, receives an ordered list of
- * WLASL video entries, then plays them sequentially â€” auto-starting
+ * WLASL video entries, then plays them sequentially - auto-starting
  * immediately after "Show Signs" is clicked.
  *
  * New features
  * ------------
- * â€¢ ðŸŽ¤ Speech-to-Text  â€” browser SpeechRecognition API fills the text box
+ *  * Speech-to-Text - browser SpeechRecognition API fills the text box
  *   in whatever language is selected (English / Hindi / Marathi).
- * â€¢ ðŸ”Š Text-to-Speech  â€” a speak button reads back the typed text (or each
+ *  * Text-to-Speech - a speak button reads back the typed text (or each
  *   word as it is signed) in the selected language using SpeechSynthesis.
- * â€¢ Language selector  â€” ASL / ISL / Hindi / Marathi; drives both STT locale
+ *  * Language selector - ASL / ISL / Hindi / Marathi; drives both STT locale
  *   and TTS voice selection.
  *
  * Key behaviours
  * --------------
- * â€¢ "Show Signs" button fetches and auto-plays from word 1 with no extra click.
- * â€¢ Videos advance with zero artificial delay â€” onEnded fires the next load.
- * â€¢ autoAdvance is ON by default; each video starts the moment canplay fires.
- * â€¢ Video URL is built via videoUrl() helper to work on any deployment origin.
- * â€¢ Fully responsive down to 320 px.
+ *  * "Show Signs" button fetches and auto-plays from word 1 with no extra click.
+ *  * Videos advance with zero artificial delay - onEnded fires the next load.
+ *  * autoAdvance is ON by default; each video starts the moment canplay fires.
+ *  * Video URL is built via videoUrl() helper to work on any deployment origin.
+ *  * Fully responsive down to 320 px.
  */
 
 import React, {
@@ -32,18 +32,18 @@ import { Spinner } from '../components/LoadingSpinner';
 import { useSettings, SUPPORTED_LANGUAGES, getTTSLocale } from '../context/SettingsContext';
 import api, { getErrorMessage, videoUrl, getLearningTip } from '../services/api';
 
-/* â”€â”€ Quick-phrase chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Quick-phrase chips - */
 const QUICK_PHRASES = [
   'hello', 'thank you', 'yes no', 'help please',
   'good morning', 'my name', 'I love you', 'how are you',
 ];
 
-/* â”€â”€ Web Speech API feature detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- Web Speech API feature detection - */
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const synth = window.speechSynthesis || null;
 
-/* â”€â”€ TTS helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* -- TTS helper - */
 function speak(text, locale, onEnd) {
   if (!synth || !text) return;
   synth.cancel();
@@ -63,20 +63,20 @@ export default function TextToSign() {
   const { language, updateSettings } = useSettings();
   const locale = getTTSLocale(language);
 
-  /* â”€â”€ Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Form - */
   const [text,       setText]       = useState('');
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState('');
 
-  /* â”€â”€ Result â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Result - */
   const [words,      setWords]      = useState([]);
   const [coverage,   setCoverage]   = useState(null);
   const [vocabHints, setVocabHints] = useState([]);
 
-  /* â”€â”€ Dataset status (local videos present?) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Dataset status (local videos present) - */
   const [localVideosAvailable, setLocalVideosAvailable] = useState(null); // null = loading
 
-  /* â”€â”€ Playback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Playback - */
   const [currentIdx,  setCurrentIdx]  = useState(0);
   const [playing,     setPlaying]     = useState(false);
   const [speed,       setSpeed]       = useState(1);
@@ -86,18 +86,18 @@ export default function TextToSign() {
   const [useFallback, setUseFallback] = useState(false);
   const videoTimeoutRef = useRef(null); // auto-skip timer for dead external URLs
 
-  /* â”€â”€ AI Learning Tip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- AI Learning Tip - */
   const [tip,        setTip]        = useState(null);
   const [tipLoading, setTipLoading] = useState(false);
   const [tipWord,    setTipWord]    = useState('');
 
-  /* â”€â”€ Speech-to-Text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Speech-to-Text - */
   const [listening,     setListening]     = useState(false);
   const [sttSupported,  setSttSupported]  = useState(!!SpeechRecognition);
   const [sttError,      setSttError]      = useState('');
   const recognitionRef = useRef(null);
 
-  /* â”€â”€ Text-to-Speech â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Text-to-Speech - */
   const [ttsSupported, setTtsSupported] = useState(!!synth);
   const [speaking,     setSpeaking]     = useState(false);
 
@@ -114,7 +114,7 @@ export default function TextToSign() {
   useEffect(() => { currentIdxRef.current = currentIdx; setVideoError(false); setUseFallback(false); }, [currentIdx]);
   useEffect(() => { playingRef.current = playing;      }, [playing]);
 
-  /* â”€â”€ Voices load async in some browsers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Voices load async in some browsers - */
   useEffect(() => {
     if (!synth) return;
     // Trigger voice list load on first render
@@ -124,7 +124,7 @@ export default function TextToSign() {
     return () => synth.removeEventListener('voiceschanged', handler);
   }, []);
 
-  /* â”€â”€ Stop STT / TTS when language changes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Stop STT / TTS when language changes - */
   useEffect(() => {
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch {}
@@ -134,7 +134,7 @@ export default function TextToSign() {
     setSpeaking(false);
   }, [language]);
 
-  /* â”€â”€ Vocabulary hints + dataset status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Vocabulary hints + dataset status - */
   useEffect(() => {
     api.get('/text-to-sign/vocabulary')
       .then(({ data }) => setVocabHints(data.words || []))
@@ -144,7 +144,7 @@ export default function TextToSign() {
       .catch(() => setLocalVideosAvailable(false));
   }, []);
 
-  /* â”€â”€ Clear any pending video-load timeout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Clear any pending video-load timeout - */
   const clearVideoTimeout = useCallback(() => {
     if (videoTimeoutRef.current) {
       clearTimeout(videoTimeoutRef.current);
@@ -152,17 +152,17 @@ export default function TextToSign() {
     }
   }, []);
 
-  /* â”€â”€ Derived â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Derived - */
   const playableWords = words.filter((w) => w.found);
   const currentWord   = playableWords[currentIdx] ?? null;
   playableRef.current = playableWords;
 
-  /* â”€â”€ Keep playbackRate in sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Keep playbackRate in sync - */
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = speed;
   }, [speed]);
 
-  /* â”€â”€ Video ended â†’ advance or loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Video ended -> advance or loop - */
   const handleVideoEnded = useCallback(() => {
     clearVideoTimeout();
     if (!autoRef.current) {
@@ -182,7 +182,7 @@ export default function TextToSign() {
     }
   }, [clearVideoTimeout]);
 
-  /* â”€â”€ Submit â€” fetch then immediately start playing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Submit  - fetch then immediately start playing - */
   const handleGenerate = async () => {
     const trimmed = text.trim();
     if (!trimmed) { setError('Please enter some text.'); return; }
@@ -208,18 +208,18 @@ export default function TextToSign() {
     }
   };
 
-  /* â”€â”€ Controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Controls - */
   const play = () => {
     if (!currentWord) return;
     playingRef.current = true; setPlaying(true);
-    videoRef.current?.play().catch(() => {});
+    videoRef.current.play().catch(() => {});
   };
   const pause = () => {
-    videoRef.current?.pause();
+    videoRef.current.pause();
     playingRef.current = false; setPlaying(false);
   };
   const stop = () => {
-    videoRef.current?.pause();
+    videoRef.current.pause();
     if (videoRef.current) videoRef.current.currentTime = 0;
     currentIdxRef.current = 0; setCurrentIdx(0);
     playingRef.current = false; setPlaying(false);
@@ -239,9 +239,9 @@ export default function TextToSign() {
     setSpeed(s);
     if (videoRef.current) videoRef.current.playbackRate = s;
   };
-  const fullscreen = () => videoRef.current?.requestFullscreen?.();
+  const fullscreen = () => videoRef.current.requestFullscreen?.();
 
-  /* â”€â”€ AI learning tip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- AI learning tip - */
   const fetchTip = useCallback(async (word) => {
     if (!word || word === tipWord) return;
     setTipLoading(true); setTip(null); setTipWord(word);
@@ -255,7 +255,7 @@ export default function TextToSign() {
     }
   }, [tipWord]);
 
-  /* â”€â”€ Speech-to-Text (mic input) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Speech-to-Text (mic input) - */
   const startListening = useCallback(() => {
     if (!SpeechRecognition) { setSttError('Speech recognition not supported in this browser.'); return; }
     setSttError('');
@@ -267,7 +267,7 @@ export default function TextToSign() {
 
     rec.onstart  = () => setListening(true);
     rec.onresult = (e) => {
-      const transcript = e.results[0]?.[0]?.transcript ?? '';
+      const transcript = e.results[0][0].transcript ?? '';
       if (transcript) setText((prev) => prev ? `${prev} ${transcript}` : transcript);
     };
     rec.onerror = (e) => {
@@ -282,29 +282,29 @@ export default function TextToSign() {
   }, [locale]);
 
   const stopListening = useCallback(() => {
-    try { recognitionRef.current?.stop(); } catch {}
+    try { recognitionRef.current.stop(); } catch {}
     setListening(false);
   }, []);
 
-  /* â”€â”€ Text-to-Speech (speak the typed text) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Text-to-Speech (speak the typed text) - */
   const handleSpeak = useCallback((textToSpeak) => {
     if (!synth) return;
     if (speaking) { synth.cancel(); setSpeaking(false); return; }
-    const t = (textToSpeak ?? text).trim();
+    const t = (textToSpeak || text).trim();
     if (!t) return;
     setSpeaking(true);
     speak(t, locale, () => setSpeaking(false));
   }, [text, locale, speaking]);
 
-  /* â”€â”€ Speak current word label when it changes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  // (optional â€” only speaks if "speak on sign" feature is toggled; disabled by default)
+  /* -- Speak current word label when it changes - */
+  // (optional  - only speaks if "speak on sign" feature is toggled; disabled by default)
 
-  /* â”€â”€ Derived display â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Derived display - */
   const hasResults    = words.length > 0;
   const notFoundWords  = words.filter((w) => !w.found).map((w) => w.word);
   const fuzzyWords     = words.filter((w) => w.found && w.fuzzy);
 
-  /* â”€â”€ Language selector change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* -- Language selector change - */
   const handleLanguageChange = (e) => {
     updateSettings({ language: e.target.value });
   };
@@ -313,13 +313,13 @@ export default function TextToSign() {
     <AppShell>
       <div className="page-header">
         <h1>Text to Sign</h1>
-        <p>Type or speak a sentence â€” GestureBridge plays the WLASL sign video for each word in order.</p>
+        <p>Type or speak a sentence  - GestureBridge plays the WLASL sign video for each word in order.</p>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
       {sttError && <Alert type="error" message={sttError} onClose={() => setSttError('')} />}
 
-      {/* â”€â”€ No local videos banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* -- No local videos banner - */}
       {localVideosAvailable === false && (
         <div style={{
           marginBottom: '1rem',
@@ -330,7 +330,7 @@ export default function TextToSign() {
           fontSize: '.875rem',
         }}>
           <div style={{ fontWeight: 700, color: 'var(--color-warning)', marginBottom: '.4rem' }}>
-            âš ï¸ WLASL video dataset not found locally
+            -- WLASL video dataset not found locally
           </div>
           <p style={{ margin: '0 0 .5rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
             The app will try to stream sign videos from external CDN URLs, but many are no longer
@@ -349,7 +349,7 @@ export default function TextToSign() {
         </div>
       )}
 
-      {/* â”€â”€ Language selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* -- Language selector - */}
       <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '.65rem', flexWrap: 'wrap' }}>
         <label style={{ fontSize: '.82rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
           Language / Voice:
@@ -369,7 +369,7 @@ export default function TextToSign() {
         </span>
       </div>
 
-      {/* â”€â”€ Input card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* -- Input card - */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 style={{ marginBottom: '1rem' }}>Enter Your Text</h3>
 
@@ -377,9 +377,9 @@ export default function TextToSign() {
           <textarea
             className="form-input form-textarea"
             placeholder={
-              language === 'Hindi'   ? 'à¤¹à¤¿à¤¨à¥à¤¦à¥€ à¤®à¥‡à¤‚ à¤Ÿà¤¾à¤‡à¤ª à¤•à¤°à¥‡à¤‚â€¦' :
-              language === 'Marathi' ? 'à¤®à¤°à¤¾à¤ à¥€à¤¤ à¤Ÿà¤¾à¤‡à¤ª à¤•à¤°à¤¾â€¦' :
-              'Type words from the supported vocabularyâ€¦'
+              language === 'Hindi'   ? 'Type Hindi words (e.g. namaste, dhanyavaad)' :
+              language === 'Marathi' ? 'Type Marathi words (e.g. namaskar, dhanyavaad)' :
+              'Type words from the supported vocabulary'
             }
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -396,7 +396,7 @@ export default function TextToSign() {
               disabled={loading || !text.trim()}
               style={{ whiteSpace: 'nowrap' }}
             >
-              {loading ? <><Spinner size="sm" /> Convertingâ€¦</> : 'â–¶ Show Signs'}
+              {loading ? <><Spinner size="sm" /> Converting…</> : '▶ Show Signs'}
             </button>
 
             {/* Mic / STT button */}
@@ -404,12 +404,12 @@ export default function TextToSign() {
               <button
                 className={`btn btn-sm ${listening ? 'btn-danger' : 'btn-subtle'}`}
                 onClick={listening ? stopListening : startListening}
-                title={listening ? 'Stop recording' : `Speak in ${SUPPORTED_LANGUAGES.find((l) => l.value === language)?.nativeName ?? 'English'}`}
+                title={listening ? 'Stop recording' : `Speak in ${SUPPORTED_LANGUAGES.find((l) => l.value === language).nativeName ?? 'English'}`}
                 style={{ display: 'flex', alignItems: 'center', gap: '.35rem', justifyContent: 'center' }}
               >
                 {listening
-                  ? <><span style={{ animation: 'pulse 1s infinite' }}>ðŸ”´</span> Stop</>
-                  : <>ðŸŽ¤ Speak</>
+                  ? <><span style={{ animation: 'pulse 1s infinite' }}>🎙</span> Stop</>
+                  : <>🎤 Speak</>
                 }
               </button>
             )}
@@ -423,7 +423,7 @@ export default function TextToSign() {
                 title={speaking ? 'Stop speaking' : 'Read text aloud'}
                 style={{ display: 'flex', alignItems: 'center', gap: '.35rem', justifyContent: 'center' }}
               >
-                {speaking ? 'â¹ Stop' : 'ðŸ”Š Listen'}
+                {speaking ? '🔇 Stop' : '🔊 Listen'}
               </button>
             )}
           </div>
@@ -432,8 +432,8 @@ export default function TextToSign() {
         {/* Live mic indicator */}
         {listening && (
           <div style={{ marginTop: '.6rem', display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.8rem', color: 'var(--color-error)' }}>
-            <span style={{ animation: 'pulse 1s infinite', fontSize: '1rem' }}>ðŸ”´</span>
-            Listening in <strong>{SUPPORTED_LANGUAGES.find((l) => l.value === language)?.nativeName}</strong>â€¦ speak clearly
+            <span style={{ animation: 'pulse 1s infinite', fontSize: '1rem' }}>-"-</span>
+            Listening in <strong>{SUPPORTED_LANGUAGES.find((l) => l.value === language).nativeName}</strong> -- speak clearly
           </div>
         )}
 
@@ -452,17 +452,17 @@ export default function TextToSign() {
         </div>
       </div>
 
-      {/* â”€â”€ Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* -- Results - */}
       {hasResults && (
         <div className="tts-grid">
 
-          {/* â”€â”€ Left: video player â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* -- Left: video player - */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
 
             {fuzzyWords.length > 0 && (
               <Alert
                 type="info"
-                message={`Approximate match used for: ${fuzzyWords.map((w) => `"${w.word}" â†’ ${w.matched_word}`).join(', ')}`}
+                message={`Approximate match used for: ${fuzzyWords.map((w) => `"${w.word}" -> ${w.matched_word}`).join(', ')}`}
               />
             )}
             {notFoundWords.length > 0 && (
@@ -480,8 +480,8 @@ export default function TextToSign() {
                   <div>
                     <span style={{ fontSize: '.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Now Signing</span>
                     <h2 style={{ color: 'var(--color-primary)', fontSize: 'clamp(1.3rem,4vw,1.8rem)', fontWeight: 800, lineHeight: 1, marginTop: '.1rem' }}>
-                      {currentWord?.word}
-                      {currentWord?.fuzzy && currentWord?.matched_word !== currentWord?.word && (
+                      {currentWord.word}
+                      {currentWord.fuzzy && currentWord.matched_word !== currentWord.word && (
                         <span style={{ fontSize: '.6em', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '.4rem' }}>
                           (~{currentWord.matched_word})
                         </span>
@@ -497,7 +497,7 @@ export default function TextToSign() {
                         title={`Speak "${currentWord.word}"`}
                         style={{ fontSize: '.78rem' }}
                       >
-                        ðŸ”Š
+                        -"
                       </button>
                     )}
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -549,7 +549,7 @@ export default function TextToSign() {
                           }
                         }}
                         onLoadStart={() => {
-                          // Start an 8-second timeout â€” if the video hasn't loaded
+                          // Start an 8-second timeout  - if the video hasn't loaded
                           // by then the external URL is dead; auto-skip to next word.
                           clearVideoTimeout();
                           videoTimeoutRef.current = setTimeout(() => {
@@ -575,12 +575,12 @@ export default function TextToSign() {
                       </p>
                       <p style={{ fontSize: '.75rem', margin: 0, color: '#64748b' }}>
                         {localVideosAvailable === false
-                          ? 'Local dataset not present â€” external source unreachable.'
+                          ? 'Local dataset not present — external source unreachable.'
                           : 'No video file found for this word.'}
                       </p>
                       <button className="btn btn-ghost btn-sm" style={{ color: '#94A3B8', borderColor: '#334155' }}
                         onClick={() => { clearVideoTimeout(); setVideoError(false); setUseFallback(false); handleVideoEnded(); }}>
-                        â­ Skip to next
+                        - Skip to next
                       </button>
                     </div>
                   )}
@@ -599,7 +599,7 @@ export default function TextToSign() {
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,.5)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,.3)'}
                     >
-                      â–¶
+                      ---
                     </button>
                   )}
                 </div>
@@ -627,11 +627,11 @@ export default function TextToSign() {
                     <button
                       className="btn btn-ghost btn-sm"
                       style={{ fontSize: '.75rem', gap: '.3rem', display: 'flex', alignItems: 'center' }}
-                      onClick={() => fetchTip(currentWord?.word)}
+                      onClick={() => fetchTip(currentWord.word)}
                       disabled={tipLoading || !currentWord}
                       title="Get an AI learning tip for this sign"
                     >
-                      {tipLoading ? <Spinner size="sm" /> : 'âœ¨'} AI Tip
+                      {tipLoading ? <Spinner size="sm" /> : '💡'} AI Tip
                     </button>
                     {/* Speak entire typed sentence */}
                     {ttsSupported && text.trim() && (
@@ -641,45 +641,33 @@ export default function TextToSign() {
                         onClick={() => handleSpeak(text)}
                         title={speaking ? 'Stop audio' : 'Speak full sentence aloud'}
                       >
-                        {speaking ? 'â¹ Stop Audio' : 'ðŸ”Š Speak Sentence'}
+                        {speaking ? '🔇 Stop Audio' : '🔊 Speak Sentence'}
                       </button>
                     )}
                   </div>
                 </div>
 
-                {/* AI Learning Tip card */}
-                {tip && tipWord === currentWord?.word && (
-                  <div style={{ marginTop: '.5rem', padding: '.75rem 1rem', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 7%, var(--bg-surface))', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--color-secondary,#7c5cd8)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.35rem' }}>
-                      <span style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--color-secondary,#7c5cd8)', textTransform: 'uppercase', letterSpacing: '.05em' }}>âœ¨ AI Learning Tip â€” {tip.word || tipWord}</span>
-                      <button onClick={() => setTip(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '.9rem', lineHeight: 1 }}>âœ•</button>
-                    </div>
-                    <p style={{ fontSize: '.855rem', color: 'var(--text-main)', margin: '0 0 .4rem', lineHeight: 1.55 }}>{tip.tip}</p>
-                    {tip.fun_fact && (
-                      <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>ðŸ’¡ {tip.fun_fact}</p>
-                    )}
-                  </div>
-                )}
+               
 
                 {/* Controls row */}
                 <div className="tts-controls">
                   <button className="btn btn-ghost btn-sm" onClick={prev} disabled={currentIdx === 0}>Prev</button>
 
                   {playing
-                    ? <button className="btn btn-subtle" onClick={pause}>â¸ Pause</button>
-                    : <button className="btn btn-primary" onClick={play} disabled={!currentWord}>â–¶ Play</button>
+                    ? <button className="btn btn-subtle" onClick={pause}>⏸ Pause</button>
+                    : <button className="btn btn-primary" onClick={play} disabled={!currentWord}>▶ Play</button>
                   }
 
-                  <button className="btn btn-ghost" onClick={stop}>â–  Stop</button>
+                  <button className="btn btn-ghost" onClick={stop}>--- Stop</button>
                   <button className="btn btn-ghost btn-sm" onClick={next} disabled={currentIdx >= playableWords.length - 1}>Next</button>
-                  <button className="btn btn-ghost btn-sm" onClick={fullscreen} title="Fullscreen">â›¶</button>
+                  <button className="btn btn-ghost btn-sm" onClick={fullscreen} title="Fullscreen">--</button>
 
                   <button
                     className={`btn btn-sm ${loop ? 'btn-primary' : 'btn-ghost'}`}
                     onClick={() => setLoop((l) => !l)}
                     title="Loop sequence"
                   >
-                    â†º Loop
+                    🔁 Loop
                   </button>
 
                   <button
@@ -687,7 +675,7 @@ export default function TextToSign() {
                     onClick={() => setAutoAdvance((a) => !a)}
                     title="Auto-advance to next word"
                   >
-                    â© Auto
+                    ↪ Auto
                   </button>
 
                   <div className="tts-speed">
@@ -706,7 +694,7 @@ export default function TextToSign() {
               </div>
             ) : (
               <div className="card" style={{ textAlign: 'center', padding: '2.5rem' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '.75rem' }}>ðŸ¤·</div>
+                <div style={{ fontSize: '3rem', marginBottom: '.75rem' }}>--</div>
                 <h3>No Signs Found</h3>
                 <p style={{ color: 'var(--text-muted)', marginTop: '.5rem' }}>
                   None of the words you entered are in the WLASL vocabulary.
@@ -718,7 +706,7 @@ export default function TextToSign() {
             {/* Word sequence strip */}
             <div className="card" style={{ padding: '.85rem 1rem' }}>
               <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '.6rem', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                Sequence â€” {words.length} word{words.length !== 1 ? 's' : ''}
+                Sequence — {words.length} word{words.length !== 1 ? 's' : ''}
                 {coverage !== null && (
                   <span style={{ marginLeft: '.75rem', color: coverage === 1 ? 'var(--color-success)' : 'var(--color-warning)' }}>
                     ({Math.round(coverage * 100)}% covered)
@@ -732,7 +720,7 @@ export default function TextToSign() {
                   const borderColor = isActive ? 'var(--color-primary)' : w.found ? (w.fuzzy ? 'var(--color-warning)' : 'var(--border)') : 'var(--color-error)';
                   const textColor   = isActive ? 'var(--color-primary)' : w.found ? 'var(--text-main)' : 'var(--color-error)';
                   const titleText   = w.found
-                    ? (w.fuzzy ? `"${w.word}" â†’ matched as "${w.matched_word}" â€” click to jump` : `Click to jump to "${w.word}"`)
+                    ? (w.fuzzy ? `"${w.word}" → matched as "${w.matched_word}" — click to jump` : `Click to jump to "${w.word}"`)
                     : `"${w.word}" not in vocabulary`;
                   return (
                     <button
@@ -749,7 +737,7 @@ export default function TextToSign() {
                       }}
                       title={titleText}
                     >
-                      {w.found ? '' : 'âœ• '}{w.word}{w.fuzzy && w.matched_word !== w.word ? ` (~${w.matched_word})` : ''}
+                      {w.found ? '' : '⚠ '}{w.word}{w.fuzzy && w.matched_word !== w.word ? ` (~${w.matched_word})` : ''}
                     </button>
                   );
                 })}
@@ -757,7 +745,7 @@ export default function TextToSign() {
             </div>
           </div>
 
-          {/* â”€â”€ Right: stats + vocabulary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* -- Right: stats + vocabulary - */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
 
             <div className="card" style={{ textAlign: 'center' }}>
@@ -788,12 +776,12 @@ export default function TextToSign() {
             <div className="card">
               <h4 style={{ marginBottom: '.75rem' }}>How It Works</h4>
               <ol style={{ paddingLeft: '1.1rem', fontSize: '.85rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
-                <li>Choose your language above, then type or <strong>ðŸŽ¤ speak</strong> your text.</li>
-                <li>Click <strong>â–¶ Show Signs</strong> â€” videos play automatically word-by-word.</li>
-                <li>Use <strong>ðŸ”Š Listen</strong> to hear the text read aloud in your language.</li>
-                <li>Use <strong>â© Auto</strong> to toggle auto-advance.</li>
+                <li>Choose your language above, then type or <strong>-- speak</strong> your text.</li>
+                <li>Click <strong>--- Show Signs</strong>  - videos play automatically word-by-word.</li>
+                <li>Use <strong>-" Listen</strong> to hear the text read aloud in your language.</li>
+                <li>Use <strong>- Auto</strong> to toggle auto-advance.</li>
                 <li>Click any word chip below the video to jump to it.</li>
-                <li>Use <strong>â†º Loop</strong> to repeat the full sentence.</li>
+                <li>Use <strong>-- Loop</strong> to repeat the full sentence.</li>
               </ol>
             </div>
 
@@ -801,7 +789,7 @@ export default function TextToSign() {
             {!sttSupported && (
               <div className="card" style={{ borderColor: 'var(--color-warning)', background: 'color-mix(in srgb, var(--color-warning) 6%, var(--bg-card))' }}>
                 <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                  âš ï¸ Speech input requires Chrome, Edge, or Safari. Your browser doesn't support it.
+                  -- Speech input requires Chrome, Edge, or Safari. Your browser doesn't support it.
                 </p>
               </div>
             )}
