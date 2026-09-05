@@ -5,9 +5,13 @@
  *
  * Exposes:
  *   theme               — 'light' | 'dark'
+<<<<<<< HEAD
  *   language            — 'ASL' | 'ISL' | 'Hindi' | 'Marathi'
  *   ttsLanguage         — BCP-47 locale used for Web Speech API TTS/STT
  *                          e.g. 'en-US', 'hi-IN', 'mr-IN'
+=======
+ *   language            — 'ASL' | 'ISL'
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
  *   recognitionMode     — 'word' | 'letter'
  *   notifications       — boolean
  *   privacyMode         — boolean
@@ -24,7 +28,10 @@ const SettingsContext = createContext(null);
 const DEFAULTS = {
   theme:               'light',
   language:            'ASL',
+<<<<<<< HEAD
   ttsLanguage:         'en-US',   // BCP-47 for Web Speech API
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   recognitionMode:     'letter',  // 'word' | 'letter'  — letter-to-sentence is default
   notifications:       true,
   privacyMode:         false,
@@ -32,6 +39,7 @@ const DEFAULTS = {
   confidenceThreshold: 0.60,  // 60 %
 };
 
+<<<<<<< HEAD
 /**
  * Supported display languages.
  * Each entry includes:
@@ -51,6 +59,8 @@ export const SUPPORTED_LANGUAGES = [
 export const getTTSLocale = (language) =>
   SUPPORTED_LANGUAGES.find((l) => l.value === language)?.ttsLocale ?? 'en-US';
 
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 export function SettingsProvider({ children }) {
   const [settings, setSettings] = useState(() => {
     try {

@@ -1,7 +1,73 @@
+<<<<<<< HEAD
+=======
+"""
+landmarks.py
+------------
+MediaPipe Holistic landmark extraction for ASL recognition (v2).
+
+Per-frame feature vector — 218 dims total:
+
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │  Group                    Dims  Description                          │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  Left hand landmarks        63  21 × (x,y,z), wrist-normalised       │
+  │  Right hand landmarks       63  21 × (x,y,z), wrist-normalised       │
+  │  Pose landmarks             24  8 upper-body joints × (x,y,z),       │
+  │                                 shoulder-midpoint origin, sw scale   │
+  │  Face spatial               27  9 lip/chin/nose pts, nose-anchored   │
+  │  Velocity (dominant)         3  Δ(x,y,z) dominant wrist, frame-to-f │
+  │  Interaction distances       2  fingertips→lips, fingertips→palm     │
+  │  ── v2 additions ────────────────────────────────────────────────── │
+  │  Acceleration                3  Δvelocity of dominant wrist          │
+  │  NMM (Non-Manual Markers)   10  eyebrow raise/furrow, head nod/shake │
+  │                                 head tilt, 5 mouth morpheme scalars  │
+  │  Finger joint angles        15  MCP+PIP angle per finger (dominant)  │
+  │  Wrist orientation           4  quaternion (w,x,y,z) from pose lms   │
+  │  Body distances              4  hand→chin, hand→chest, hand→abdomen  │
+  │                                 dominant→base palm                   │
+  ├──────────────────────────────────────────────────────────────────────┤
+  │  TOTAL                     218                                       │
+  └──────────────────────────────────────────────────────────────────────┘
+
+NMM definitions
+  [0]  eyebrow_raise   – mean y-lift of brow landmarks above baseline
+  [1]  eyebrow_furrow  – inner-brow convergence scalar
+  [2]  head_nod        – cumulative pitch delta (smoothed)
+  [3]  head_shake      – cumulative yaw delta (smoothed)
+  [4]  head_tilt       – roll delta
+  [5]  mouth_open      – vertical lip distance / face height
+  [6]  mouth_wide      – horizontal lip distance / face width
+  [7]  lip_protrude    – mean z of lip landmarks relative to nose
+  [8]  cheek_puff      – cheek-width proxy (landmarks 234 & 454)
+  [9]  brow_asymmetry  – left-brow_raise − right-brow_raise
+
+Finger joint angles (dominant hand, 15 values)
+  Each finger: [MCP_angle, PIP_angle, DIP_angle] using the law-of-cosines
+  on consecutive landmark triplets.  Index=0, Middle=1, Ring=2, Pinky=3,
+  Thumb=4 (only CMC-MCP-IP for thumb).
+
+Wrist orientation (4 values)
+  Approximate quaternion (w, x, y, z) derived from wrist (lm 0),
+  index-MCP (lm 5), and pinky-MCP (lm 17) to form an orthonormal frame.
+
+Body distances (4 values, normalised by shoulder width)
+  [0]  dominant_fingertips → chin  (face landmark 152 / pose chin proxy)
+  [1]  dominant_fingertips → chest (mid-sternum via pose lms 11+12+23+24)
+  [2]  dominant_fingertips → abdomen (hip midpoint)
+  [3]  dominant_wrist → base_hand_palm  (complementary to interaction[1])
+"""
+
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 import numpy as np
 import cv2
 from pathlib import Path
 
+<<<<<<< HEAD
+=======
+# ------------------------------------------------------------------
+# Constants — exported for all downstream modules
+# ------------------------------------------------------------------
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 NUM_HAND_LANDMARKS = 21
 COORDS             = 3
 SINGLE_HAND_SIZE   = NUM_HAND_LANDMARKS * COORDS   # 63
@@ -22,11 +88,20 @@ FACE_SIZE     = FACE_POINTS * COORDS                # 27
 VELOCITY_SIZE    = 3
 INTERACTION_SIZE = 2
 
+<<<<<<< HEAD
 ACCEL_SIZE            = 3
 NMM_SIZE              = 10
 FINGER_ANGLE_SIZE     = 15
 WRIST_ORIENT_SIZE     = 4
 BODY_DIST_SIZE        = 4
+=======
+# v2 additions
+ACCEL_SIZE            = 3   # Δ(velocity) of dominant wrist
+NMM_SIZE              = 10  # non-manual markers
+FINGER_ANGLE_SIZE     = 15  # 5 fingers × 3 angles (MCP, PIP, DIP/IP)
+WRIST_ORIENT_SIZE     = 4   # quaternion (w,x,y,z)
+BODY_DIST_SIZE        = 4   # chin, chest, abdomen, base-palm
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
 V2_EXTRA_SIZE = ACCEL_SIZE + NMM_SIZE + FINGER_ANGLE_SIZE + WRIST_ORIENT_SIZE + BODY_DIST_SIZE  # 36
 
@@ -35,6 +110,10 @@ LANDMARK_VECTOR_SIZE = (
     VELOCITY_SIZE + INTERACTION_SIZE + V2_EXTRA_SIZE
 )  # 126+24+27+3+2+36 = 218
 
+<<<<<<< HEAD
+=======
+# v2 feature offsets (for slicing in downstream code)
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 OFF_LEFT_HAND    = 0
 OFF_RIGHT_HAND   = SINGLE_HAND_SIZE
 OFF_POSE         = HANDS_SIZE
@@ -61,7 +140,13 @@ __all__ = [
 ]
 
 
+<<<<<<< HEAD
 # Build a MediaPipe Holistic solution instance
+=======
+# ------------------------------------------------------------------
+# Holistic solution builder
+# ------------------------------------------------------------------
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def build_hands_solution(
     static_image_mode: bool = False,
     max_num_hands: int = 2,
@@ -78,7 +163,13 @@ def build_hands_solution(
     )
 
 
+<<<<<<< HEAD
 # Wrist-centre and scale-normalise a hand landmark array
+=======
+# ------------------------------------------------------------------
+# Hand normalisation
+# ------------------------------------------------------------------
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def _normalize_hand(coords: np.ndarray) -> np.ndarray:
     coords = coords - coords[0]
     scale = np.max(np.abs(coords))
@@ -87,7 +178,13 @@ def _normalize_hand(coords: np.ndarray) -> np.ndarray:
     return coords.flatten().astype(np.float32)
 
 
+<<<<<<< HEAD
 # Extract shoulder-normalised upper-body pose landmarks (8 joints × 3)
+=======
+# ------------------------------------------------------------------
+# Pose extraction
+# ------------------------------------------------------------------
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def _extract_pose(pose_landmarks) -> np.ndarray:
     out = np.zeros(POSE_SIZE, dtype=np.float32)
     if pose_landmarks is None:
@@ -112,7 +209,13 @@ def _extract_pose(pose_landmarks) -> np.ndarray:
     return np.array(coords, dtype=np.float32).flatten()
 
 
+<<<<<<< HEAD
 # Extract nose-anchored face spatial landmarks (9 points × 3)
+=======
+# ------------------------------------------------------------------
+# Face spatial extraction
+# ------------------------------------------------------------------
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def _extract_face(face_landmarks) -> np.ndarray:
     out = np.zeros(FACE_SIZE, dtype=np.float32)
     if face_landmarks is None:
@@ -138,7 +241,13 @@ def _extract_face(face_landmarks) -> np.ndarray:
     return np.array(coords, dtype=np.float32).flatten()
 
 
+<<<<<<< HEAD
 # Compute fingertips-to-lips and fingertips-to-palm distances (2 values)
+=======
+# ------------------------------------------------------------------
+# Interaction distances (original 2-dim)
+# ------------------------------------------------------------------
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def _interaction_features(
     left_lms, right_lms, face_lms, pose_lms, shoulder_scale: float,
 ) -> np.ndarray:
@@ -179,10 +288,24 @@ def _interaction_features(
     return np.array([dist_to_lips, dist_to_palm], dtype=np.float32)
 
 
+<<<<<<< HEAD
 # Extract 10 non-manual marker scalars from face mesh; returns (vec, yaw, pitch, roll)
 def _extract_nmm(face_landmarks, prev_head_yaw: float = 0.0,
                   prev_head_pitch: float = 0.0, prev_head_roll: float = 0.0,
                   face_scale: float = 1.0) -> tuple[np.ndarray, float, float, float]:
+=======
+# ------------------------------------------------------------------
+# v2: Non-Manual Markers (NMM) — 10 scalars from face mesh
+# ------------------------------------------------------------------
+def _extract_nmm(face_landmarks, prev_head_yaw: float = 0.0,
+                  prev_head_pitch: float = 0.0, prev_head_roll: float = 0.0,
+                  face_scale: float = 1.0) -> tuple[np.ndarray, float, float, float]:
+    """
+    Extract 10 non-manual marker scalars.
+
+    Returns (nmm_vec (10,), new_yaw, new_pitch, new_roll)
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     out = np.zeros(NMM_SIZE, dtype=np.float32)
     if face_landmarks is None:
         return out, prev_head_yaw, prev_head_pitch, prev_head_roll
@@ -196,14 +319,25 @@ def _extract_nmm(face_landmarks, prev_head_yaw: float = 0.0,
             return lms[i].x, lms[i].y, lms[i].z
         return default
 
+<<<<<<< HEAD
+=======
+    # ── [0] eyebrow_raise: mean y-offset of brow lms above eye baseline ──
+    # Left brow: 70,63,105,66,107   Right brow: 336,296,334,293,300
+    # Left eye centre: 159  Right eye centre: 386
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     brow_l_y = np.mean([lm(i)[1] for i in [70, 63, 105, 66, 107]])
     brow_r_y = np.mean([lm(i)[1] for i in [336, 296, 334, 293, 300]])
     eye_l_y  = lm(159)[1]
     eye_r_y  = lm(386)[1]
+<<<<<<< HEAD
+=======
+    # Negative y = higher on screen (image y flipped in Mediapipe world)
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     raise_l = max(0.0, (eye_l_y - brow_l_y) / sc)
     raise_r = max(0.0, (eye_r_y - brow_r_y) / sc)
     out[0] = (raise_l + raise_r) * 0.5
 
+<<<<<<< HEAD
     inner_l = np.array(lm(107)[:2])
     inner_r = np.array(lm(336)[:2])
     baseline_dist = np.linalg.norm(np.array(lm(33)[:2]) - np.array(lm(263)[:2]))
@@ -215,37 +349,81 @@ def _extract_nmm(face_landmarks, prev_head_yaw: float = 0.0,
     forehead = np.array(lm(10))
     pitch = float(chin[1] - nose_tip[1]) / sc
     yaw   = float((chin[0] - forehead[0])) / sc
+=======
+    # ── [1] eyebrow_furrow: inner brow convergence ────────────────────
+    # inner-brow landmarks: left 107, right 336
+    inner_l = np.array(lm(107)[:2])
+    inner_r = np.array(lm(336)[:2])
+    baseline_dist = np.linalg.norm(np.array(lm(33)[:2]) - np.array(lm(263)[:2]))  # eye corners
+    brow_dist = np.linalg.norm(inner_l - inner_r)
+    out[1] = float(np.clip(1.0 - brow_dist / (baseline_dist + 1e-8), 0, 1))
+
+    # ── [2][3][4] head nod/shake/tilt from nose bridge vs chin vector ──
+    nose_tip = np.array(lm(1))
+    chin     = np.array(lm(152))
+    forehead = np.array(lm(10))
+    # pitch = vertical tilt (nod):  dy of nose_tip–chin in Y
+    pitch = float(chin[1] - nose_tip[1]) / sc
+    # yaw = horizontal rotation:    dx skew between forehead and chin
+    yaw   = float((chin[0] - forehead[0])) / sc
+    # roll = clockwise tilt:        x-difference of two eye outer corners
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     eye_l_outer = np.array(lm(33)[:2])
     eye_r_outer = np.array(lm(263)[:2])
     roll  = float(eye_r_outer[1] - eye_l_outer[1]) / sc
 
+<<<<<<< HEAD
     out[2] = float(pitch - prev_head_pitch)
     out[3] = float(yaw   - prev_head_yaw)
     out[4] = float(roll  - prev_head_roll)
 
+=======
+    out[2] = float(pitch - prev_head_pitch)   # Δpitch = nod delta
+    out[3] = float(yaw   - prev_head_yaw)     # Δyaw   = shake delta
+    out[4] = float(roll  - prev_head_roll)    # Δroll  = tilt delta
+
+    # ── [5] mouth_open: vertical lip gap / face height ────────────────
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     upper_lip = np.array(lm(13))
     lower_lip = np.array(lm(14))
     out[5] = float(abs(lower_lip[1] - upper_lip[1]) / sc)
 
+<<<<<<< HEAD
+=======
+    # ── [6] mouth_wide: horizontal lip span / face width ─────────────
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     left_corner  = np.array(lm(61)[:2])
     right_corner = np.array(lm(291)[:2])
     face_w = np.linalg.norm(np.array(lm(234)[:2]) - np.array(lm(454)[:2]))
     out[6] = float(np.linalg.norm(left_corner - right_corner) / (face_w + 1e-8))
 
+<<<<<<< HEAD
+=======
+    # ── [7] lip_protrude: mean z of lip corners vs nose ────────────── 
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     lip_z = (lm(61)[2] + lm(291)[2] + lm(13)[2] + lm(14)[2]) * 0.25
     nose_z = lm(1)[2]
     out[7] = float(lip_z - nose_z)
 
+<<<<<<< HEAD
+=======
+    # ── [8] cheek_puff: width of cheek region ─────────────────────── 
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if n > 454:
         cheek_l = np.array(lm(234)[:2])
         cheek_r = np.array(lm(454)[:2])
         out[8] = float(np.linalg.norm(cheek_l - cheek_r) / sc)
 
+<<<<<<< HEAD
+=======
+    # ── [9] brow_asymmetry: raise_l − raise_r ─────────────────────── 
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     out[9] = float(raise_l - raise_r)
 
     return out, yaw, pitch, roll
 
 
+<<<<<<< HEAD
 _FINGER_TRIPLETS = [
     (0, 1, 2),   (1, 2, 3),   (2, 3, 4),
     (0, 5, 6),   (5, 6, 7),   (6, 7, 8),
@@ -257,6 +435,31 @@ _FINGER_TRIPLETS = [
 
 # Angle at vertex b in the a-b-c triplet, in [0, π]
 def _joint_angle(a, b, c) -> float:
+=======
+# ------------------------------------------------------------------
+# v2: Finger joint angles — 15 scalars (dominant hand)
+# ------------------------------------------------------------------
+# Landmark triplet chains per finger:
+#   Thumb : 1-2-3, 2-3-4
+#   Index : 5-6-7, 6-7-8
+#   Middle: 9-10-11, 10-11-12
+#   Ring  : 13-14-15, 14-15-16
+#   Pinky : 17-18-19, 18-19-20
+# MCP angle uses wrist (0) as well:
+#   Thumb MCP: 0-1-2   Index MCP: 0-5-6   etc.
+_FINGER_TRIPLETS = [
+    # (prox, mid, dist) — MCP+PIP+DIP/IP for each finger
+    (0, 1, 2),   (1, 2, 3),   (2, 3, 4),    # thumb CMC,MCP,IP
+    (0, 5, 6),   (5, 6, 7),   (6, 7, 8),    # index  MCP,PIP,DIP
+    (0, 9, 10),  (9, 10, 11), (10, 11, 12), # middle MCP,PIP,DIP
+    (0, 13, 14), (13, 14, 15),(14, 15, 16), # ring   MCP,PIP,DIP
+    (0, 17, 18), (17, 18, 19),(18, 19, 20), # pinky  MCP,PIP,DIP
+]
+
+
+def _joint_angle(a, b, c) -> float:
+    """Angle at vertex b in the a-b-c triplet, in [0, π]."""
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     ba = a - b
     bc = c - b
     norm_ba = np.linalg.norm(ba)
@@ -267,8 +470,13 @@ def _joint_angle(a, b, c) -> float:
     return float(np.arccos(np.clip(cos_angle, -1.0, 1.0)))
 
 
+<<<<<<< HEAD
 # Return 15 joint angles (in radians) for the given hand
 def _extract_finger_angles(hand_landmarks) -> np.ndarray:
+=======
+def _extract_finger_angles(hand_landmarks) -> np.ndarray:
+    """Return 15 joint angles (in radians) for the given hand."""
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     out = np.zeros(FINGER_ANGLE_SIZE, dtype=np.float32)
     if hand_landmarks is None:
         return out
@@ -279,8 +487,21 @@ def _extract_finger_angles(hand_landmarks) -> np.ndarray:
     return out
 
 
+<<<<<<< HEAD
 # Derive an approximate (w,x,y,z) orientation quaternion from the hand plane
 def _extract_wrist_orientation(hand_landmarks) -> np.ndarray:
+=======
+# ------------------------------------------------------------------
+# v2: Wrist orientation — 4-dim approximate quaternion
+# ------------------------------------------------------------------
+def _extract_wrist_orientation(hand_landmarks) -> np.ndarray:
+    """
+    Derive an approximate orientation quaternion from the hand plane:
+      forward = lm[9] − lm[0]   (wrist → middle-MCP, palm normal direction)
+      right   = lm[17] − lm[5]  (pinky-MCP → index-MCP, along knuckles)
+    Returns (w, x, y, z) normalised quaternion, or (1,0,0,0) if unavailable.
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     out = np.array([1., 0., 0., 0.], dtype=np.float32)
     if hand_landmarks is None:
         return out
@@ -293,9 +514,16 @@ def _extract_wrist_orientation(hand_landmarks) -> np.ndarray:
     fwd = mid   - wrist; fwd /= (np.linalg.norm(fwd)   + 1e-8)
     rgt = index - pinky; rgt /= (np.linalg.norm(rgt)   + 1e-8)
     up  = np.cross(fwd, rgt); up /= (np.linalg.norm(up) + 1e-8)
+<<<<<<< HEAD
     rgt = np.cross(up, fwd)
 
     R = np.array([rgt, up, fwd], dtype=np.float32).T
+=======
+    rgt = np.cross(up, fwd)   # re-orthogonalise
+
+    # Rotation matrix → quaternion
+    R = np.array([rgt, up, fwd], dtype=np.float32).T  # 3×3
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     trace = R[0, 0] + R[1, 1] + R[2, 2]
     if trace > 0:
         s = 0.5 / np.sqrt(trace + 1.0)
@@ -321,10 +549,26 @@ def _extract_wrist_orientation(hand_landmarks) -> np.ndarray:
     return q / norm if norm > 1e-8 else out
 
 
+<<<<<<< HEAD
 # Compute 4 body-distance scalars from dominant fingertips to chin/chest/abdomen/palm
 def _body_distance_features(
     dominant_lms, base_lms, face_lms, pose_lms, shoulder_scale: float
 ) -> np.ndarray:
+=======
+# ------------------------------------------------------------------
+# v2: Body distances — 4 scalars (dominant fingertips to body targets)
+# ------------------------------------------------------------------
+def _body_distance_features(
+    dominant_lms, base_lms, face_lms, pose_lms, shoulder_scale: float
+) -> np.ndarray:
+    """
+    [0] dominant fingertips → chin
+    [1] dominant fingertips → chest (sternum midpoint)
+    [2] dominant fingertips → abdomen (hip midpoint)
+    [3] dominant wrist → base hand palm
+    All normalised by shoulder_scale.
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     out = np.zeros(BODY_DIST_SIZE, dtype=np.float32)
     sc  = shoulder_scale if shoulder_scale > 1e-8 else 1.0
     FINGERTIP_IDX = [4, 8, 12, 16, 20]
@@ -337,6 +581,10 @@ def _body_distance_features(
         dom_ft = tips.mean(axis=0)
         dom_wr = np.array([lms[0].x, lms[0].y, lms[0].z], dtype=np.float32)
 
+<<<<<<< HEAD
+=======
+    # Chin: face landmark 152
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if face_lms is not None and len(face_lms.landmark) > 152:
         chin = np.array([face_lms.landmark[152].x,
                           face_lms.landmark[152].y,
@@ -345,6 +593,10 @@ def _body_distance_features(
 
     if pose_lms is not None:
         lms = pose_lms.landmark
+<<<<<<< HEAD
+=======
+        # Chest: midpoint of shoulders (11,12)
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         try:
             chest = np.array([(lms[11].x + lms[12].x) * 0.5,
                                (lms[11].y + lms[12].y) * 0.5,
@@ -352,6 +604,10 @@ def _body_distance_features(
             out[1] = float(np.linalg.norm(dom_ft - chest)) / sc
         except IndexError:
             pass
+<<<<<<< HEAD
+=======
+        # Abdomen: midpoint of hips (23,24)
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         try:
             abdomen = np.array([(lms[23].x + lms[24].x) * 0.5,
                                   (lms[23].y + lms[24].y) * 0.5,
@@ -360,6 +616,10 @@ def _body_distance_features(
         except IndexError:
             pass
 
+<<<<<<< HEAD
+=======
+    # Base-hand palm (landmark 9 of non-dominant hand)
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if base_lms is not None:
         try:
             palm = np.array([base_lms.landmark[9].x,
@@ -372,19 +632,45 @@ def _body_distance_features(
     return out
 
 
+<<<<<<< HEAD
 # Run the Holistic model on a single BGR frame; returns (vec218, wrist, velocity, head_state)
+=======
+# ------------------------------------------------------------------
+# Per-frame extraction (public)
+# ------------------------------------------------------------------
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def extract_landmarks_from_frame(
     frame_bgr: np.ndarray,
     hands_solution,
     prev_dominant_wrist: np.ndarray = None,
     prev_velocity: np.ndarray = None,
+<<<<<<< HEAD
     prev_head_state: tuple = (0.0, 0.0, 0.0),
     dominant_is_right: bool = True,
 ) -> tuple:
+=======
+    prev_head_state: tuple = (0.0, 0.0, 0.0),   # (yaw, pitch, roll)
+    dominant_is_right: bool = True,
+) -> tuple:
+    """
+    Run the Holistic model on a single BGR frame.
+
+    Returns
+    -------
+    vec            : np.ndarray (218,)  full feature vector
+    dominant_wrist : np.ndarray (3,)    raw wrist position for next-frame velocity
+    velocity       : np.ndarray (3,)    this frame's velocity (for acceleration)
+    head_state     : tuple (yaw, pitch, roll)  for next-frame NMM deltas
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
     frame_rgb.flags.writeable = False
     result = hands_solution.process(frame_rgb)
 
+<<<<<<< HEAD
+=======
+    # ── Assign dominant / base hand ─────────────────────────────────
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if dominant_is_right:
         dom_lms  = result.right_hand_landmarks
         base_lms = result.left_hand_landmarks
@@ -392,6 +678,10 @@ def extract_landmarks_from_frame(
         dom_lms  = result.left_hand_landmarks
         base_lms = result.right_hand_landmarks
 
+<<<<<<< HEAD
+=======
+    # ── Hand vectors (126) ──────────────────────────────────────────
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     left_hand  = np.zeros(SINGLE_HAND_SIZE, dtype=np.float32)
     right_hand = np.zeros(SINGLE_HAND_SIZE, dtype=np.float32)
 
@@ -405,6 +695,10 @@ def extract_landmarks_from_frame(
                             for lm in result.right_hand_landmarks.landmark], dtype=np.float32)
         right_hand = _normalize_hand(coords)
 
+<<<<<<< HEAD
+=======
+    # ── Shoulder scale & dominant wrist ────────────────────────────
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     shoulder_scale = 1.0
     dominant_wrist = np.zeros(3, dtype=np.float32)
     if result.pose_landmarks:
@@ -419,23 +713,45 @@ def extract_landmarks_from_frame(
         except IndexError:
             pass
 
+<<<<<<< HEAD
+=======
+    # ── Velocity (3) ───────────────────────────────────────────────
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if prev_dominant_wrist is not None:
         velocity = dominant_wrist - prev_dominant_wrist
     else:
         velocity = np.zeros(VELOCITY_SIZE, dtype=np.float32)
 
+<<<<<<< HEAD
+=======
+    # ── Acceleration (3) ───────────────────────────────────────────
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if prev_velocity is not None:
         acceleration = velocity - prev_velocity
     else:
         acceleration = np.zeros(ACCEL_SIZE, dtype=np.float32)
 
+<<<<<<< HEAD
     pose_vec = _extract_pose(result.pose_landmarks)
     face_vec = _extract_face(result.face_landmarks)
+=======
+    # ── Pose (24) ──────────────────────────────────────────────────
+    pose_vec = _extract_pose(result.pose_landmarks)
+
+    # ── Face spatial (27) ──────────────────────────────────────────
+    face_vec = _extract_face(result.face_landmarks)
+
+    # ── Interaction distances (2) ──────────────────────────────────
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     interact_vec = _interaction_features(
         result.left_hand_landmarks, result.right_hand_landmarks,
         result.face_landmarks, result.pose_landmarks, shoulder_scale,
     )
 
+<<<<<<< HEAD
+=======
+    # ── NMM (10) ───────────────────────────────────────────────────
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     face_h = 1.0
     if result.face_landmarks and len(result.face_landmarks.landmark) > 152:
         lms = result.face_landmarks.landmark
@@ -448,6 +764,7 @@ def extract_landmarks_from_frame(
         face_scale=face_h,
     )
 
+<<<<<<< HEAD
     finger_ang_vec   = _extract_finger_angles(dom_lms)
     wrist_orient_vec = _extract_wrist_orientation(dom_lms)
     body_dist_vec    = _body_distance_features(
@@ -467,6 +784,33 @@ def extract_landmarks_from_frame(
         wrist_orient_vec,
         body_dist_vec,
     ], dtype=np.float32)
+=======
+    # ── Finger angles (15) — dominant hand ─────────────────────────
+    finger_ang_vec = _extract_finger_angles(dom_lms)
+
+    # ── Wrist orientation (4) — dominant hand ──────────────────────
+    wrist_orient_vec = _extract_wrist_orientation(dom_lms)
+
+    # ── Body distances (4) ─────────────────────────────────────────
+    body_dist_vec = _body_distance_features(
+        dom_lms, base_lms, result.face_landmarks, result.pose_landmarks, shoulder_scale
+    )
+
+    # ── Concatenate → 218 ──────────────────────────────────────────
+    vec = np.concatenate([
+        left_hand,        # 63
+        right_hand,       # 63
+        pose_vec,         # 24
+        face_vec,         # 27
+        velocity,         #  3
+        interact_vec,     #  2
+        acceleration,     #  3
+        nmm_vec,          # 10
+        finger_ang_vec,   # 15
+        wrist_orient_vec, #  4
+        body_dist_vec,    #  4
+    ], dtype=np.float32)   # total: 218
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
     assert len(vec) == LANDMARK_VECTOR_SIZE, \
         f"Feature vector length {len(vec)} != expected {LANDMARK_VECTOR_SIZE}"
@@ -479,13 +823,27 @@ def extract_landmarks_from_frame(
     )
 
 
+<<<<<<< HEAD
 # Extract a fixed-length multi-modal landmark sequence from a video file
+=======
+# ------------------------------------------------------------------
+# Video-level extraction
+# ------------------------------------------------------------------
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def extract_sequence_from_video(
     video_path: str,
     sequence_length: int = 45,
     hands_solution=None,
     dominant_is_right: bool = True,
 ) -> np.ndarray:
+<<<<<<< HEAD
+=======
+    """
+    Extract a fixed-length multi-modal landmark sequence from a video.
+
+    Returns np.ndarray shape (sequence_length, 218), float32.
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         return np.zeros((sequence_length, LANDMARK_VECTOR_SIZE), dtype=np.float32)
@@ -527,6 +885,14 @@ def extract_sequence_from_video(
     return sequence
 
 
+<<<<<<< HEAD
 # Legacy stub — returns zeros for backward compatibility
 def extract_landmarks_from_result(result) -> np.ndarray:
+=======
+# ------------------------------------------------------------------
+# Legacy compat
+# ------------------------------------------------------------------
+def extract_landmarks_from_result(result) -> np.ndarray:
+    """Legacy stub — returns zeros."""
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     return np.zeros(LANDMARK_VECTOR_SIZE, dtype=np.float32)

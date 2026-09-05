@@ -1,3 +1,43 @@
+<<<<<<< HEAD
+=======
+"""
+predictor.py  (backend/ml/predictor.py)
+-----------------------------------------
+Production inference module for the GestureBridge gesture classifier.
+
+This module is imported by backend/routes/gesture.py (the /predict route).
+It is the ONLY file the Flask app interacts with for ML inference.
+
+Public API
+----------
+predict_gesture(landmark_sequence) → dict
+    Accepts a MediaPipe landmark sequence and returns:
+      - predicted_word  : str   — the top-1 predicted sign
+      - confidence      : float — softmax probability of top-1 (0–1)
+      - top5            : list  — top-5 [{word, confidence}] dicts
+
+Loading strategy
+----------------
+The model and labels are loaded once at module import time (singleton
+pattern) so the Flask app pays the load cost only on startup, not per
+request.
+
+If the model file does not exist (e.g., before training completes) the
+module logs a warning and returns a graceful "model not ready" response
+rather than crashing the server.
+
+Input contract
+--------------
+`landmark_sequence` can be:
+  - np.ndarray of shape (T, 218) — raw landmark sequence from MediaPipe v2
+  - list of lists / nested Python floats — JSON-decoded body from the
+    frontend webcam module (shape inferred at runtime)
+
+The sequence does NOT need to be pre-padded; preprocess_landmark_sequence()
+handles that.
+"""
+
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 import json
 import logging
 from pathlib import Path
@@ -9,12 +49,20 @@ from ml.utils.preprocess import preprocess_landmark_sequence
 
 log = logging.getLogger(__name__)
 
+<<<<<<< HEAD
 _ML_DIR         = Path(__file__).parent
+=======
+# ------------------------------------------------------------------
+# Paths (relative to backend/ — where the Flask app is launched)
+# ------------------------------------------------------------------
+_ML_DIR         = Path(__file__).parent           # backend/ml/
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 _MODEL_PATH      = _ML_DIR / "gesture_model.pt"
 _LABELS_PATH     = _ML_DIR / "labels.json"
 _META_PATH       = _ML_DIR / "model_meta.json"
 _NORMALIZER_PATH = _ML_DIR / "normalizer.npz"
 
+<<<<<<< HEAD
 _SEQUENCE_LENGTH:      int = 45
 _LANDMARK_VECTOR_SIZE: int = 218
 
@@ -27,6 +75,24 @@ _feat_std:  np.ndarray = None
 
 # Load idx_to_label mapping from labels.json
 def _load_labels(labels_path: Path) -> dict:
+=======
+# Runtime values — overridden by model_meta.json if present
+_SEQUENCE_LENGTH:      int = 45
+_LANDMARK_VECTOR_SIZE: int = 218
+
+# ------------------------------------------------------------------
+# Singleton model + labels (loaded once at import)
+# ------------------------------------------------------------------
+_model = None
+_labels: dict = {}        # {int_index: word_string}
+_num_classes: int = 0
+_feat_mean: np.ndarray = None   # per-feature training mean (182,)
+_feat_std:  np.ndarray = None   # per-feature training std  (182,)
+
+
+def _load_labels(labels_path: Path) -> dict:
+    """Load idx_to_label mapping from labels.json."""
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if not labels_path.exists():
         log.warning("labels.json not found at %s — predictions will return raw indices.", labels_path)
         return {}
@@ -35,8 +101,13 @@ def _load_labels(labels_path: Path) -> dict:
     return {int(k): v for k, v in raw.items()}
 
 
+<<<<<<< HEAD
 # Load the PyTorch model state dict; returns None if file does not exist
 def _load_model(model_path: Path, meta_path: Path, num_classes: int):
+=======
+def _load_model(model_path: Path, meta_path: Path, num_classes: int):
+    """Load the PyTorch model state dict. Returns None if file does not exist."""
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     global _SEQUENCE_LENGTH, _LANDMARK_VECTOR_SIZE
     if not model_path.exists():
         log.warning(
@@ -46,6 +117,10 @@ def _load_model(model_path: Path, meta_path: Path, num_classes: int):
         )
         return None
 
+<<<<<<< HEAD
+=======
+    # Determine num_classes, sequence_length, and feature size from meta
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if meta_path.exists():
         with open(meta_path, "r", encoding="utf-8") as f:
             meta = json.load(f)
@@ -74,6 +149,12 @@ def _load_model(model_path: Path, meta_path: Path, num_classes: int):
         log.info("GestureBridge model loaded from %s (classes=%d)", model_path, num_classes)
         return model
     except RuntimeError as exc:
+<<<<<<< HEAD
+=======
+        # Most likely cause: saved weights have a different input_size (e.g. 182)
+        # but the current model expects LANDMARK_VECTOR_SIZE (218).
+        # The model must be retrained: python -m ml.preprocess_dataset && python -m ml.train
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         log.error(
             "Model state_dict mismatch — the saved model was probably trained on a "
             "different feature size. Retrain with ml/train.py.  Detail: %s", exc
@@ -84,17 +165,30 @@ def _load_model(model_path: Path, meta_path: Path, num_classes: int):
         return None
 
 
+<<<<<<< HEAD
 # Load model and labels into module-level singletons
 def _initialize():
+=======
+def _initialize():
+    """Load model and labels into module-level singletons."""
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     global _model, _labels, _num_classes, _feat_mean, _feat_std
     _labels      = _load_labels(_LABELS_PATH)
     _num_classes = len(_labels)
     _model       = _load_model(_MODEL_PATH, _META_PATH, _num_classes)
 
+<<<<<<< HEAD
     if _NORMALIZER_PATH.exists():
         npz = np.load(str(_NORMALIZER_PATH))
         _feat_mean = npz["mean"]
         _feat_std  = npz["std"]
+=======
+    # Load normalizer stats (saved by train.py)
+    if _NORMALIZER_PATH.exists():
+        npz = np.load(str(_NORMALIZER_PATH))
+        _feat_mean = npz["mean"]   # (182,)
+        _feat_std  = npz["std"]    # (182,)
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         log.info("Normalizer stats loaded from %s", _NORMALIZER_PATH)
     else:
         _feat_mean = None
@@ -108,11 +202,42 @@ def _initialize():
     )
 
 
+<<<<<<< HEAD
 _initialize()
 
 
 # Run inference on a MediaPipe landmark sequence and return top-1 + top-5 predictions
 def predict_gesture(landmark_sequence: Union[np.ndarray, list]) -> dict:
+=======
+# Initialize on import
+_initialize()
+
+
+# ------------------------------------------------------------------
+# Public inference API
+# ------------------------------------------------------------------
+def predict_gesture(landmark_sequence: Union[np.ndarray, list]) -> dict:
+    """
+    Run inference on a MediaPipe landmark sequence.
+
+    Parameters
+    ----------
+    landmark_sequence : np.ndarray or list
+        Shape (T, 218) — T variable-length frames (ideally T = _SEQUENCE_LENGTH),
+        each with 218 floats. Feature layout per frame (produced by landmarks.py):
+          left_hand(63) | right_hand(63) | pose(24) | face(27)
+          | velocity(3) | interaction(2) | accel(3) | nmm(10)
+          | finger_angles(15) | wrist_quat(4) | body_dist(4)
+
+    Returns
+    -------
+    dict with keys:
+        predicted_word : str   — top-1 predicted sign language word
+        confidence     : float — softmax probability for top-1 (0–1)
+        top5           : list  — [{"word": str, "confidence": float}, …]
+                                  sorted highest → lowest (up to 5)
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if _model is None:
         return {
             "predicted_word": "—",
@@ -126,11 +251,16 @@ def predict_gesture(landmark_sequence: Union[np.ndarray, list]) -> dict:
             "needs_retrain": True,
         }
 
+<<<<<<< HEAD
+=======
+    # ── Coerce input to numpy (T × 182) ───────────────────────────
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if not isinstance(landmark_sequence, np.ndarray):
         landmark_sequence = np.array(landmark_sequence, dtype=np.float32)
     if landmark_sequence.ndim == 1:
         landmark_sequence = landmark_sequence.reshape(1, -1)
 
+<<<<<<< HEAD
     from ml.utils.preprocess import pad_or_truncate
     seq = pad_or_truncate(landmark_sequence, _SEQUENCE_LENGTH)
     if _feat_mean is not None and _feat_std is not None:
@@ -143,11 +273,31 @@ def predict_gesture(landmark_sequence: Union[np.ndarray, list]) -> dict:
     with torch.no_grad():
         logits = _model(tensor)
         probs  = F.softmax(logits, dim=-1)[0].numpy()
+=======
+    # ── Preprocess: pad/truncate to _SEQUENCE_LENGTH, then z-score ─
+    from ml.utils.preprocess import pad_or_truncate
+    seq = pad_or_truncate(landmark_sequence, _SEQUENCE_LENGTH)    # (_SEQUENCE_LENGTH, 218)
+    if _feat_mean is not None and _feat_std is not None:
+        seq = (seq - _feat_mean) / (_feat_std + 1e-8)
+    X = np.expand_dims(seq, axis=0).astype(np.float32)           # (1, _SEQUENCE_LENGTH, 218)
+
+    # ── Inference ──────────────────────────────────────────────────
+    import torch
+    import torch.nn.functional as F
+    tensor = torch.from_numpy(X)       # (1, _SEQUENCE_LENGTH, 218)
+    with torch.no_grad():
+        logits = _model(tensor)                            # (1, num_classes)
+        probs  = F.softmax(logits, dim=-1)[0].numpy()     # (num_classes,)
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
     top1_idx  = int(np.argmax(probs))
     top1_conf = float(probs[top1_idx])
     top1_word = _labels.get(top1_idx, f"class_{top1_idx}")
 
+<<<<<<< HEAD
+=======
+    # Top-5 (or all classes if fewer than 5)
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     k = min(5, len(probs))
     top_k_indices = np.argsort(probs)[-k:][::-1]
     top5 = [
@@ -165,7 +315,17 @@ def predict_gesture(landmark_sequence: Union[np.ndarray, list]) -> dict:
     }
 
 
+<<<<<<< HEAD
 # Hot-reload the model and labels from disk without restarting the server
 def reload_model():
+=======
+def reload_model():
+    """
+    Hot-reload the model and labels from disk.
+
+    Useful after retraining without restarting the Flask server.
+    Can be called from an admin endpoint or a management CLI.
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     log.info("Reloading model and labels …")
     _initialize()

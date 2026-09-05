@@ -5,6 +5,7 @@
  * WLASL video entries, then plays them sequentially — auto-starting
  * immediately after "Show Signs" is clicked.
  *
+<<<<<<< HEAD
  * New features
  * ------------
  * • 🎤 Speech-to-Text  — browser SpeechRecognition API fills the text box
@@ -14,6 +15,8 @@
  * • Language selector  — ASL / ISL / Hindi / Marathi; drives both STT locale
  *   and TTS voice selection.
  *
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
  * Key behaviours
  * --------------
  * • "Show Signs" button fetches and auto-plays from word 1 with no extra click.
@@ -29,7 +32,11 @@ import React, {
 import AppShell from '../components/AppShell';
 import Alert from '../components/Alert';
 import { Spinner } from '../components/LoadingSpinner';
+<<<<<<< HEAD
 import { useSettings, SUPPORTED_LANGUAGES, getTTSLocale } from '../context/SettingsContext';
+=======
+import { useSettings } from '../context/SettingsContext';
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 import api, { getErrorMessage, videoUrl, getLearningTip } from '../services/api';
 
 /* ── Quick-phrase chips ─────────────────────────────────────────────── */
@@ -38,6 +45,7 @@ const QUICK_PHRASES = [
   'good morning', 'my name', 'I love you', 'how are you',
 ];
 
+<<<<<<< HEAD
 /* ── Web Speech API feature detection ─────────────────────────────── */
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition || null;
@@ -62,6 +70,10 @@ function speak(text, locale, onEnd) {
 export default function TextToSign() {
   const { language, updateSettings } = useSettings();
   const locale = getTTSLocale(language);
+=======
+export default function TextToSign() {
+  const { language } = useSettings();
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
   /* ── Form ──────────────────────────────────────────────────────────── */
   const [text,       setText]       = useState('');
@@ -73,15 +85,19 @@ export default function TextToSign() {
   const [coverage,   setCoverage]   = useState(null);
   const [vocabHints, setVocabHints] = useState([]);
 
+<<<<<<< HEAD
   /* ── Dataset status (local videos present?) ────────────────────────── */
   const [localVideosAvailable, setLocalVideosAvailable] = useState(null); // null = loading
 
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   /* ── Playback ──────────────────────────────────────────────────────── */
   const [currentIdx,  setCurrentIdx]  = useState(0);
   const [playing,     setPlaying]     = useState(false);
   const [speed,       setSpeed]       = useState(1);
   const [loop,        setLoop]        = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(true);
+<<<<<<< HEAD
   const [videoError,  setVideoError]  = useState(false);
   const [useFallback, setUseFallback] = useState(false);
   const videoTimeoutRef = useRef(null); // auto-skip timer for dead external URLs
@@ -100,6 +116,15 @@ export default function TextToSign() {
   /* ── Text-to-Speech ────────────────────────────────────────────────── */
   const [ttsSupported, setTtsSupported] = useState(!!synth);
   const [speaking,     setSpeaking]     = useState(false);
+=======
+  const [videoError,  setVideoError]  = useState(false);   // true when ALL sources fail
+  const [useFallback, setUseFallback] = useState(false);   // true when using external_url
+
+  /* ── AI Learning Tip ───────────────────────────────────────────────── */
+  const [tip,        setTip]        = useState(null);   // { tip, fun_fact }
+  const [tipLoading, setTipLoading] = useState(false);
+  const [tipWord,    setTipWord]    = useState('');     // which word the tip is for
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
   const videoRef        = useRef(null);
   const autoRef         = useRef(true);
@@ -107,6 +132,13 @@ export default function TextToSign() {
   const currentIdxRef   = useRef(0);
   const playingRef      = useRef(false);
   const playableRef     = useRef([]);
+<<<<<<< HEAD
+=======
+  // Set true while handleVideoEnded is advancing to the next index.
+  // Suppresses the browser's synthetic "pause" event that fires when the old
+  // <video> element unmounts — prevents playingRef from being set to false
+  // before the new video's onCanPlay has a chance to auto-start it.
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   const advancingRef    = useRef(false);
 
   useEffect(() => { autoRef.current    = autoAdvance; }, [autoAdvance]);
@@ -114,6 +146,7 @@ export default function TextToSign() {
   useEffect(() => { currentIdxRef.current = currentIdx; setVideoError(false); setUseFallback(false); }, [currentIdx]);
   useEffect(() => { playingRef.current = playing;      }, [playing]);
 
+<<<<<<< HEAD
   /* ── Voices load async in some browsers ───────────────────────────── */
   useEffect(() => {
     if (!synth) return;
@@ -135,10 +168,14 @@ export default function TextToSign() {
   }, [language]);
 
   /* ── Vocabulary hints + dataset status ────────────────────────────── */
+=======
+  /* ── Vocabulary hints ──────────────────────────────────────────────── */
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   useEffect(() => {
     api.get('/text-to-sign/vocabulary')
       .then(({ data }) => setVocabHints(data.words || []))
       .catch(() => {});
+<<<<<<< HEAD
     api.get('/text-to-sign/status')
       .then(({ data }) => setLocalVideosAvailable(data.local_videos_available ?? false))
       .catch(() => setLocalVideosAvailable(false));
@@ -150,6 +187,8 @@ export default function TextToSign() {
       clearTimeout(videoTimeoutRef.current);
       videoTimeoutRef.current = null;
     }
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   }, []);
 
   /* ── Derived ───────────────────────────────────────────────────────── */
@@ -164,15 +203,25 @@ export default function TextToSign() {
 
   /* ── Video ended → advance or loop ────────────────────────────────── */
   const handleVideoEnded = useCallback(() => {
+<<<<<<< HEAD
     clearVideoTimeout();
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if (!autoRef.current) {
       setPlaying(false); playingRef.current = false; return;
     }
     const nextIdx = currentIdxRef.current + 1;
     if (nextIdx < playableRef.current.length) {
+<<<<<<< HEAD
       advancingRef.current  = true;
       currentIdxRef.current = nextIdx;
       setCurrentIdx(nextIdx);
+=======
+      advancingRef.current  = true;   // block onPause from clearing playingRef
+      currentIdxRef.current = nextIdx;
+      setCurrentIdx(nextIdx);
+      // key={currentIdx} change → <video> remounts → onCanPlay fires → play()
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     } else if (loopRef.current) {
       advancingRef.current  = true;
       currentIdxRef.current = 0;
@@ -180,7 +229,11 @@ export default function TextToSign() {
     } else {
       setPlaying(false); playingRef.current = false;
     }
+<<<<<<< HEAD
   }, [clearVideoTimeout]);
+=======
+  }, []);
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
   /* ── Submit — fetch then immediately start playing ─────────────────── */
   const handleGenerate = async () => {
@@ -192,6 +245,10 @@ export default function TextToSign() {
     setCurrentIdx(0);
     currentIdxRef.current = 0;
     setUseFallback(false);
+<<<<<<< HEAD
+=======
+    // Mark as playing NOW so onCanPlay auto-starts the first video
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     setPlaying(true);
     playingRef.current = true;
     setLoading(true);
@@ -227,13 +284,25 @@ export default function TextToSign() {
   const prev = () => {
     const idx = Math.max(0, currentIdx - 1);
     currentIdxRef.current = idx; setCurrentIdx(idx);
+<<<<<<< HEAD
+=======
+    // Don't reset playingRef — onCanPlay on the remounted video will resume if playing
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   };
   const next = () => {
     const idx = Math.min(playableWords.length - 1, currentIdx + 1);
     currentIdxRef.current = idx; setCurrentIdx(idx);
+<<<<<<< HEAD
   };
   const jumpTo = (idx) => {
     currentIdxRef.current = idx; setCurrentIdx(idx);
+=======
+    // Don't reset playingRef — onCanPlay on the remounted video will resume if playing
+  };
+  const jumpTo = (idx) => {
+    currentIdxRef.current = idx; setCurrentIdx(idx);
+    // onCanPlay on remounted video resumes automatically when playingRef is true
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   };
   const changeSpeed = (s) => {
     setSpeed(s);
@@ -255,6 +324,7 @@ export default function TextToSign() {
     }
   }, [tipWord]);
 
+<<<<<<< HEAD
   /* ── Speech-to-Text (mic input) ───────────────────────────────────── */
   const startListening = useCallback(() => {
     if (!SpeechRecognition) { setSttError('Speech recognition not supported in this browser.'); return; }
@@ -299,20 +369,26 @@ export default function TextToSign() {
   /* ── Speak current word label when it changes ─────────────────────── */
   // (optional — only speaks if "speak on sign" feature is toggled; disabled by default)
 
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   /* ── Derived display ───────────────────────────────────────────────── */
   const hasResults    = words.length > 0;
   const notFoundWords  = words.filter((w) => !w.found).map((w) => w.word);
   const fuzzyWords     = words.filter((w) => w.found && w.fuzzy);
 
+<<<<<<< HEAD
   /* ── Language selector change ─────────────────────────────────────── */
   const handleLanguageChange = (e) => {
     updateSettings({ language: e.target.value });
   };
 
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   return (
     <AppShell>
       <div className="page-header">
         <h1>Text to Sign</h1>
+<<<<<<< HEAD
         <p>Type or speak a sentence — GestureBridge plays the WLASL sign video for each word in order.</p>
       </div>
 
@@ -368,6 +444,12 @@ export default function TextToSign() {
           Used for speech input &amp; audio output
         </span>
       </div>
+=======
+        <p>Type a sentence — GestureBridge plays the WLASL sign video for each word in order.</p>
+      </div>
+
+      {error && <Alert type="error" message={error} onClose={() => setError('')} />}
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
       {/* ── Input card ─────────────────────────────────────────────── */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
@@ -376,17 +458,22 @@ export default function TextToSign() {
         <div className="tts-input-row">
           <textarea
             className="form-input form-textarea"
+<<<<<<< HEAD
             placeholder={
               language === 'Hindi'   ? 'हिन्दी में टाइप करें…' :
               language === 'Marathi' ? 'मराठीत टाइप करा…' :
               'Type words from the supported vocabulary…'
             }
+=======
+            placeholder="Type words from the supported vocabulary…"
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
             style={{ flex: 1, minWidth: 0, fontSize: '1rem', resize: 'vertical' }}
             onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) handleGenerate(); }}
           />
+<<<<<<< HEAD
 
           {/* Action buttons column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem', flexShrink: 0 }}>
@@ -437,6 +524,18 @@ export default function TextToSign() {
           </div>
         )}
 
+=======
+          <button
+            className="btn btn-primary btn-lg"
+            onClick={handleGenerate}
+            disabled={loading || !text.trim()}
+            style={{ flexShrink: 0, alignSelf: 'flex-end', whiteSpace: 'nowrap' }}
+          >
+            {loading ? <><Spinner size="sm" /> Converting…</> : '▶ Show Signs'}
+          </button>
+        </div>
+
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         {/* Quick phrase chips */}
         <div style={{ marginTop: '.85rem', display: 'flex', flexWrap: 'wrap', gap: '.35rem', alignItems: 'center' }}>
           <span style={{ fontSize: '.78rem', color: 'var(--text-muted)', marginRight: '.2rem' }}>Quick:</span>
@@ -475,7 +574,11 @@ export default function TextToSign() {
             {playableWords.length > 0 ? (
               <div className="card" style={{ padding: '1rem' }}>
 
+<<<<<<< HEAD
                 {/* Word label + counter + speak-word button */}
+=======
+                {/* Word label + counter */}
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem', flexWrap: 'wrap', gap: '.5rem' }}>
                   <div>
                     <span style={{ fontSize: '.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Now Signing</span>
@@ -488,6 +591,7 @@ export default function TextToSign() {
                       )}
                     </h2>
                   </div>
+<<<<<<< HEAD
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
                     {/* Speak current word */}
                     {ttsSupported && currentWord && (
@@ -505,13 +609,26 @@ export default function TextToSign() {
                       <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>
                         {currentIdx + 1} / {playableWords.length}
                       </div>
+=======
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <span style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>Word</span>
+                    <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                      {currentIdx + 1} / {playableWords.length}
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                     </div>
                   </div>
                 </div>
 
+<<<<<<< HEAD
                 {/* Video element */}
                 <div style={{ position: 'relative', background: '#0F172A', borderRadius: 'var(--radius-md)', overflow: 'hidden', aspectRatio: '16/9' }}>
                   {currentWord && !videoError && (() => {
+=======
+                {/* Video element — local first, CDN external_url fallback on error */}
+                <div style={{ position: 'relative', background: '#0F172A', borderRadius: 'var(--radius-md)', overflow: 'hidden', aspectRatio: '16/9' }}>
+                  {currentWord && !videoError && (() => {
+                    // Pick source: prefer local /video/<id>, fall back to external_url
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                     const localSrc = currentWord.video_url ? videoUrl(currentWord.video_url) : null;
                     const extSrc   = currentWord.external_url || null;
                     const src      = useFallback ? extSrc : (localSrc || extSrc);
@@ -524,7 +641,10 @@ export default function TextToSign() {
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         onEnded={handleVideoEnded}
                         onPlay={() => {
+<<<<<<< HEAD
                           clearVideoTimeout();
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                           advancingRef.current = false;
                           setPlaying(true); playingRef.current = true;
                         }}
@@ -533,6 +653,7 @@ export default function TextToSign() {
                           setPlaying(false); playingRef.current = false;
                         }}
                         onError={() => {
+<<<<<<< HEAD
                           clearVideoTimeout();
                           if (!useFallback && extSrc && src !== extSrc) {
                             setUseFallback(true);
@@ -542,12 +663,23 @@ export default function TextToSign() {
                         }}
                         onCanPlay={(e) => {
                           clearVideoTimeout();
+=======
+                          // If we were on local and there is an external fallback, switch to it
+                          if (!useFallback && extSrc && src !== extSrc) {
+                            setUseFallback(true);
+                          } else {
+                            setVideoError(true);  // both sources failed
+                          }
+                        }}
+                        onCanPlay={(e) => {
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                           advancingRef.current = false;
                           e.target.playbackRate = speed;
                           if (playingRef.current) {
                             e.target.play().catch(() => {});
                           }
                         }}
+<<<<<<< HEAD
                         onLoadStart={() => {
                           // Start an 8-second timeout — if the video hasn't loaded
                           // by then the external URL is dead; auto-skip to next word.
@@ -561,12 +693,15 @@ export default function TextToSign() {
                             }
                           }, 8000);
                         }}
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                         playsInline
                         autoPlay={false}
                       />
                     );
                   })()}
 
+<<<<<<< HEAD
                   {currentWord && videoError && (
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '.75rem', color: '#94A3B8', padding: '1rem', textAlign: 'center' }}>
                       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -581,10 +716,24 @@ export default function TextToSign() {
                       <button className="btn btn-ghost btn-sm" style={{ color: '#94A3B8', borderColor: '#334155' }}
                         onClick={() => { clearVideoTimeout(); setVideoError(false); setUseFallback(false); handleVideoEnded(); }}>
                         ⏭ Skip to next
+=======
+                  {/* Video unavailable — shown when both sources fail */}
+                  {currentWord && videoError && (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '.75rem', color: '#94A3B8', padding: '1rem', textAlign: 'center' }}>
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      <p style={{ fontSize: '.85rem', margin: 0 }}>Video unavailable for this sign.</p>
+                      <button className="btn btn-ghost btn-sm" style={{ color: '#94A3B8', borderColor: '#334155' }}
+                        onClick={() => { setVideoError(false); setUseFallback(false); handleVideoEnded(); }}>
+                        Skip to next
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                       </button>
                     </div>
                   )}
 
+<<<<<<< HEAD
+=======
+                  {/* Translucent play button */}
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                   {!playing && !videoError && (
                     <button
                       onClick={play}
@@ -621,6 +770,7 @@ export default function TextToSign() {
                   ))}
                 </div>
 
+<<<<<<< HEAD
                 {/* AI tip + speak-sentence buttons */}
                 <div style={{ marginTop: '.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '.4rem' }}>
                   <div style={{ display: 'flex', gap: '.4rem' }}>
@@ -645,6 +795,19 @@ export default function TextToSign() {
                       </button>
                     )}
                   </div>
+=======
+                {/* AI tip button — appears next to the word label */}
+                <div style={{ marginTop: '.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '.75rem', gap: '.3rem', display: 'flex', alignItems: 'center' }}
+                    onClick={() => fetchTip(currentWord?.word)}
+                    disabled={tipLoading || !currentWord}
+                    title="Get an AI learning tip for this sign"
+                  >
+                    {tipLoading ? <Spinner size="sm" /> : '✨'} AI Tip
+                  </button>
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                 </div>
 
                 {/* AI Learning Tip card */}
@@ -788,15 +951,21 @@ export default function TextToSign() {
             <div className="card">
               <h4 style={{ marginBottom: '.75rem' }}>How It Works</h4>
               <ol style={{ paddingLeft: '1.1rem', fontSize: '.85rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
+<<<<<<< HEAD
                 <li>Choose your language above, then type or <strong>🎤 speak</strong> your text.</li>
                 <li>Click <strong>▶ Show Signs</strong> — videos play automatically word-by-word.</li>
                 <li>Use <strong>🔊 Listen</strong> to hear the text read aloud in your language.</li>
+=======
+                <li>Type words from the WLASL vocabulary.</li>
+                <li>Click <strong>▶ Show Signs</strong> — videos play automatically word-by-word.</li>
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                 <li>Use <strong>⏩ Auto</strong> to toggle auto-advance.</li>
                 <li>Click any word chip below the video to jump to it.</li>
                 <li>Use <strong>↺ Loop</strong> to repeat the full sentence.</li>
               </ol>
             </div>
 
+<<<<<<< HEAD
             {/* STT browser support notice */}
             {!sttSupported && (
               <div className="card" style={{ borderColor: 'var(--color-warning)', background: 'color-mix(in srgb, var(--color-warning) 6%, var(--bg-card))' }}>
@@ -806,6 +975,8 @@ export default function TextToSign() {
               </div>
             )}
 
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
             {vocabHints.length > 0 && (
               <div className="card">
                 <h4 style={{ marginBottom: '.6rem' }}>
@@ -835,12 +1006,15 @@ export default function TextToSign() {
       )}
 
       <style>{`
+<<<<<<< HEAD
         /* Mic pulse animation */
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50%       { opacity: .3; }
         }
 
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         /* Input row */
         .tts-input-row {
           display: flex;
@@ -849,6 +1023,10 @@ export default function TextToSign() {
           flex-wrap: wrap;
         }
         .tts-input-row textarea { min-width: 0; flex: 1 1 220px; }
+<<<<<<< HEAD
+=======
+        .tts-input-row .btn-lg  { flex-shrink: 0; }
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
         /* Results grid */
         .tts-grid {

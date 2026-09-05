@@ -280,7 +280,11 @@ export default function Auth({ defaultTab = 'login' }) {
     }
   };
 
+<<<<<<< HEAD
   /* ── Register — only sends OTP; does NOT create the account yet ─ */
+=======
+  /* ── Register → send real OTP via backend ───────────────────── */
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   const handleRegister = async (e) => {
     e.preventDefault();
     clearMessages();
@@ -303,12 +307,28 @@ export default function Auth({ defaultTab = 'login' }) {
     setLoading(true);
 
     try {
+<<<<<<< HEAD
       // Send OTP FIRST — only move to OTP screen if the email was delivered.
       // The account is created in handleVerifyOtp after the code is confirmed.
       await api.post('/otp/send', { email: regEmail });
 
       setOtpValue('');
       setOtpActive(false);
+=======
+      await registerUser({
+        name: regName,
+        email: regEmail,
+        password: regPassword
+      });
+
+      await api.post('/otp/send', {
+        email: regEmail
+      });
+
+      setOtpValue('');
+      setOtpActive(false);
+
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
       setTimeout(() => setOtpActive(true), 50);
       setScreen('otp');
     } catch (err) {
@@ -318,7 +338,11 @@ export default function Auth({ defaultTab = 'login' }) {
     }
   };
 
+<<<<<<< HEAD
   /* ── OTP verify → create account only after code is confirmed ── */
+=======
+  /* ── OTP verify ─────────────────────────────────────────────── */
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   const handleVerifyOtp = async (e) => {
     e?.preventDefault();
     clearMessages();
@@ -342,6 +366,7 @@ export default function Auth({ defaultTab = 'login' }) {
         return;
       }
 
+<<<<<<< HEAD
       // OTP confirmed — NOW create the account
       await registerUser({
         name: regName,
@@ -350,6 +375,8 @@ export default function Auth({ defaultTab = 'login' }) {
       });
 
       // Immediately log in with the fresh credentials
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
       try {
         const { data: loginData } = await loginUser({
           email: regEmail,
@@ -357,9 +384,20 @@ export default function Auth({ defaultTab = 'login' }) {
         });
 
         const token = loginData.token;
+<<<<<<< HEAD
         localStorage.setItem('gb_token', token);
 
         let user = { email: regEmail, name: regName };
+=======
+
+        localStorage.setItem('gb_token', token);
+
+        let user = {
+          email: regEmail,
+          name: regName
+        };
+
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         try {
           const r = await getProfile();
           user = r.data;
@@ -368,9 +406,18 @@ export default function Auth({ defaultTab = 'login' }) {
         }
 
         login(token, user);
+<<<<<<< HEAD
         requestAnimationFrame(() => navigate(from, { replace: true }));
       } catch {
         setSuccess('Account created! Please sign in.');
+=======
+
+        requestAnimationFrame(() =>
+          navigate(from, { replace: true })
+        );
+      } catch {
+        setSuccess('Email verified! Please sign in.');
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         switchScreen('login');
         setLoginEmail(regEmail);
       }

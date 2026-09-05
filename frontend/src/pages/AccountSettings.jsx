@@ -19,10 +19,15 @@ const TABS = [
 ];
 
 const LANGUAGES = [
+<<<<<<< HEAD
   { value: 'ASL',     label: 'American Sign Language (ASL)' },
   { value: 'ISL',     label: 'Indian Sign Language (ISL)' },
   { value: 'Hindi',   label: 'Hindi — हिन्दी (hi-IN)' },
   { value: 'Marathi', label: 'Marathi — मराठी (mr-IN)' },
+=======
+  { value: 'ASL', label: 'American Sign Language (ASL)' },
+  { value: 'ISL', label: 'Indian Sign Language (ISL)' },
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 ];
 
 const Icon = ({ d, size = 16 }) => (

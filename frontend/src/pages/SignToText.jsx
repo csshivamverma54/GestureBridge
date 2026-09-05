@@ -35,6 +35,7 @@ import AppShell from '../components/AppShell';
 import Alert from '../components/Alert';
 import { Spinner } from '../components/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
+<<<<<<< HEAD
 import { useSettings, getTTSLocale } from '../context/SettingsContext';
 import { predictGesture, generateSentence, predictLetter, generateLetterSentence, improveText } from '../services/api';
 
@@ -54,6 +55,11 @@ function speakText(text, locale) {
   _synth.speak(utt);
 }
 
+=======
+import { useSettings } from '../context/SettingsContext';
+import { predictGesture, generateSentence, predictLetter, generateLetterSentence, improveText } from '../services/api';
+
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 /* ══════════════════════════════════════════════════════════════════
    Constants
    ══════════════════════════════════════════════════════════════════ */
@@ -455,8 +461,12 @@ function loadScript(src) {
    ══════════════════════════════════════════════════════════════════ */
 export default function SignToText() {
   const { user }  = useAuth();
+<<<<<<< HEAD
   const { confidenceThreshold: settingsThreshold, privacyMode, recognitionMode, updateSettings, language } = useSettings();
   const ttsLocale = getTTSLocale(language);
+=======
+  const { confidenceThreshold: settingsThreshold, privacyMode, recognitionMode, updateSettings } = useSettings();
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   const effectiveThreshold = Math.max(settingsThreshold, CONFIDENCE_THRESHOLD);
   // Stable ref so inference callbacks (closures) always read the latest mode
   const recognitionModeRef = useRef(recognitionMode);
@@ -1251,6 +1261,7 @@ export default function SignToText() {
                   <button className="btn btn-ghost btn-sm" onClick={handleUndoSentence} disabled={!sentence.length}>Undo</button>
                   <button className="btn btn-ghost btn-sm" onClick={handleClearAll} disabled={!sentence.length && !glossSequence.length}>Clear All</button>
                   <button className="btn btn-subtle btn-sm" onClick={handleCopy} disabled={!sentence.length && !glossSequence.length} title="Copies English translation">Copy</button>
+<<<<<<< HEAD
                   {_synth && (
                     <button
                       className="btn btn-ghost btn-sm"
@@ -1266,6 +1277,8 @@ export default function SignToText() {
                       🔊
                     </button>
                   )}
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                 </div>
               </div>
               <div style={{ minHeight: 80, padding: '1rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-sm)', display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
@@ -1406,6 +1419,7 @@ export default function SignToText() {
               <div style={{ display: 'flex', gap: '.3rem' }}>
                 <button className="btn btn-ghost btn-sm" onClick={handleLetterClearAll} disabled={!letterWord && !letterWords.length && !letterSentence}>Clear</button>
                 <button className="btn btn-subtle btn-sm" onClick={handleLetterCopy} disabled={!letterWord && !letterWords.length}>Copy</button>
+<<<<<<< HEAD
                 {_synth && (
                   <button
                     className="btn btn-ghost btn-sm"
@@ -1416,6 +1430,8 @@ export default function SignToText() {
                     🔊
                   </button>
                 )}
+=======
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
               </div>
             </div>
 
@@ -1522,6 +1538,7 @@ export default function SignToText() {
             {/* Generated sentence */}
             {letterSentence && (
               <div style={{ marginTop: '.75rem', padding: '.65rem .85rem', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 8%, var(--bg-surface))', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--color-secondary,#7c5cd8)' }}>
+<<<<<<< HEAD
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.2rem' }}>
                   <span style={{ fontSize: '.72rem', color: 'var(--text-muted)' }}>Sentence</span>
                   {_synth && (
@@ -1535,6 +1552,9 @@ export default function SignToText() {
                     </button>
                   )}
                 </div>
+=======
+                <div style={{ fontSize: '.72rem', color: 'var(--text-muted)', marginBottom: '.2rem' }}>Sentence</div>
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                 <div style={{ fontSize: '.95rem', fontWeight: 600, color: 'var(--text-main)' }}>{letterSentence}</div>
               </div>
             )}

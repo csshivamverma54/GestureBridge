@@ -1,11 +1,52 @@
+<<<<<<< HEAD
+=======
+"""
+routes/ai.py  —  IBM Watsonx.ai powered endpoints for GestureBridge
+---------------------------------------------------------------------
+
+Routes
+------
+POST /ai/improve-text
+    Polish a sign-translated sentence into fluent English.
+    Body : { "text": "you go store hungry?" }
+    Reply: { "improved": "Are you going to the store because you're hungry?" }
+
+POST /ai/learning-tip
+    Return a short ASL learning tip about a specific sign/word.
+    Body : { "word": "HELLO" }
+    Reply: { "tip": "…", "fun_fact": "…" }
+
+POST /ai/sentence-insights
+    Given a list of translation history entries, return AI-generated
+    usage insights (patterns, frequency notes, improvement suggestions).
+    Body : { "translations": ["HELLO", "THANK YOU", ...] }
+    Reply: { "insights": "…" }
+
+GET /ai/status
+    Check whether the Watsonx service is configured and reachable.
+    Reply: { "configured": true, "model": "meta-llama/…" }
+
+All endpoints gracefully degrade: when Watsonx is unavailable or the
+credentials are missing the endpoints return a 503 with a clear message
+so the frontend can fall back to its own rule-based text.
+"""
+
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 from flask import Blueprint, jsonify, request
 
 from services.watsonx import generate, is_configured, MODEL_ID
 
 ai_bp = Blueprint("ai", __name__, url_prefix="/ai")
 
+<<<<<<< HEAD
 
 # Return a 503 response when Watsonx credentials are not configured
+=======
+# ──────────────────────────────────────────────────────────────────────────
+# Helpers
+# ──────────────────────────────────────────────────────────────────────────
+
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def _unavailable():
     return jsonify({
         "error": "IBM Watsonx.ai is not configured. "
@@ -13,9 +54,20 @@ def _unavailable():
     }), 503
 
 
+<<<<<<< HEAD
 # Rewrite a raw sign-to-text translation as fluent English
 @ai_bp.route("/improve-text", methods=["POST"])
 def improve_text():
+=======
+# ──────────────────────────────────────────────────────────────────────────
+# POST /ai/improve-text
+# ──────────────────────────────────────────────────────────────────────────
+@ai_bp.route("/improve-text", methods=["POST"])
+def improve_text():
+    """
+    Take a rough sign-to-text translation and rewrite it as fluent English.
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if not is_configured():
         return _unavailable()
 
@@ -39,15 +91,30 @@ def improve_text():
     try:
         improved = generate(prompt, max_new_tokens=120, temperature=0.2,
                             stop_sequences=["<|eot_id|>", "\n\n"])
+<<<<<<< HEAD
+=======
+        # Strip any residual Llama header tokens
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         improved = improved.replace("<|eot_id|>", "").strip()
         return jsonify({"improved": improved or text}), 200
     except Exception as exc:  # noqa: BLE001
         return jsonify({"error": str(exc), "improved": text}), 500
 
 
+<<<<<<< HEAD
 # Return a concise learning tip and fun fact for an ASL sign word
 @ai_bp.route("/learning-tip", methods=["POST"])
 def learning_tip():
+=======
+# ──────────────────────────────────────────────────────────────────────────
+# POST /ai/learning-tip
+# ──────────────────────────────────────────────────────────────────────────
+@ai_bp.route("/learning-tip", methods=["POST"])
+def learning_tip():
+    """
+    Return a concise learning tip about an ASL sign.
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if not is_configured():
         return _unavailable()
 
@@ -74,12 +141,20 @@ def learning_tip():
                        stop_sequences=["<|eot_id|>"])
         raw = raw.replace("<|eot_id|>", "").strip()
 
+<<<<<<< HEAD
+=======
+        # Try to parse as JSON; fall back to plain text split
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         import json as _json
         try:
             payload = _json.loads(raw)
             tip      = payload.get("tip",      raw)
             fun_fact = payload.get("fun_fact", "")
         except _json.JSONDecodeError:
+<<<<<<< HEAD
+=======
+            # Graceful fallback: return raw text as tip
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
             tip      = raw
             fun_fact = ""
 
@@ -88,9 +163,21 @@ def learning_tip():
         return jsonify({"error": str(exc)}), 500
 
 
+<<<<<<< HEAD
 # Analyse a list of recent translations and return AI-generated learning insights
 @ai_bp.route("/sentence-insights", methods=["POST"])
 def sentence_insights():
+=======
+# ──────────────────────────────────────────────────────────────────────────
+# POST /ai/sentence-insights
+# ──────────────────────────────────────────────────────────────────────────
+@ai_bp.route("/sentence-insights", methods=["POST"])
+def sentence_insights():
+    """
+    Analyse a list of recent translations and return AI-generated insights
+    about signing patterns, vocabulary frequency and learning progress.
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if not is_configured():
         return _unavailable()
 
@@ -99,6 +186,10 @@ def sentence_insights():
     if not translations or not isinstance(translations, list):
         return jsonify({"error": "Field 'translations' must be a non-empty list"}), 400
 
+<<<<<<< HEAD
+=======
+    # Cap at 30 most recent to keep prompt size reasonable
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     sample = translations[:30]
     joined = ", ".join(f'"{t}"' for t in sample)
 
@@ -127,9 +218,21 @@ def sentence_insights():
         return jsonify({"error": str(exc)}), 500
 
 
+<<<<<<< HEAD
 # Convert an ASL gloss sequence into natural English using Watsonx, with rule-based fallback
 @ai_bp.route("/gloss-to-english", methods=["POST"])
 def gloss_to_english():
+=======
+# ──────────────────────────────────────────────────────────────────────────
+# POST /ai/gloss-to-english  (replaces rule-based generate-sentence)
+# ──────────────────────────────────────────────────────────────────────────
+@ai_bp.route("/gloss-to-english", methods=["POST"])
+def gloss_to_english():
+    """
+    Convert an ASL gloss sequence + NMM summary into natural English using LLM.
+    Falls back to the rule-based generator when Watsonx is unavailable.
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     data = request.get_json(silent=True) or {}
     glosses     = data.get("glosses", [])
     nmm_payload = data.get("nmm", {})
@@ -137,6 +240,10 @@ def gloss_to_english():
     if not isinstance(glosses, list) or not glosses:
         return jsonify({"error": "Field 'glosses' must be a non-empty list"}), 400
 
+<<<<<<< HEAD
+=======
+    # Build NMM context string
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     nmm_ctx = ""
     raise_v  = float(nmm_payload.get("eyebrow_raise",  0))
     furrow_v = float(nmm_payload.get("eyebrow_furrow", 0))
@@ -155,6 +262,10 @@ def gloss_to_english():
     gloss_str = " ".join(g.upper() for g in glosses)
 
     if not is_configured():
+<<<<<<< HEAD
+=======
+        # Graceful fallback to rule-based
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         from ml.sentence_generator import generate_sentence
         sentence = generate_sentence(glosses, nmm_payload)
         return jsonify({"sentence": sentence, "glosses": glosses, "nmm": nmm_payload,
@@ -181,6 +292,10 @@ def gloss_to_english():
         return jsonify({"sentence": sentence, "glosses": glosses,
                         "nmm": nmm_payload, "source": "watsonx"}), 200
     except Exception as exc:  # noqa: BLE001
+<<<<<<< HEAD
+=======
+        # Fall back to rule-based on any error
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         from ml.sentence_generator import generate_sentence
         sentence = generate_sentence(glosses, nmm_payload)
         return jsonify({"sentence": sentence, "glosses": glosses,
@@ -188,9 +303,22 @@ def gloss_to_english():
                         "warning": str(exc)}), 200
 
 
+<<<<<<< HEAD
 # Match fingerspelled letters to the best English word using Watsonx or dictionary fallback
 @ai_bp.route("/letter-to-sentence", methods=["POST"])
 def letter_to_sentence():
+=======
+# ──────────────────────────────────────────────────────────────────────────
+# POST /ai/letter-to-sentence  (replaces rule-based generate-letter-sentence)
+# ──────────────────────────────────────────────────────────────────────────
+@ai_bp.route("/letter-to-sentence", methods=["POST"])
+def letter_to_sentence():
+    """
+    Given a string of fingerspelled letters, return the most likely word,
+    word suggestions, and optionally a full sentence.
+    Falls back gracefully when Watsonx is unavailable.
+    """
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     data = request.get_json(silent=True) or {}
     letters = (data.get("letters") or "").strip().lower()
     if not letters:
@@ -231,9 +359,18 @@ def letter_to_sentence():
                         "source": "rule-based", "warning": str(exc)}), 200
 
 
+<<<<<<< HEAD
 # Return whether the Watsonx service is configured and which model is in use
 @ai_bp.route("/status", methods=["GET"])
 def ai_status():
+=======
+# ──────────────────────────────────────────────────────────────────────────
+# GET /ai/status
+# ──────────────────────────────────────────────────────────────────────────
+@ai_bp.route("/status", methods=["GET"])
+def ai_status():
+    """Return whether the Watsonx service is configured."""
+>>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     return jsonify({
         "configured": is_configured(),
         "model":      MODEL_ID if is_configured() else None,
