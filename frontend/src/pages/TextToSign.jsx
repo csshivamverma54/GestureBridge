@@ -1,29 +1,26 @@
-/**
+﻿/**
  * TextToSign Page
- * ───────────────
+ * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
  * Sends typed text to POST /text-to-sign, receives an ordered list of
- * WLASL video entries, then plays them sequentially — auto-starting
+ * WLASL video entries, then plays them sequentially â€” auto-starting
  * immediately after "Show Signs" is clicked.
  *
-<<<<<<< HEAD
  * New features
  * ------------
- * • 🎤 Speech-to-Text  — browser SpeechRecognition API fills the text box
+ * â€¢ ðŸŽ¤ Speech-to-Text  â€” browser SpeechRecognition API fills the text box
  *   in whatever language is selected (English / Hindi / Marathi).
- * • 🔊 Text-to-Speech  — a speak button reads back the typed text (or each
+ * â€¢ ðŸ”Š Text-to-Speech  â€” a speak button reads back the typed text (or each
  *   word as it is signed) in the selected language using SpeechSynthesis.
- * • Language selector  — ASL / ISL / Hindi / Marathi; drives both STT locale
+ * â€¢ Language selector  â€” ASL / ISL / Hindi / Marathi; drives both STT locale
  *   and TTS voice selection.
  *
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
  * Key behaviours
  * --------------
- * • "Show Signs" button fetches and auto-plays from word 1 with no extra click.
- * • Videos advance with zero artificial delay — onEnded fires the next load.
- * • autoAdvance is ON by default; each video starts the moment canplay fires.
- * • Video URL is built via videoUrl() helper to work on any deployment origin.
- * • Fully responsive down to 320 px.
+ * â€¢ "Show Signs" button fetches and auto-plays from word 1 with no extra click.
+ * â€¢ Videos advance with zero artificial delay â€” onEnded fires the next load.
+ * â€¢ autoAdvance is ON by default; each video starts the moment canplay fires.
+ * â€¢ Video URL is built via videoUrl() helper to work on any deployment origin.
+ * â€¢ Fully responsive down to 320 px.
  */
 
 import React, {
@@ -32,26 +29,21 @@ import React, {
 import AppShell from '../components/AppShell';
 import Alert from '../components/Alert';
 import { Spinner } from '../components/LoadingSpinner';
-<<<<<<< HEAD
 import { useSettings, SUPPORTED_LANGUAGES, getTTSLocale } from '../context/SettingsContext';
-=======
-import { useSettings } from '../context/SettingsContext';
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 import api, { getErrorMessage, videoUrl, getLearningTip } from '../services/api';
 
-/* ── Quick-phrase chips ─────────────────────────────────────────────── */
+/* â”€â”€ Quick-phrase chips â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const QUICK_PHRASES = [
   'hello', 'thank you', 'yes no', 'help please',
   'good morning', 'my name', 'I love you', 'how are you',
 ];
 
-<<<<<<< HEAD
-/* ── Web Speech API feature detection ─────────────────────────────── */
+/* â”€â”€ Web Speech API feature detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition || null;
 const synth = window.speechSynthesis || null;
 
-/* ── TTS helper ────────────────────────────────────────────────────── */
+/* â”€â”€ TTS helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function speak(text, locale, onEnd) {
   if (!synth || !text) return;
   synth.cancel();
@@ -70,61 +62,44 @@ function speak(text, locale, onEnd) {
 export default function TextToSign() {
   const { language, updateSettings } = useSettings();
   const locale = getTTSLocale(language);
-=======
-export default function TextToSign() {
-  const { language } = useSettings();
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
-  /* ── Form ──────────────────────────────────────────────────────────── */
+  /* â”€â”€ Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const [text,       setText]       = useState('');
   const [loading,    setLoading]    = useState(false);
   const [error,      setError]      = useState('');
 
-  /* ── Result ────────────────────────────────────────────────────────── */
+  /* â”€â”€ Result â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const [words,      setWords]      = useState([]);
   const [coverage,   setCoverage]   = useState(null);
   const [vocabHints, setVocabHints] = useState([]);
 
-<<<<<<< HEAD
-  /* ── Dataset status (local videos present?) ────────────────────────── */
+  /* â”€â”€ Dataset status (local videos present?) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const [localVideosAvailable, setLocalVideosAvailable] = useState(null); // null = loading
 
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
-  /* ── Playback ──────────────────────────────────────────────────────── */
+  /* â”€â”€ Playback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const [currentIdx,  setCurrentIdx]  = useState(0);
   const [playing,     setPlaying]     = useState(false);
   const [speed,       setSpeed]       = useState(1);
   const [loop,        setLoop]        = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(true);
-<<<<<<< HEAD
   const [videoError,  setVideoError]  = useState(false);
   const [useFallback, setUseFallback] = useState(false);
   const videoTimeoutRef = useRef(null); // auto-skip timer for dead external URLs
 
-  /* ── AI Learning Tip ───────────────────────────────────────────────── */
+  /* â”€â”€ AI Learning Tip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const [tip,        setTip]        = useState(null);
   const [tipLoading, setTipLoading] = useState(false);
   const [tipWord,    setTipWord]    = useState('');
 
-  /* ── Speech-to-Text ────────────────────────────────────────────────── */
+  /* â”€â”€ Speech-to-Text â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const [listening,     setListening]     = useState(false);
   const [sttSupported,  setSttSupported]  = useState(!!SpeechRecognition);
   const [sttError,      setSttError]      = useState('');
   const recognitionRef = useRef(null);
 
-  /* ── Text-to-Speech ────────────────────────────────────────────────── */
+  /* â”€â”€ Text-to-Speech â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const [ttsSupported, setTtsSupported] = useState(!!synth);
   const [speaking,     setSpeaking]     = useState(false);
-=======
-  const [videoError,  setVideoError]  = useState(false);   // true when ALL sources fail
-  const [useFallback, setUseFallback] = useState(false);   // true when using external_url
-
-  /* ── AI Learning Tip ───────────────────────────────────────────────── */
-  const [tip,        setTip]        = useState(null);   // { tip, fun_fact }
-  const [tipLoading, setTipLoading] = useState(false);
-  const [tipWord,    setTipWord]    = useState('');     // which word the tip is for
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
   const videoRef        = useRef(null);
   const autoRef         = useRef(true);
@@ -132,13 +107,6 @@ export default function TextToSign() {
   const currentIdxRef   = useRef(0);
   const playingRef      = useRef(false);
   const playableRef     = useRef([]);
-<<<<<<< HEAD
-=======
-  // Set true while handleVideoEnded is advancing to the next index.
-  // Suppresses the browser's synthetic "pause" event that fires when the old
-  // <video> element unmounts — prevents playingRef from being set to false
-  // before the new video's onCanPlay has a chance to auto-start it.
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   const advancingRef    = useRef(false);
 
   useEffect(() => { autoRef.current    = autoAdvance; }, [autoAdvance]);
@@ -146,8 +114,7 @@ export default function TextToSign() {
   useEffect(() => { currentIdxRef.current = currentIdx; setVideoError(false); setUseFallback(false); }, [currentIdx]);
   useEffect(() => { playingRef.current = playing;      }, [playing]);
 
-<<<<<<< HEAD
-  /* ── Voices load async in some browsers ───────────────────────────── */
+  /* â”€â”€ Voices load async in some browsers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   useEffect(() => {
     if (!synth) return;
     // Trigger voice list load on first render
@@ -157,7 +124,7 @@ export default function TextToSign() {
     return () => synth.removeEventListener('voiceschanged', handler);
   }, []);
 
-  /* ── Stop STT / TTS when language changes ──────────────────────────── */
+  /* â”€â”€ Stop STT / TTS when language changes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   useEffect(() => {
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch {}
@@ -167,61 +134,45 @@ export default function TextToSign() {
     setSpeaking(false);
   }, [language]);
 
-  /* ── Vocabulary hints + dataset status ────────────────────────────── */
-=======
-  /* ── Vocabulary hints ──────────────────────────────────────────────── */
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
+  /* â”€â”€ Vocabulary hints + dataset status â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   useEffect(() => {
     api.get('/text-to-sign/vocabulary')
       .then(({ data }) => setVocabHints(data.words || []))
       .catch(() => {});
-<<<<<<< HEAD
     api.get('/text-to-sign/status')
       .then(({ data }) => setLocalVideosAvailable(data.local_videos_available ?? false))
       .catch(() => setLocalVideosAvailable(false));
   }, []);
 
-  /* ── Clear any pending video-load timeout ──────────────────────────── */
+  /* â”€â”€ Clear any pending video-load timeout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const clearVideoTimeout = useCallback(() => {
     if (videoTimeoutRef.current) {
       clearTimeout(videoTimeoutRef.current);
       videoTimeoutRef.current = null;
     }
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   }, []);
 
-  /* ── Derived ───────────────────────────────────────────────────────── */
+  /* â”€â”€ Derived â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const playableWords = words.filter((w) => w.found);
   const currentWord   = playableWords[currentIdx] ?? null;
   playableRef.current = playableWords;
 
-  /* ── Keep playbackRate in sync ─────────────────────────────────────── */
+  /* â”€â”€ Keep playbackRate in sync â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = speed;
   }, [speed]);
 
-  /* ── Video ended → advance or loop ────────────────────────────────── */
+  /* â”€â”€ Video ended â†’ advance or loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const handleVideoEnded = useCallback(() => {
-<<<<<<< HEAD
     clearVideoTimeout();
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if (!autoRef.current) {
       setPlaying(false); playingRef.current = false; return;
     }
     const nextIdx = currentIdxRef.current + 1;
     if (nextIdx < playableRef.current.length) {
-<<<<<<< HEAD
       advancingRef.current  = true;
       currentIdxRef.current = nextIdx;
       setCurrentIdx(nextIdx);
-=======
-      advancingRef.current  = true;   // block onPause from clearing playingRef
-      currentIdxRef.current = nextIdx;
-      setCurrentIdx(nextIdx);
-      // key={currentIdx} change → <video> remounts → onCanPlay fires → play()
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     } else if (loopRef.current) {
       advancingRef.current  = true;
       currentIdxRef.current = 0;
@@ -229,13 +180,9 @@ export default function TextToSign() {
     } else {
       setPlaying(false); playingRef.current = false;
     }
-<<<<<<< HEAD
   }, [clearVideoTimeout]);
-=======
-  }, []);
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
-  /* ── Submit — fetch then immediately start playing ─────────────────── */
+  /* â”€â”€ Submit â€” fetch then immediately start playing â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const handleGenerate = async () => {
     const trimmed = text.trim();
     if (!trimmed) { setError('Please enter some text.'); return; }
@@ -245,10 +192,6 @@ export default function TextToSign() {
     setCurrentIdx(0);
     currentIdxRef.current = 0;
     setUseFallback(false);
-<<<<<<< HEAD
-=======
-    // Mark as playing NOW so onCanPlay auto-starts the first video
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     setPlaying(true);
     playingRef.current = true;
     setLoading(true);
@@ -265,7 +208,7 @@ export default function TextToSign() {
     }
   };
 
-  /* ── Controls ──────────────────────────────────────────────────────── */
+  /* â”€â”€ Controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const play = () => {
     if (!currentWord) return;
     playingRef.current = true; setPlaying(true);
@@ -284,25 +227,13 @@ export default function TextToSign() {
   const prev = () => {
     const idx = Math.max(0, currentIdx - 1);
     currentIdxRef.current = idx; setCurrentIdx(idx);
-<<<<<<< HEAD
-=======
-    // Don't reset playingRef — onCanPlay on the remounted video will resume if playing
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   };
   const next = () => {
     const idx = Math.min(playableWords.length - 1, currentIdx + 1);
     currentIdxRef.current = idx; setCurrentIdx(idx);
-<<<<<<< HEAD
   };
   const jumpTo = (idx) => {
     currentIdxRef.current = idx; setCurrentIdx(idx);
-=======
-    // Don't reset playingRef — onCanPlay on the remounted video will resume if playing
-  };
-  const jumpTo = (idx) => {
-    currentIdxRef.current = idx; setCurrentIdx(idx);
-    // onCanPlay on remounted video resumes automatically when playingRef is true
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   };
   const changeSpeed = (s) => {
     setSpeed(s);
@@ -310,7 +241,7 @@ export default function TextToSign() {
   };
   const fullscreen = () => videoRef.current?.requestFullscreen?.();
 
-  /* ── AI learning tip ──────────────────────────────────────────────── */
+  /* â”€â”€ AI learning tip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const fetchTip = useCallback(async (word) => {
     if (!word || word === tipWord) return;
     setTipLoading(true); setTip(null); setTipWord(word);
@@ -324,8 +255,7 @@ export default function TextToSign() {
     }
   }, [tipWord]);
 
-<<<<<<< HEAD
-  /* ── Speech-to-Text (mic input) ───────────────────────────────────── */
+  /* â”€â”€ Speech-to-Text (mic input) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const startListening = useCallback(() => {
     if (!SpeechRecognition) { setSttError('Speech recognition not supported in this browser.'); return; }
     setSttError('');
@@ -356,7 +286,7 @@ export default function TextToSign() {
     setListening(false);
   }, []);
 
-  /* ── Text-to-Speech (speak the typed text) ────────────────────────── */
+  /* â”€â”€ Text-to-Speech (speak the typed text) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const handleSpeak = useCallback((textToSpeak) => {
     if (!synth) return;
     if (speaking) { synth.cancel(); setSpeaking(false); return; }
@@ -366,36 +296,30 @@ export default function TextToSign() {
     speak(t, locale, () => setSpeaking(false));
   }, [text, locale, speaking]);
 
-  /* ── Speak current word label when it changes ─────────────────────── */
-  // (optional — only speaks if "speak on sign" feature is toggled; disabled by default)
+  /* â”€â”€ Speak current word label when it changes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  // (optional â€” only speaks if "speak on sign" feature is toggled; disabled by default)
 
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
-  /* ── Derived display ───────────────────────────────────────────────── */
+  /* â”€â”€ Derived display â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const hasResults    = words.length > 0;
   const notFoundWords  = words.filter((w) => !w.found).map((w) => w.word);
   const fuzzyWords     = words.filter((w) => w.found && w.fuzzy);
 
-<<<<<<< HEAD
-  /* ── Language selector change ─────────────────────────────────────── */
+  /* â”€â”€ Language selector change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const handleLanguageChange = (e) => {
     updateSettings({ language: e.target.value });
   };
 
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
   return (
     <AppShell>
       <div className="page-header">
         <h1>Text to Sign</h1>
-<<<<<<< HEAD
-        <p>Type or speak a sentence — GestureBridge plays the WLASL sign video for each word in order.</p>
+        <p>Type or speak a sentence â€” GestureBridge plays the WLASL sign video for each word in order.</p>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
       {sttError && <Alert type="error" message={sttError} onClose={() => setSttError('')} />}
 
-      {/* ── No local videos banner ───────────────────────────────────── */}
+      {/* â”€â”€ No local videos banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {localVideosAvailable === false && (
         <div style={{
           marginBottom: '1rem',
@@ -406,7 +330,7 @@ export default function TextToSign() {
           fontSize: '.875rem',
         }}>
           <div style={{ fontWeight: 700, color: 'var(--color-warning)', marginBottom: '.4rem' }}>
-            ⚠️ WLASL video dataset not found locally
+            âš ï¸ WLASL video dataset not found locally
           </div>
           <p style={{ margin: '0 0 .5rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
             The app will try to stream sign videos from external CDN URLs, but many are no longer
@@ -425,7 +349,7 @@ export default function TextToSign() {
         </div>
       )}
 
-      {/* ── Language selector ────────────────────────────────────────── */}
+      {/* â”€â”€ Language selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '.65rem', flexWrap: 'wrap' }}>
         <label style={{ fontSize: '.82rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
           Language / Voice:
@@ -444,36 +368,25 @@ export default function TextToSign() {
           Used for speech input &amp; audio output
         </span>
       </div>
-=======
-        <p>Type a sentence — GestureBridge plays the WLASL sign video for each word in order.</p>
-      </div>
 
-      {error && <Alert type="error" message={error} onClose={() => setError('')} />}
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
-
-      {/* ── Input card ─────────────────────────────────────────────── */}
+      {/* â”€â”€ Input card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <h3 style={{ marginBottom: '1rem' }}>Enter Your Text</h3>
 
         <div className="tts-input-row">
           <textarea
             className="form-input form-textarea"
-<<<<<<< HEAD
             placeholder={
-              language === 'Hindi'   ? 'हिन्दी में टाइप करें…' :
-              language === 'Marathi' ? 'मराठीत टाइप करा…' :
-              'Type words from the supported vocabulary…'
+              language === 'Hindi'   ? 'à¤¹à¤¿à¤¨à¥à¤¦à¥€ à¤®à¥‡à¤‚ à¤Ÿà¤¾à¤‡à¤ª à¤•à¤°à¥‡à¤‚â€¦' :
+              language === 'Marathi' ? 'à¤®à¤°à¤¾à¤ à¥€à¤¤ à¤Ÿà¤¾à¤‡à¤ª à¤•à¤°à¤¾â€¦' :
+              'Type words from the supported vocabularyâ€¦'
             }
-=======
-            placeholder="Type words from the supported vocabulary…"
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
             style={{ flex: 1, minWidth: 0, fontSize: '1rem', resize: 'vertical' }}
             onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) handleGenerate(); }}
           />
-<<<<<<< HEAD
 
           {/* Action buttons column */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem', flexShrink: 0 }}>
@@ -483,7 +396,7 @@ export default function TextToSign() {
               disabled={loading || !text.trim()}
               style={{ whiteSpace: 'nowrap' }}
             >
-              {loading ? <><Spinner size="sm" /> Converting…</> : '▶ Show Signs'}
+              {loading ? <><Spinner size="sm" /> Convertingâ€¦</> : 'â–¶ Show Signs'}
             </button>
 
             {/* Mic / STT button */}
@@ -495,8 +408,8 @@ export default function TextToSign() {
                 style={{ display: 'flex', alignItems: 'center', gap: '.35rem', justifyContent: 'center' }}
               >
                 {listening
-                  ? <><span style={{ animation: 'pulse 1s infinite' }}>🔴</span> Stop</>
-                  : <>🎤 Speak</>
+                  ? <><span style={{ animation: 'pulse 1s infinite' }}>ðŸ”´</span> Stop</>
+                  : <>ðŸŽ¤ Speak</>
                 }
               </button>
             )}
@@ -510,7 +423,7 @@ export default function TextToSign() {
                 title={speaking ? 'Stop speaking' : 'Read text aloud'}
                 style={{ display: 'flex', alignItems: 'center', gap: '.35rem', justifyContent: 'center' }}
               >
-                {speaking ? '⏹ Stop' : '🔊 Listen'}
+                {speaking ? 'â¹ Stop' : 'ðŸ”Š Listen'}
               </button>
             )}
           </div>
@@ -519,23 +432,11 @@ export default function TextToSign() {
         {/* Live mic indicator */}
         {listening && (
           <div style={{ marginTop: '.6rem', display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.8rem', color: 'var(--color-error)' }}>
-            <span style={{ animation: 'pulse 1s infinite', fontSize: '1rem' }}>🔴</span>
-            Listening in <strong>{SUPPORTED_LANGUAGES.find((l) => l.value === language)?.nativeName}</strong>… speak clearly
+            <span style={{ animation: 'pulse 1s infinite', fontSize: '1rem' }}>ðŸ”´</span>
+            Listening in <strong>{SUPPORTED_LANGUAGES.find((l) => l.value === language)?.nativeName}</strong>â€¦ speak clearly
           </div>
         )}
 
-=======
-          <button
-            className="btn btn-primary btn-lg"
-            onClick={handleGenerate}
-            disabled={loading || !text.trim()}
-            style={{ flexShrink: 0, alignSelf: 'flex-end', whiteSpace: 'nowrap' }}
-          >
-            {loading ? <><Spinner size="sm" /> Converting…</> : '▶ Show Signs'}
-          </button>
-        </div>
-
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         {/* Quick phrase chips */}
         <div style={{ marginTop: '.85rem', display: 'flex', flexWrap: 'wrap', gap: '.35rem', alignItems: 'center' }}>
           <span style={{ fontSize: '.78rem', color: 'var(--text-muted)', marginRight: '.2rem' }}>Quick:</span>
@@ -551,17 +452,17 @@ export default function TextToSign() {
         </div>
       </div>
 
-      {/* ── Results ─────────────────────────────────────────────────── */}
+      {/* â”€â”€ Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {hasResults && (
         <div className="tts-grid">
 
-          {/* ── Left: video player ──────────────────────────────────── */}
+          {/* â”€â”€ Left: video player â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
 
             {fuzzyWords.length > 0 && (
               <Alert
                 type="info"
-                message={`Approximate match used for: ${fuzzyWords.map((w) => `"${w.word}" → ${w.matched_word}`).join(', ')}`}
+                message={`Approximate match used for: ${fuzzyWords.map((w) => `"${w.word}" â†’ ${w.matched_word}`).join(', ')}`}
               />
             )}
             {notFoundWords.length > 0 && (
@@ -574,11 +475,7 @@ export default function TextToSign() {
             {playableWords.length > 0 ? (
               <div className="card" style={{ padding: '1rem' }}>
 
-<<<<<<< HEAD
                 {/* Word label + counter + speak-word button */}
-=======
-                {/* Word label + counter */}
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem', flexWrap: 'wrap', gap: '.5rem' }}>
                   <div>
                     <span style={{ fontSize: '.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Now Signing</span>
@@ -591,7 +488,6 @@ export default function TextToSign() {
                       )}
                     </h2>
                   </div>
-<<<<<<< HEAD
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
                     {/* Speak current word */}
                     {ttsSupported && currentWord && (
@@ -601,7 +497,7 @@ export default function TextToSign() {
                         title={`Speak "${currentWord.word}"`}
                         style={{ fontSize: '.78rem' }}
                       >
-                        🔊
+                        ðŸ”Š
                       </button>
                     )}
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -609,26 +505,13 @@ export default function TextToSign() {
                       <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>
                         {currentIdx + 1} / {playableWords.length}
                       </div>
-=======
-                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <span style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>Word</span>
-                    <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>
-                      {currentIdx + 1} / {playableWords.length}
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                     </div>
                   </div>
                 </div>
 
-<<<<<<< HEAD
                 {/* Video element */}
                 <div style={{ position: 'relative', background: '#0F172A', borderRadius: 'var(--radius-md)', overflow: 'hidden', aspectRatio: '16/9' }}>
                   {currentWord && !videoError && (() => {
-=======
-                {/* Video element — local first, CDN external_url fallback on error */}
-                <div style={{ position: 'relative', background: '#0F172A', borderRadius: 'var(--radius-md)', overflow: 'hidden', aspectRatio: '16/9' }}>
-                  {currentWord && !videoError && (() => {
-                    // Pick source: prefer local /video/<id>, fall back to external_url
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                     const localSrc = currentWord.video_url ? videoUrl(currentWord.video_url) : null;
                     const extSrc   = currentWord.external_url || null;
                     const src      = useFallback ? extSrc : (localSrc || extSrc);
@@ -641,10 +524,7 @@ export default function TextToSign() {
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         onEnded={handleVideoEnded}
                         onPlay={() => {
-<<<<<<< HEAD
                           clearVideoTimeout();
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                           advancingRef.current = false;
                           setPlaying(true); playingRef.current = true;
                         }}
@@ -653,7 +533,6 @@ export default function TextToSign() {
                           setPlaying(false); playingRef.current = false;
                         }}
                         onError={() => {
-<<<<<<< HEAD
                           clearVideoTimeout();
                           if (!useFallback && extSrc && src !== extSrc) {
                             setUseFallback(true);
@@ -663,25 +542,14 @@ export default function TextToSign() {
                         }}
                         onCanPlay={(e) => {
                           clearVideoTimeout();
-=======
-                          // If we were on local and there is an external fallback, switch to it
-                          if (!useFallback && extSrc && src !== extSrc) {
-                            setUseFallback(true);
-                          } else {
-                            setVideoError(true);  // both sources failed
-                          }
-                        }}
-                        onCanPlay={(e) => {
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                           advancingRef.current = false;
                           e.target.playbackRate = speed;
                           if (playingRef.current) {
                             e.target.play().catch(() => {});
                           }
                         }}
-<<<<<<< HEAD
                         onLoadStart={() => {
-                          // Start an 8-second timeout — if the video hasn't loaded
+                          // Start an 8-second timeout â€” if the video hasn't loaded
                           // by then the external URL is dead; auto-skip to next word.
                           clearVideoTimeout();
                           videoTimeoutRef.current = setTimeout(() => {
@@ -693,15 +561,12 @@ export default function TextToSign() {
                             }
                           }, 8000);
                         }}
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                         playsInline
                         autoPlay={false}
                       />
                     );
                   })()}
 
-<<<<<<< HEAD
                   {currentWord && videoError && (
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '.75rem', color: '#94A3B8', padding: '1rem', textAlign: 'center' }}>
                       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -710,30 +575,16 @@ export default function TextToSign() {
                       </p>
                       <p style={{ fontSize: '.75rem', margin: 0, color: '#64748b' }}>
                         {localVideosAvailable === false
-                          ? 'Local dataset not present — external source unreachable.'
+                          ? 'Local dataset not present â€” external source unreachable.'
                           : 'No video file found for this word.'}
                       </p>
                       <button className="btn btn-ghost btn-sm" style={{ color: '#94A3B8', borderColor: '#334155' }}
                         onClick={() => { clearVideoTimeout(); setVideoError(false); setUseFallback(false); handleVideoEnded(); }}>
-                        ⏭ Skip to next
-=======
-                  {/* Video unavailable — shown when both sources fail */}
-                  {currentWord && videoError && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '.75rem', color: '#94A3B8', padding: '1rem', textAlign: 'center' }}>
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                      <p style={{ fontSize: '.85rem', margin: 0 }}>Video unavailable for this sign.</p>
-                      <button className="btn btn-ghost btn-sm" style={{ color: '#94A3B8', borderColor: '#334155' }}
-                        onClick={() => { setVideoError(false); setUseFallback(false); handleVideoEnded(); }}>
-                        Skip to next
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
+                        â­ Skip to next
                       </button>
                     </div>
                   )}
 
-<<<<<<< HEAD
-=======
-                  {/* Translucent play button */}
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                   {!playing && !videoError && (
                     <button
                       onClick={play}
@@ -748,7 +599,7 @@ export default function TextToSign() {
                       onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,.5)'}
                       onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,.3)'}
                     >
-                      ▶
+                      â–¶
                     </button>
                   )}
                 </div>
@@ -770,7 +621,6 @@ export default function TextToSign() {
                   ))}
                 </div>
 
-<<<<<<< HEAD
                 {/* AI tip + speak-sentence buttons */}
                 <div style={{ marginTop: '.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '.4rem' }}>
                   <div style={{ display: 'flex', gap: '.4rem' }}>
@@ -781,7 +631,7 @@ export default function TextToSign() {
                       disabled={tipLoading || !currentWord}
                       title="Get an AI learning tip for this sign"
                     >
-                      {tipLoading ? <Spinner size="sm" /> : '✨'} AI Tip
+                      {tipLoading ? <Spinner size="sm" /> : 'âœ¨'} AI Tip
                     </button>
                     {/* Speak entire typed sentence */}
                     {ttsSupported && text.trim() && (
@@ -791,35 +641,22 @@ export default function TextToSign() {
                         onClick={() => handleSpeak(text)}
                         title={speaking ? 'Stop audio' : 'Speak full sentence aloud'}
                       >
-                        {speaking ? '⏹ Stop Audio' : '🔊 Speak Sentence'}
+                        {speaking ? 'â¹ Stop Audio' : 'ðŸ”Š Speak Sentence'}
                       </button>
                     )}
                   </div>
-=======
-                {/* AI tip button — appears next to the word label */}
-                <div style={{ marginTop: '.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    style={{ fontSize: '.75rem', gap: '.3rem', display: 'flex', alignItems: 'center' }}
-                    onClick={() => fetchTip(currentWord?.word)}
-                    disabled={tipLoading || !currentWord}
-                    title="Get an AI learning tip for this sign"
-                  >
-                    {tipLoading ? <Spinner size="sm" /> : '✨'} AI Tip
-                  </button>
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
                 </div>
 
                 {/* AI Learning Tip card */}
                 {tip && tipWord === currentWord?.word && (
                   <div style={{ marginTop: '.5rem', padding: '.75rem 1rem', background: 'color-mix(in srgb, var(--color-secondary,#7c5cd8) 7%, var(--bg-surface))', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--color-secondary,#7c5cd8)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.35rem' }}>
-                      <span style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--color-secondary,#7c5cd8)', textTransform: 'uppercase', letterSpacing: '.05em' }}>✨ AI Learning Tip — {tip.word || tipWord}</span>
-                      <button onClick={() => setTip(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '.9rem', lineHeight: 1 }}>✕</button>
+                      <span style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--color-secondary,#7c5cd8)', textTransform: 'uppercase', letterSpacing: '.05em' }}>âœ¨ AI Learning Tip â€” {tip.word || tipWord}</span>
+                      <button onClick={() => setTip(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '.9rem', lineHeight: 1 }}>âœ•</button>
                     </div>
                     <p style={{ fontSize: '.855rem', color: 'var(--text-main)', margin: '0 0 .4rem', lineHeight: 1.55 }}>{tip.tip}</p>
                     {tip.fun_fact && (
-                      <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>💡 {tip.fun_fact}</p>
+                      <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>ðŸ’¡ {tip.fun_fact}</p>
                     )}
                   </div>
                 )}
@@ -829,20 +666,20 @@ export default function TextToSign() {
                   <button className="btn btn-ghost btn-sm" onClick={prev} disabled={currentIdx === 0}>Prev</button>
 
                   {playing
-                    ? <button className="btn btn-subtle" onClick={pause}>⏸ Pause</button>
-                    : <button className="btn btn-primary" onClick={play} disabled={!currentWord}>▶ Play</button>
+                    ? <button className="btn btn-subtle" onClick={pause}>â¸ Pause</button>
+                    : <button className="btn btn-primary" onClick={play} disabled={!currentWord}>â–¶ Play</button>
                   }
 
-                  <button className="btn btn-ghost" onClick={stop}>■ Stop</button>
+                  <button className="btn btn-ghost" onClick={stop}>â–  Stop</button>
                   <button className="btn btn-ghost btn-sm" onClick={next} disabled={currentIdx >= playableWords.length - 1}>Next</button>
-                  <button className="btn btn-ghost btn-sm" onClick={fullscreen} title="Fullscreen">⛶</button>
+                  <button className="btn btn-ghost btn-sm" onClick={fullscreen} title="Fullscreen">â›¶</button>
 
                   <button
                     className={`btn btn-sm ${loop ? 'btn-primary' : 'btn-ghost'}`}
                     onClick={() => setLoop((l) => !l)}
                     title="Loop sequence"
                   >
-                    ↺ Loop
+                    â†º Loop
                   </button>
 
                   <button
@@ -850,7 +687,7 @@ export default function TextToSign() {
                     onClick={() => setAutoAdvance((a) => !a)}
                     title="Auto-advance to next word"
                   >
-                    ⏩ Auto
+                    â© Auto
                   </button>
 
                   <div className="tts-speed">
@@ -869,7 +706,7 @@ export default function TextToSign() {
               </div>
             ) : (
               <div className="card" style={{ textAlign: 'center', padding: '2.5rem' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '.75rem' }}>🤷</div>
+                <div style={{ fontSize: '3rem', marginBottom: '.75rem' }}>ðŸ¤·</div>
                 <h3>No Signs Found</h3>
                 <p style={{ color: 'var(--text-muted)', marginTop: '.5rem' }}>
                   None of the words you entered are in the WLASL vocabulary.
@@ -881,7 +718,7 @@ export default function TextToSign() {
             {/* Word sequence strip */}
             <div className="card" style={{ padding: '.85rem 1rem' }}>
               <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '.6rem', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                Sequence — {words.length} word{words.length !== 1 ? 's' : ''}
+                Sequence â€” {words.length} word{words.length !== 1 ? 's' : ''}
                 {coverage !== null && (
                   <span style={{ marginLeft: '.75rem', color: coverage === 1 ? 'var(--color-success)' : 'var(--color-warning)' }}>
                     ({Math.round(coverage * 100)}% covered)
@@ -895,7 +732,7 @@ export default function TextToSign() {
                   const borderColor = isActive ? 'var(--color-primary)' : w.found ? (w.fuzzy ? 'var(--color-warning)' : 'var(--border)') : 'var(--color-error)';
                   const textColor   = isActive ? 'var(--color-primary)' : w.found ? 'var(--text-main)' : 'var(--color-error)';
                   const titleText   = w.found
-                    ? (w.fuzzy ? `"${w.word}" → matched as "${w.matched_word}" — click to jump` : `Click to jump to "${w.word}"`)
+                    ? (w.fuzzy ? `"${w.word}" â†’ matched as "${w.matched_word}" â€” click to jump` : `Click to jump to "${w.word}"`)
                     : `"${w.word}" not in vocabulary`;
                   return (
                     <button
@@ -912,7 +749,7 @@ export default function TextToSign() {
                       }}
                       title={titleText}
                     >
-                      {w.found ? '' : '✕ '}{w.word}{w.fuzzy && w.matched_word !== w.word ? ` (~${w.matched_word})` : ''}
+                      {w.found ? '' : 'âœ• '}{w.word}{w.fuzzy && w.matched_word !== w.word ? ` (~${w.matched_word})` : ''}
                     </button>
                   );
                 })}
@@ -920,7 +757,7 @@ export default function TextToSign() {
             </div>
           </div>
 
-          {/* ── Right: stats + vocabulary ────────────────────────────── */}
+          {/* â”€â”€ Right: stats + vocabulary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
 
             <div className="card" style={{ textAlign: 'center' }}>
@@ -951,32 +788,24 @@ export default function TextToSign() {
             <div className="card">
               <h4 style={{ marginBottom: '.75rem' }}>How It Works</h4>
               <ol style={{ paddingLeft: '1.1rem', fontSize: '.85rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
-<<<<<<< HEAD
-                <li>Choose your language above, then type or <strong>🎤 speak</strong> your text.</li>
-                <li>Click <strong>▶ Show Signs</strong> — videos play automatically word-by-word.</li>
-                <li>Use <strong>🔊 Listen</strong> to hear the text read aloud in your language.</li>
-=======
-                <li>Type words from the WLASL vocabulary.</li>
-                <li>Click <strong>▶ Show Signs</strong> — videos play automatically word-by-word.</li>
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
-                <li>Use <strong>⏩ Auto</strong> to toggle auto-advance.</li>
+                <li>Choose your language above, then type or <strong>ðŸŽ¤ speak</strong> your text.</li>
+                <li>Click <strong>â–¶ Show Signs</strong> â€” videos play automatically word-by-word.</li>
+                <li>Use <strong>ðŸ”Š Listen</strong> to hear the text read aloud in your language.</li>
+                <li>Use <strong>â© Auto</strong> to toggle auto-advance.</li>
                 <li>Click any word chip below the video to jump to it.</li>
-                <li>Use <strong>↺ Loop</strong> to repeat the full sentence.</li>
+                <li>Use <strong>â†º Loop</strong> to repeat the full sentence.</li>
               </ol>
             </div>
 
-<<<<<<< HEAD
             {/* STT browser support notice */}
             {!sttSupported && (
               <div className="card" style={{ borderColor: 'var(--color-warning)', background: 'color-mix(in srgb, var(--color-warning) 6%, var(--bg-card))' }}>
                 <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                  ⚠️ Speech input requires Chrome, Edge, or Safari. Your browser doesn't support it.
+                  âš ï¸ Speech input requires Chrome, Edge, or Safari. Your browser doesn't support it.
                 </p>
               </div>
             )}
 
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
             {vocabHints.length > 0 && (
               <div className="card">
                 <h4 style={{ marginBottom: '.6rem' }}>
@@ -1006,15 +835,12 @@ export default function TextToSign() {
       )}
 
       <style>{`
-<<<<<<< HEAD
         /* Mic pulse animation */
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50%       { opacity: .3; }
         }
 
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         /* Input row */
         .tts-input-row {
           display: flex;
@@ -1023,10 +849,6 @@ export default function TextToSign() {
           flex-wrap: wrap;
         }
         .tts-input-row textarea { min-width: 0; flex: 1 1 220px; }
-<<<<<<< HEAD
-=======
-        .tts-input-row .btn-lg  { flex-shrink: 0; }
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
         /* Results grid */
         .tts-grid {

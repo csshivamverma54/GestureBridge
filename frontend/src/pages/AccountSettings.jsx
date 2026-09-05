@@ -1,5 +1,5 @@
-/**
- * AccountSettings — merged Profile + Settings page.
+﻿/**
+ * AccountSettings â€” merged Profile + Settings page.
  * Tabbed layout: Profile | Security | Appearance | Privacy
  */
 
@@ -19,15 +19,10 @@ const TABS = [
 ];
 
 const LANGUAGES = [
-<<<<<<< HEAD
   { value: 'ASL',     label: 'American Sign Language (ASL)' },
   { value: 'ISL',     label: 'Indian Sign Language (ISL)' },
-  { value: 'Hindi',   label: 'Hindi — हिन्दी (hi-IN)' },
-  { value: 'Marathi', label: 'Marathi — मराठी (mr-IN)' },
-=======
-  { value: 'ASL', label: 'American Sign Language (ASL)' },
-  { value: 'ISL', label: 'Indian Sign Language (ISL)' },
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
+  { value: 'Hindi',   label: 'Hindi â€” à¤¹à¤¿à¤¨à¥à¤¦à¥€ (hi-IN)' },
+  { value: 'Marathi', label: 'Marathi â€” à¤®à¤°à¤¾à¤ à¥€ (mr-IN)' },
 ];
 
 const Icon = ({ d, size = 16 }) => (
@@ -118,7 +113,7 @@ export default function AccountSettings() {
   const initials = (name || 'U').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
   const guestBanner = user?.isGuest && (
-    <Alert type="info" message="You're in guest mode — profile changes are not persisted." />
+    <Alert type="info" message="You're in guest mode â€” profile changes are not persisted." />
   );
 
   return (
@@ -135,7 +130,7 @@ export default function AccountSettings() {
 
       <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
 
-        {/* ── Left tab nav ── */}
+        {/* â”€â”€ Left tab nav â”€â”€ */}
         <div style={{
           width: 200, flexShrink: 0,
           background: 'var(--bg-card)',
@@ -186,7 +181,7 @@ export default function AccountSettings() {
           </nav>
         </div>
 
-        {/* ── Right content panel ── */}
+        {/* â”€â”€ Right content panel â”€â”€ */}
         <div style={{ flex: 1, minWidth: 0 }}>
 
           {/* PROFILE tab */}
@@ -205,7 +200,7 @@ export default function AccountSettings() {
                 </div>
                 <div>
                   <button type="submit" className="btn btn-primary" disabled={loading} style={{ gap: '.4rem' }}>
-                    {loading ? <><Spinner size="sm" /> Saving…</> : <>
+                    {loading ? <><Spinner size="sm" /> Savingâ€¦</> : <>
                       <Icon d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" size={14} />
                       Save Changes
                     </>}
@@ -234,7 +229,7 @@ export default function AccountSettings() {
                 </div>
                 <div>
                   <button type="submit" className="btn btn-primary" disabled={loading} style={{ gap: '.4rem' }}>
-                    {loading ? <><Spinner size="sm" /> Updating…</> : <>
+                    {loading ? <><Spinner size="sm" /> Updatingâ€¦</> : <>
                       <Icon d={['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z']} size={14} />
                       Change Password
                     </>}
@@ -266,7 +261,7 @@ export default function AccountSettings() {
 
               <div style={{ padding: '.875rem 0', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ fontWeight: 600, fontSize: '.9rem', marginBottom: '.3rem' }}>
-                  Frame Capture Interval — <span style={{ color: 'var(--color-primary)' }}>{captureInterval} ms</span>
+                  Frame Capture Interval â€” <span style={{ color: 'var(--color-primary)' }}>{captureInterval} ms</span>
                 </div>
                 <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', marginBottom: '.75rem' }}>Lower = faster but more CPU intensive. Higher = slower but more stable.</p>
                 <input type="range" min="100" max="500" step="50" value={captureInterval}
@@ -279,7 +274,7 @@ export default function AccountSettings() {
 
               <div style={{ padding: '.875rem 0' }}>
                 <div style={{ fontWeight: 600, fontSize: '.9rem', marginBottom: '.3rem' }}>
-                  Confidence Threshold — <span style={{ color: 'var(--color-primary)' }}>{(confidenceThreshold * 100).toFixed(0)}%</span>
+                  Confidence Threshold â€” <span style={{ color: 'var(--color-primary)' }}>{(confidenceThreshold * 100).toFixed(0)}%</span>
                 </div>
                 <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', marginBottom: '.75rem' }}>Only auto-commit predictions above this confidence level.</p>
                 <input type="range" min="0.3" max="0.95" step="0.05" value={confidenceThreshold}

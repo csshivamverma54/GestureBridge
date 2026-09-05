@@ -1,104 +1,4 @@
-<<<<<<< HEAD
-=======
-"""
-gesture.py  (backend/routes/gesture.py)
------------------------------------------
-Flask Blueprint for gesture prediction endpoints.
-
-Routes
-------
-POST /predict
-    Accepts a MediaPipe landmark sequence and returns the predicted sign
-    word, confidence score, top-5 predictions, and detected NMM state.
-
-    Request body (JSON):
-    {
-        "user_id"  : "abc123",
-        "gesture"  : [[...], ...]   ← (T × 218) 2-D list
-        "nmm"      : {              ← optional non-manual marker summary
-            "eyebrow_raise"  : 0.0,
-            "eyebrow_furrow" : 0.0,
-            "head_nod"       : 0.0,
-            "head_shake"     : 0.0,
-            "mouth_open"     : 0.0
-        }
-    }
-
-    Response body (JSON):
-    {
-        "message"       : "Prediction successful",
-        "predicted_text": "Hello",
-        "confidence"    : 0.9231,
-        "top5"          : [...],
-        "nmm"           : { ... }   ← echoed back for UI display
-    }
-
-POST /predict-letter
-    Classifies a single frame of 63 hand-landmark features (dominant hand)
-    into an ASL letter A–Z using the auxiliary MLP model.
-
-    Request body (JSON):
-    {
-        "landmarks"     : [float × 63]   ← raw MediaPipe landmarks (flattened)
-        "index_tip_xy"  : [x, y]         ← optional: index fingertip for J/Z detection
-    }
-
-    Response body (JSON):
-    {
-        "letter"     : "A",
-        "confidence" : 0.97,
-        "top5"       : [{"letter": "A", "confidence": 0.97}, …],
-        "is_dynamic" : false
-    }
-
-POST /generate-sentence
-    Converts an ordered ASL gloss sequence + NMM summary into a natural
-    English sentence using the rule-based sentence_generator module.
-
-    Request body (JSON):
-    {
-        "glosses" : ["STORE", "YOU", "GO"],
-        "nmm"     : {
-            "eyebrow_raise"  : 0.72,
-            "eyebrow_furrow" : 0.0,
-            "head_shake"     : 0.05,
-            "head_nod"       : 0.02,
-            "mouth_open"     : 0.1
-        }
-    }
-
-    Response body (JSON):
-    {
-        "sentence" : "Are you going to the store?",
-        "glosses"  : ["STORE", "YOU", "GO"],   ← echoed
-        "nmm"      : { ... }                   ← echoed
-    }
-
-POST /generate-letter-sentence
-    Converts a string of committed fingerspelled letters into a natural
-    English sentence suggestion.
-
-    Request body (JSON):
-    {
-        "letters" : "HELLO"
-    }
-
-    Response body (JSON):
-    {
-        "sentence"    : "hello",
-        "suggestions" : ["hello", "help", "held"]
-    }
-
-GET /model/status
-    Returns whether the ML model is loaded and ready.
-
-POST /model/reload
-    Hot-reloads the model and labels from disk without restarting the
-    server. Useful after retraining in a long-running deployment.
-"""
-
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
-from datetime import datetime
+﻿from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 
@@ -111,22 +11,13 @@ gesture = Blueprint("gesture", __name__)
 mongo = None
 
 
-<<<<<<< HEAD
 # Inject MongoDB instance shared from app.py
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def init_db(db):
     global mongo
     mongo = db
 
 
-<<<<<<< HEAD
 # Accept a MediaPipe landmark sequence and return the predicted sign word
-=======
-# ------------------------------------------------------------------
-# POST /predict
-# ------------------------------------------------------------------
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 @gesture.route("/predict", methods=["POST"])
 def predict():
     data = request.get_json(silent=True)
@@ -135,29 +26,17 @@ def predict():
 
     user_id       = data.get("user_id")
     gesture_input = data.get("gesture")
-<<<<<<< HEAD
     nmm_payload   = data.get("nmm", {})
-=======
-    nmm_payload   = data.get("nmm", {})   # optional NMM summary from frontend
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 
     if not user_id or gesture_input is None:
         return jsonify({"error": "Missing required fields: user_id, gesture"}), 400
 
-<<<<<<< HEAD
-=======
-    # Run ML inference
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     result = predict_gesture(gesture_input)
 
     predicted_text = result.get("predicted_word", "unknown")
     confidence     = result.get("confidence", 0.0)
     top5           = result.get("top5", [])
 
-<<<<<<< HEAD
-=======
-    # Persist to MongoDB history (only when model is ready)
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if mongo and "error" not in result:
         record = {
             "user_id":        user_id,
@@ -175,11 +54,7 @@ def predict():
         "predicted_text": predicted_text,
         "confidence":     confidence,
         "top5":           top5,
-<<<<<<< HEAD
         "nmm":            nmm_payload,
-=======
-        "nmm":            nmm_payload,   # echoed for UI
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     }
     if "error" in result:
         response["warning"]       = result["error"]
@@ -188,23 +63,9 @@ def predict():
     return jsonify(response), 200
 
 
-<<<<<<< HEAD
 # Convert an ASL gloss sequence and NMM summary into an English sentence
 @gesture.route("/generate-sentence", methods=["POST"])
 def generate_sentence_route():
-=======
-# ------------------------------------------------------------------
-# POST /generate-sentence
-# ------------------------------------------------------------------
-@gesture.route("/generate-sentence", methods=["POST"])
-def generate_sentence_route():
-    """
-    Convert an ASL gloss sequence + NMM summary into an English sentence.
-    Attempts Watsonx AI first; falls back to the rule-based generator.
-
-    Body: { "glosses": [...], "nmm": {...} }
-    """
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "Request body must be JSON"}), 400
@@ -215,10 +76,6 @@ def generate_sentence_route():
     if not isinstance(glosses, list) or not glosses:
         return jsonify({"error": "Field 'glosses' must be a non-empty list"}), 400
 
-<<<<<<< HEAD
-=======
-    # Try Watsonx AI first
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     try:
         from services.watsonx import generate as wx_generate, is_configured
         if is_configured():
@@ -252,14 +109,8 @@ def generate_sentence_route():
                 return jsonify({"sentence": sentence, "glosses": glosses,
                                 "nmm": nmm_payload, "source": "watsonx"}), 200
     except Exception:  # noqa: BLE001
-<<<<<<< HEAD
         pass
 
-=======
-        pass  # fall through to rule-based
-
-    # Rule-based fallback
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     try:
         sentence = generate_sentence(glosses, nmm_payload)
     except Exception as exc:  # noqa: BLE001
@@ -273,23 +124,9 @@ def generate_sentence_route():
     }), 200
 
 
-<<<<<<< HEAD
 # Classify a single frame of 63 hand-landmark features into an ASL letter
 @gesture.route("/predict-letter", methods=["POST"])
 def predict_letter_route():
-=======
-# ------------------------------------------------------------------
-# POST /predict-letter
-# ------------------------------------------------------------------
-@gesture.route("/predict-letter", methods=["POST"])
-def predict_letter_route():
-    """
-    Classify a single frame of 63 raw hand-landmark features into an ASL
-    letter using the auxiliary MLP model.
-
-    Body: { "landmarks": [float×63], "index_tip_xy": [x, y]? }
-    """
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "Request body must be JSON"}), 400
@@ -304,23 +141,9 @@ def predict_letter_route():
     return jsonify(result), 200
 
 
-<<<<<<< HEAD
 # Convert fingerspelled letters into a sentence suggestion via Watsonx or dictionary
 @gesture.route("/generate-letter-sentence", methods=["POST"])
 def generate_letter_sentence_route():
-=======
-# ------------------------------------------------------------------
-# POST /generate-letter-sentence
-# ------------------------------------------------------------------
-@gesture.route("/generate-letter-sentence", methods=["POST"])
-def generate_letter_sentence_route():
-    """
-    Convert a string of committed fingerspelled letters into a sentence
-    suggestion. Tries Watsonx AI; falls back to dictionary auto-complete.
-
-    Body: { "letters": "HELLO" }
-    """
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "Request body must be JSON"}), 400
@@ -331,10 +154,6 @@ def generate_letter_sentence_route():
 
     word = letters.strip().lower()
 
-<<<<<<< HEAD
-=======
-    # Try Watsonx for smarter word completion
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     try:
         from services.watsonx import generate as wx_generate, is_configured
         import json as _json
@@ -358,33 +177,17 @@ def generate_letter_sentence_route():
             return jsonify({"sentence": best, "suggestions": suggestions,
                             "source": "watsonx"}), 200
     except Exception:  # noqa: BLE001
-<<<<<<< HEAD
         pass
 
     suggestions = LetterSession.suggest(word, n=3)
-=======
-        pass  # fall through
-
-    suggestions = LetterSession.suggest(word, n=3)
-    # Use best suggestion as the primary sentence (prefix-first match is most likely)
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     best = suggestions[0] if suggestions else word
     return jsonify({"sentence": best, "suggestions": suggestions,
                     "source": "rule-based"}), 200
 
 
-<<<<<<< HEAD
 # Return whether the gesture and letter ML models are loaded and ready
 @gesture.route("/model/status", methods=["GET"])
 def model_status():
-=======
-# ------------------------------------------------------------------
-# GET /model/status
-# ------------------------------------------------------------------
-@gesture.route("/model/status", methods=["GET"])
-def model_status():
-    """Return whether the ML model is currently loaded."""
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     from ml.predictor import _model, _num_classes, _labels
     from ml.letter_predictor import _model as _lmodel, _classes as _lclasses, _meta as _lmeta
     return jsonify(
@@ -399,18 +202,9 @@ def model_status():
     ), 200
 
 
-<<<<<<< HEAD
 # Hot-reload both ML models from disk without restarting the server
 @gesture.route("/model/reload", methods=["POST"])
 def model_reload():
-=======
-# ------------------------------------------------------------------
-# POST /model/reload
-# ------------------------------------------------------------------
-@gesture.route("/model/reload", methods=["POST"])
-def model_reload():
-    """Hot-reload both models from disk (after retraining)."""
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     try:
         reload_model()
         reload_letter_model()

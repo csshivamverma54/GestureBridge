@@ -1,34 +1,4 @@
-<<<<<<< HEAD
-=======
-"""
-auth.py  (backend/routes/auth.py)
-----------------------------------
-Authentication routes: email/password + Google OAuth 2.0.
-
-Routes
-------
-POST /register           — create account (name, email, password)
-POST /login              — returns JWT
-GET  /profile            — authenticated user info
-GET  /auth/google        — redirect browser to Google consent screen
-GET  /auth/google/callback — Google redirects here; exchange code for user
-                             info, upsert user in MongoDB, return JWT to
-                             the React SPA via a redirect to /auth/callback
-                             with ?token=<jwt>&name=<name>&email=<email>
-
-PKCE note
----------
-google-auth-oauthlib ≥ 1.0 automatically generates a PKCE code_verifier when
-authorization_url() is called. The verifier is stored on the Flow object but
-that object is garbage-collected after the redirect response is sent. When the
-callback creates a fresh Flow it has no verifier → Google returns
-"invalid_grant: Missing code verifier".
-
-Fix: store (state, code_verifier) in the Flask session between the two requests.
-"""
-
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
-import os
+﻿import os
 import urllib.parse
 from datetime import datetime, timedelta
 from functools import wraps
@@ -45,32 +15,17 @@ auth = Blueprint('auth', __name__)
 
 mongo = None
 
-<<<<<<< HEAD
-=======
-# ── Scopes requested from Google ──────────────────────────────────────────
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 _SCOPES = [
     'openid',
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
 ]
 
-<<<<<<< HEAD
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 
 # Return the OAuth2 client config dict built from environment variables
 def _client_config():
-=======
-# Render (and most hosting platforms) terminate TLS at the edge and forward
-# plain HTTP to gunicorn.  oauthlib refuses to exchange the code over HTTP
-# unless we set this flag.  It is safe because the external URL IS https://.
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-
-
-def _client_config():
-    """Return the OAuth2 client config dict from env vars."""
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     return {
         "web": {
             "client_id":     os.getenv('GOOGLE_CLIENT_ID', ''),
@@ -85,29 +40,18 @@ def _client_config():
     }
 
 
-<<<<<<< HEAD
 # Return the configured Google OAuth redirect URI
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def _redirect_uri():
     return os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:5000/auth/google/callback')
 
 
-<<<<<<< HEAD
 # Inject MongoDB instance shared from app.py
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def init_app(db):
     global mongo
     mongo = db
 
 
-<<<<<<< HEAD
 # Create a new user account with hashed password
-=======
-# ── Email / password ───────────────────────────────────────────────────────
-
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 @auth.route('/register', methods=['POST'])
 def register():
     data = request.get_json()
@@ -128,10 +72,7 @@ def register():
     return jsonify({'message': 'User registered successfully'}), 201
 
 
-<<<<<<< HEAD
 # Verify credentials and return a 24-hour JWT
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 @auth.route('/login', methods=['POST'])
 def login():
     data     = request.get_json()
@@ -154,10 +95,7 @@ def login():
     return jsonify({'message': 'Login successful', 'token': token}), 200
 
 
-<<<<<<< HEAD
 # Decorator that validates Bearer JWT before allowing access to a route
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -175,33 +113,16 @@ def token_required(f):
     return decorated
 
 
-<<<<<<< HEAD
 # Return name and email for the authenticated user
-=======
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
 @auth.route('/profile', methods=['GET'])
 @token_required
 def profile(current_user):
     return jsonify({'name': current_user['name'], 'email': current_user['email']}), 200
 
 
-<<<<<<< HEAD
 # Redirect the browser to the Google OAuth consent screen
 @auth.route('/auth/google')
 def google_login():
-=======
-# ── Google OAuth ───────────────────────────────────────────────────────────
-
-@auth.route('/auth/google')
-def google_login():
-    """
-    Step 1 — Build the Google consent URL and redirect the browser to it.
-
-    The Flow object generates a PKCE code_verifier automatically (google-auth-
-    oauthlib ≥ 1.0). We must persist both `state` and `code_verifier` in the
-    Flask session so the callback can reconstruct an equivalent Flow.
-    """
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     if not os.getenv('GOOGLE_CLIENT_ID'):
         return jsonify({'error': 'Google OAuth is not configured on this server.'}), 503
 
@@ -217,37 +138,18 @@ def google_login():
         prompt='select_account',
     )
 
-<<<<<<< HEAD
-=======
-    # Persist state + PKCE verifier across the redirect
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
     session['oauth_state']         = state
     session['oauth_code_verifier'] = getattr(flow, 'code_verifier', None)
 
     return redirect(auth_url)
 
 
-<<<<<<< HEAD
 # Handle the Google OAuth callback, upsert the user, and redirect with JWT
 @auth.route('/auth/google/callback')
 def google_callback():
     frontend_origin = os.getenv('FRONTEND_ORIGIN', 'http://localhost:3000')
 
     try:
-=======
-@auth.route('/auth/google/callback')
-def google_callback():
-    """
-    Step 2 — Google redirects here with ?code=&state=
-
-    Reconstruct the Flow with the same state and code_verifier that were
-    stored in the session during step 1, then exchange the code for tokens.
-    """
-    frontend_origin = os.getenv('FRONTEND_ORIGIN', 'http://localhost:3000')
-
-    try:
-        # Retrieve PKCE verifier saved in step 1
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         saved_state         = session.pop('oauth_state', None)
         saved_code_verifier = session.pop('oauth_code_verifier', None)
 
@@ -258,20 +160,9 @@ def google_callback():
             state=saved_state,
         )
 
-<<<<<<< HEAD
         if saved_code_verifier:
             flow.code_verifier = saved_code_verifier
 
-=======
-        # Restore the code_verifier so fetch_token can include it
-        if saved_code_verifier:
-            flow.code_verifier = saved_code_verifier
-
-        # On Render, Gunicorn receives plain HTTP from the edge proxy even
-        # though the external URL is HTTPS.  request.url starts with http://
-        # but Google sent the browser to the https:// callback URI.
-        # Replace the scheme so the redirect URI matches exactly.
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         auth_response = request.url
         if auth_response.startswith('http://') and _redirect_uri().startswith('https://'):
             auth_response = 'https://' + auth_response[len('http://'):]
@@ -279,10 +170,6 @@ def google_callback():
         flow.fetch_token(authorization_response=auth_response)
         credentials = flow.credentials
 
-<<<<<<< HEAD
-=======
-        # Verify the ID token and extract user info
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         info = id_token.verify_oauth2_token(
             credentials.id_token,
             google_requests.Request(),
@@ -291,10 +178,6 @@ def google_callback():
         email = info['email']
         name  = info.get('name') or email.split('@')[0]
 
-<<<<<<< HEAD
-=======
-        # Upsert user — Google-auth users have no password field
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         mongo.db.users.update_one(
             {'email': email},
             {'$setOnInsert': {
@@ -303,10 +186,6 @@ def google_callback():
             }},
             upsert=True,
         )
-<<<<<<< HEAD
-=======
-        # Always refresh display name from Google profile
->>>>>>> 349992d6c8b355879cf13b88666ccafa4b163dac
         mongo.db.users.update_one({'email': email}, {'$set': {'name': name}})
 
         token = jwt.encode(
