@@ -29,14 +29,21 @@ import React, {
 import AppShell from '../components/AppShell';
 import Alert from '../components/Alert';
 import { Spinner } from '../components/LoadingSpinner';
-import { useSettings, SUPPORTED_LANGUAGES, getTTSLocale } from '../context/SettingsContext';
-import api, { getErrorMessage, videoUrl, getLearningTip } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import {
+  useSettings,
+  SUPPORTED_SIGN_LANGUAGES,
+  SUPPORTED_SPOKEN_LANGUAGES,
+  getTTSLocale,
+} from '../context/SettingsContext';
+import api, { getErrorMessage, videoUrl, getLearningTip, saveHistory } from '../services/api';
 
-/* -- Quick-phrase chips - */
-const QUICK_PHRASES = [
-  'hello', 'thank you', 'yes no', 'help please',
-  'good morning', 'my name', 'I love you', 'how are you',
-];
+/* -- Quick-phrase chips by spoken language -- */
+const QUICK_PHRASES_BY_LANG = {
+  English: ['hello', 'thank you', 'yes', 'no', 'help please', 'good morning', 'I love you', 'how are you'],
+  Hindi: ['नमस्ते', 'धन्यवाद', 'हाँ', 'नहीं', 'कृपया मदद करें', 'शुभ प्रभात', 'मैं तुमसे प्यार करता हूँ', 'आप कैसे हैं'],
+  Marathi: ['नमस्कार', 'धन्यवाद', 'हो', 'नाही', 'कृपया मदत करा', 'शुभ सकाळ', 'माझे तुझ्यावर प्रेम आहे', 'तुम्ही कसे आहात'],
+};
 
 /* -- Web Speech API feature detection - */
 const SpeechRecognition =
@@ -60,8 +67,11 @@ function speak(text, locale, onEnd) {
 }
 
 export default function TextToSign() {
-  const { language, updateSettings } = useSettings();
-  const locale = getTTSLocale(language);
+  const { user } = useAuth();
+  const { signLanguage, spokenLanguage, language, updateSettings } = useSettings();
+  const activeSpoken = spokenLanguage || (language !== 'ASL' && language !== 'ISL' ? language : 'English');
+  const activeSign   = signLanguage || (language === 'ISL' ? 'ISL' : 'ASL');
+  const locale = getTTSLocale(activeSpoken);
 
   /* -- Form - */
   const [text,       setText]       = useState('');
@@ -132,7 +142,7 @@ export default function TextToSign() {
     if (synth) synth.cancel();
     setListening(false);
     setSpeaking(false);
-  }, [language]);
+  }, [activeSpoken, activeSign]);
 
   /* -- Vocabulary hints + dataset status - */
   useEffect(() => {
@@ -196,9 +206,24 @@ export default function TextToSign() {
     playingRef.current = true;
     setLoading(true);
     try {
-      const { data } = await api.post('/text-to-sign', { text: trimmed, language });
+      const { data } = await api.post('/text-to-sign', {
+        text: trimmed,
+        language: activeSpoken,
+        spoken_language: activeSpoken,
+        sign_language: activeSign,
+      });
       setWords(data.words || []);
       setCoverage(data.coverage ?? null);
+
+      // Record Text to Sign operation in history
+      const uid = user?.email || 'guest';
+      saveHistory({
+        user_id: uid,
+        predicted_text: trimmed,
+        mode: 'text-to-sign',
+        type: 'text-to-sign',
+        confidence: typeof data.coverage === 'number' ? data.coverage : 1.0,
+      }).catch(() => {});
     } catch (err) {
       setError(getErrorMessage(err));
       setPlaying(false);
@@ -311,92 +336,140 @@ export default function TextToSign() {
 
   return (
     <AppShell>
-      <div className="page-header">
-        <h1>Text to Sign</h1>
-        <p>Type or speak a sentence  - GestureBridge plays the WLASL sign video for each word in order.</p>
+      {/* ── Page Header with Stitch Telemetry Badges ── */}
+      <div className="page-header" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+          <span className="badge badge-primary">
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-primary)', display: 'inline-block' }} />
+            WLASL Video Synthesis
+          </span>
+          <span className="badge badge-neutral">Frame-by-Frame Sync</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>
+            2,000+ Sign Dictionaries
+          </span>
+        </div>
+
+        <h1 style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.85rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: '0.35rem' }}>
+          Text to Sign Translation
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0, maxWidth: '680px', lineHeight: 1.5 }}>
+          Type or speak an English phrase. GestureBridge plays verified WLASL sign language video demonstrations for each word in sequence.
+        </p>
       </div>
 
       {error && <Alert type="error" message={error} onClose={() => setError('')} />}
       {sttError && <Alert type="error" message={sttError} onClose={() => setSttError('')} />}
 
-      {/* -- No local videos banner - */}
+      {/* ── Dataset notice banner ── */}
       {localVideosAvailable === false && (
-        <div style={{
-          marginBottom: '1rem',
-          padding: '1rem 1.25rem',
-          background: 'color-mix(in srgb, var(--color-warning) 8%, var(--bg-card))',
-          border: '1px solid color-mix(in srgb, var(--color-warning) 40%, var(--border))',
-          borderRadius: 'var(--radius-md)',
-          fontSize: '.875rem',
-        }}>
-          <div style={{ fontWeight: 700, color: 'var(--color-warning)', marginBottom: '.4rem' }}>
-            -- WLASL video dataset not found locally
+        <div
+          style={{
+            marginBottom: '1.25rem',
+            padding: '1rem 1.25rem',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '0.85rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: 'var(--color-warning)', marginBottom: '0.25rem' }}>
+            <span>⚠</span>
+            <span>External Video CDN Mode</span>
           </div>
-          <p style={{ margin: '0 0 .5rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            The app will try to stream sign videos from external CDN URLs, but many are no longer
-            reachable. Videos that fail to load will be <strong>auto-skipped after 8 seconds</strong>.
-          </p>
-          <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            To get all videos working locally, download the WLASL dataset mp4 files and place them
-            in <code style={{ background: 'var(--bg-surface)', padding: '.1rem .35rem', borderRadius: 4, fontSize: '.82rem' }}>backend/data/WLASL/videos/</code>.
-            See the{' '}
-            <a href="https://github.com/dxli94/WLASL" target="_blank" rel="noopener noreferrer"
-               style={{ color: 'var(--color-primary)' }}>
-              WLASL GitHub repo
-            </a>
-            {' '}for download instructions.
+          <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            Local video dataset is not mounted. The system will stream from external WLASL CDN archives with an 8-second auto-skip fallback.
           </p>
         </div>
       )}
 
-      {/* -- Language selector - */}
-      <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '.65rem', flexWrap: 'wrap' }}>
-        <label style={{ fontSize: '.82rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-          Language / Voice:
-        </label>
-        <select
-          value={language}
-          onChange={handleLanguageChange}
-          className="form-input"
-          style={{ fontSize: '.85rem', padding: '.3rem .65rem', width: 'auto', minWidth: 160 }}
-        >
-          {SUPPORTED_LANGUAGES.map((l) => (
-            <option key={l.value} value={l.value}>{l.label}</option>
-          ))}
-        </select>
-        <span style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>
-          Used for speech input &amp; audio output
+      {/* ── Dual Language Selector Bar (Sign Dialect + Spoken Voice) ── */}
+      <div
+        style={{
+          marginBottom: '1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1.5rem',
+          flexWrap: 'wrap',
+          background: 'var(--bg-card)',
+          padding: '0.85rem 1.15rem',
+          borderRadius: 'var(--radius-md)',
+          border: '1px solid var(--border)',
+        }}
+      >
+        {/* Spoken / Written Natural Language */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <label style={{ fontSize: '0.82rem', color: 'var(--text-main)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+            🗣️ Spoken Voice & Text:
+          </label>
+          <select
+            value={activeSpoken}
+            onChange={(e) => updateSettings({ spokenLanguage: e.target.value })}
+            className="form-select"
+            style={{ fontSize: '0.85rem', padding: '0.35rem 2rem 0.35rem 0.75rem', width: 'auto', minWidth: 170 }}
+          >
+            {SUPPORTED_SPOKEN_LANGUAGES.map((l) => (
+              <option key={l.value} value={l.value}>
+                {l.flag} {l.nativeName} ({l.value})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Visual Sign Language Dialect */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <label style={{ fontSize: '0.82rem', color: 'var(--text-main)', fontWeight: 700, whiteSpace: 'nowrap' }}>
+            🤟 Sign Language Dialect:
+          </label>
+          <select
+            value={activeSign}
+            onChange={(e) => updateSettings({ signLanguage: e.target.value })}
+            className="form-select"
+            style={{ fontSize: '0.85rem', padding: '0.35rem 2rem 0.35rem 0.75rem', width: 'auto', minWidth: 180 }}
+          >
+            {SUPPORTED_SIGN_LANGUAGES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)', marginLeft: 'auto' }}>
+          AUDIO LOCALE: {locale}
         </span>
       </div>
 
-      {/* -- Input card - */}
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <h3 style={{ marginBottom: '1rem' }}>Enter Your Text</h3>
+      {/* ── Input Card ── */}
+      <div className="card" style={{ marginBottom: '1.75rem', padding: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Enter Text or Speak</h3>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>Press Ctrl+Enter to Translate</span>
+        </div>
 
         <div className="tts-input-row">
           <textarea
             className="form-input form-textarea"
             placeholder={
-              language === 'Hindi'   ? 'Type Hindi words (e.g. namaste, dhanyavaad)' :
-              language === 'Marathi' ? 'Type Marathi words (e.g. namaskar, dhanyavaad)' :
-              'Type words from the supported vocabulary'
+              activeSpoken === 'Hindi'   ? 'Type in Hindi or Hinglish (e.g. "नमस्ते", "dhanyavaad", "madad")' :
+              activeSpoken === 'Marathi' ? 'Type in Marathi (e.g. "नमस्कार", "dhanyavaad", "madat")' :
+              'Type words from supported vocabulary (e.g. "hello world welcome family")'
             }
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
-            style={{ flex: 1, minWidth: 0, fontSize: '1rem', resize: 'vertical' }}
+            style={{ flex: 1, minWidth: 0, fontSize: '0.95rem', resize: 'vertical' }}
             onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) handleGenerate(); }}
           />
 
           {/* Action buttons column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.45rem', flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flexShrink: 0 }}>
             <button
               className="btn btn-primary btn-lg"
               onClick={handleGenerate}
               disabled={loading || !text.trim()}
-              style={{ whiteSpace: 'nowrap' }}
+              style={{ whiteSpace: 'nowrap', height: '42px', fontWeight: 600 }}
             >
-              {loading ? <><Spinner size="sm" /> Converting…</> : '▶ Show Signs'}
+              {loading ? <><Spinner size="sm" /> Translating…</> : '▶ Show Signs'}
             </button>
 
             {/* Mic / STT button */}
@@ -404,26 +477,29 @@ export default function TextToSign() {
               <button
                 className={`btn btn-sm ${listening ? 'btn-danger' : 'btn-subtle'}`}
                 onClick={listening ? stopListening : startListening}
-                title={listening ? 'Stop recording' : `Speak in ${SUPPORTED_LANGUAGES.find((l) => l.value === language).nativeName ?? 'English'}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '.35rem', justifyContent: 'center' }}
+                title={listening ? 'Stop recording' : `Speak in ${activeSpoken}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center', height: '36px' }}
               >
-                {listening
-                  ? <><span style={{ animation: 'pulse 1s infinite' }}>🎙</span> Stop</>
-                  : <>🎤 Speak</>
-                }
+                {listening ? (
+                  <>
+                    <span style={{ animation: 'pulse 1s infinite' }}>🎙</span> Listening…
+                  </>
+                ) : (
+                  <>🎤 Voice Input</>
+                )}
               </button>
             )}
 
             {/* TTS / speak-back button */}
             {ttsSupported && (
               <button
-                className={`btn btn-sm ${speaking ? 'btn-subtle' : 'btn-ghost'}`}
+                className={`btn btn-sm ${speaking ? 'btn-subtle' : 'btn-outline'}`}
                 onClick={() => handleSpeak()}
                 disabled={!text.trim()}
-                title={speaking ? 'Stop speaking' : 'Read text aloud'}
-                style={{ display: 'flex', alignItems: 'center', gap: '.35rem', justifyContent: 'center' }}
+                title={speaking ? 'Stop speaking' : `Read text aloud in ${activeSpoken}`}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center', height: '36px' }}
               >
-                {speaking ? '🔇 Stop' : '🔊 Listen'}
+                {speaking ? '🔇 Stop Voice' : '🔊 Hear Audio'}
               </button>
             )}
           </div>
@@ -431,20 +507,34 @@ export default function TextToSign() {
 
         {/* Live mic indicator */}
         {listening && (
-          <div style={{ marginTop: '.6rem', display: 'flex', alignItems: 'center', gap: '.5rem', fontSize: '.8rem', color: 'var(--color-error)' }}>
-            <span style={{ animation: 'pulse 1s infinite', fontSize: '1rem' }}>-"-</span>
-            Listening in <strong>{SUPPORTED_LANGUAGES.find((l) => l.value === language).nativeName}</strong> -- speak clearly
+          <div style={{ marginTop: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--color-error)' }}>
+            <span style={{ animation: 'pulse 1s infinite', fontSize: '1rem' }}>●</span>
+            Listening in <strong>{SUPPORTED_SPOKEN_LANGUAGES.find((l) => l.value === activeSpoken)?.nativeName || activeSpoken}</strong> — speak clearly into microphone
           </div>
         )}
 
-        {/* Quick phrase chips */}
-        <div style={{ marginTop: '.85rem', display: 'flex', flexWrap: 'wrap', gap: '.35rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '.78rem', color: 'var(--text-muted)', marginRight: '.2rem' }}>Quick:</span>
-          {QUICK_PHRASES.map((p) => (
+        {/* Quick phrase chips (Non-pill 6px radius) */}
+        <div style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: '0.25rem' }}>
+            Quick Phrases ({activeSpoken}):
+          </span>
+          {(QUICK_PHRASES_BY_LANG[activeSpoken] || QUICK_PHRASES_BY_LANG.English).map((p) => (
             <button
               key={p}
               onClick={() => setText(p)}
               className="quick-chip"
+              style={{
+                fontSize: '0.78rem',
+                padding: '0.25rem 0.65rem',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-surface)',
+                cursor: 'pointer',
+                color: 'var(--text-muted)',
+                fontFamily: 'inherit',
+                fontWeight: 500,
+                transition: 'all var(--transition)',
+              }}
             >
               {p}
             </button>
@@ -452,65 +542,68 @@ export default function TextToSign() {
         </div>
       </div>
 
-      {/* -- Results - */}
+      {/* ── Results Viewport ── */}
       {hasResults && (
         <div className="tts-grid">
 
-          {/* -- Left: video player - */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
+          {/* ── Left: Video Player & Controls ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', minWidth: 0 }}>
 
             {fuzzyWords.length > 0 && (
               <Alert
                 type="info"
-                message={`Approximate match used for: ${fuzzyWords.map((w) => `"${w.word}" -> ${w.matched_word}`).join(', ')}`}
+                message={`Approximate vocabulary match used for: ${fuzzyWords.map((w) => `"${w.word}" → ${w.matched_word}`).join(', ')}`}
               />
             )}
             {notFoundWords.length > 0 && (
               <Alert
                 type="warning"
-                message={`${notFoundWords.length} word${notFoundWords.length > 1 ? 's' : ''} not found and will be skipped: ${notFoundWords.join(', ')}`}
+                message={`${notFoundWords.length} word${notFoundWords.length > 1 ? 's' : ''} not in WLASL lexicon: ${notFoundWords.join(', ')}`}
               />
             )}
 
             {playableWords.length > 0 ? (
-              <div className="card" style={{ padding: '1rem' }}>
+              <div className="card" style={{ padding: '1.25rem' }}>
 
-                {/* Word label + counter + speak-word button */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.75rem', flexWrap: 'wrap', gap: '.5rem' }}>
+                {/* Word header + counter + speak-word button */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div>
-                    <span style={{ fontSize: '.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Now Signing</span>
-                    <h2 style={{ color: 'var(--color-primary)', fontSize: 'clamp(1.3rem,4vw,1.8rem)', fontWeight: 800, lineHeight: 1, marginTop: '.1rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
+                      Active Sign Demonstration
+                    </span>
+                    <h2 style={{ color: 'var(--color-primary)', fontSize: 'clamp(1.35rem, 4vw, 1.85rem)', fontWeight: 800, lineHeight: 1.1, marginTop: '0.15rem', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
                       {currentWord.word}
                       {currentWord.fuzzy && currentWord.matched_word !== currentWord.word && (
-                        <span style={{ fontSize: '.6em', fontWeight: 400, color: 'var(--text-muted)', marginLeft: '.4rem' }}>
+                        <span style={{ fontSize: '0.6em', fontWeight: 500, color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
                           (~{currentWord.matched_word})
                         </span>
                       )}
                     </h2>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-                    {/* Speak current word */}
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                     {ttsSupported && currentWord && (
                       <button
                         className="btn btn-ghost btn-sm"
                         onClick={() => handleSpeak(currentWord.word)}
-                        title={`Speak "${currentWord.word}"`}
-                        style={{ fontSize: '.78rem' }}
+                        title={`Pronounce "${currentWord.word}"`}
+                        style={{ fontSize: '0.8rem', gap: '0.3rem' }}
                       >
-                        -"
+                        🔊 Pronounce
                       </button>
                     )}
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <span style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>Word</span>
-                      <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>
+
+                    <div style={{ textAlign: 'right', background: 'var(--bg-surface)', padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--text-light)', textTransform: 'uppercase', display: 'block', fontWeight: 600 }}>Sequence</span>
+                      <div style={{ fontWeight: 800, fontSize: '0.95rem', fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>
                         {currentIdx + 1} / {playableWords.length}
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Video element */}
-                <div style={{ position: 'relative', background: '#0F172A', borderRadius: 'var(--radius-md)', overflow: 'hidden', aspectRatio: '16/9' }}>
+                {/* Video element viewport */}
+                <div style={{ position: 'relative', background: '#0B1120', borderRadius: 'var(--radius-lg)', overflow: 'hidden', aspectRatio: '16/9', border: '1px solid var(--border)' }}>
                   {currentWord && !videoError && (() => {
                     const localSrc = currentWord.video_url ? videoUrl(currentWord.video_url) : null;
                     const extSrc   = currentWord.external_url || null;
@@ -549,11 +642,8 @@ export default function TextToSign() {
                           }
                         }}
                         onLoadStart={() => {
-                          // Start an 8-second timeout  - if the video hasn't loaded
-                          // by then the external URL is dead; auto-skip to next word.
                           clearVideoTimeout();
                           videoTimeoutRef.current = setTimeout(() => {
-                            // Treat as error: try external fallback, then skip
                             if (!useFallback && extSrc && src !== extSrc) {
                               setUseFallback(true);
                             } else {
@@ -568,19 +658,21 @@ export default function TextToSign() {
                   })()}
 
                   {currentWord && videoError && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '.75rem', color: '#94A3B8', padding: '1rem', textAlign: 'center' }}>
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                      <p style={{ fontSize: '.85rem', margin: 0 }}>
-                        Video unavailable for <strong style={{ color: '#cbd5e1' }}>{currentWord.word}</strong>.
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', color: '#94A3B8', padding: '1.25rem', textAlign: 'center' }}>
+                      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M23 7l-7 5 7 5V7z" />
+                        <rect x="1" y="5" width="15" height="14" rx="2" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                      <p style={{ fontSize: '0.875rem', margin: 0 }}>
+                        Video stream unavailable for <strong style={{ color: '#E2E8F0' }}>"{currentWord.word}"</strong>.
                       </p>
-                      <p style={{ fontSize: '.75rem', margin: 0, color: '#64748b' }}>
-                        {localVideosAvailable === false
-                          ? 'Local dataset not present — external source unreachable.'
-                          : 'No video file found for this word.'}
-                      </p>
-                      <button className="btn btn-ghost btn-sm" style={{ color: '#94A3B8', borderColor: '#334155' }}
-                        onClick={() => { clearVideoTimeout(); setVideoError(false); setUseFallback(false); handleVideoEnded(); }}>
-                        - Skip to next
+                      <button
+                        className="btn btn-outline btn-sm"
+                        style={{ color: '#E2E8F0', borderColor: '#475569' }}
+                        onClick={() => { clearVideoTimeout(); setVideoError(false); setUseFallback(false); handleVideoEnded(); }}
+                      >
+                        Skip to next sign →
                       </button>
                     </div>
                   )}
@@ -588,154 +680,185 @@ export default function TextToSign() {
                   {!playing && !videoError && (
                     <button
                       onClick={play}
-                      aria-label="Play"
+                      aria-label="Play Video"
                       style={{
-                        position: 'absolute', inset: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'rgba(0,0,0,.3)', border: 'none', cursor: 'pointer',
-                        color: '#fff', fontSize: '3rem',
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'rgba(0,0,0,0.35)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: '#fff',
+                        fontSize: '2.5rem',
                         transition: 'background var(--transition)',
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(0,0,0,.5)'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(0,0,0,.3)'}
                     >
-                      ---
+                      ▶
                     </button>
                   )}
                 </div>
 
-                {/* Progress dots */}
-                <div style={{ margin: '.85rem 0 .5rem', display: 'flex', gap: '.3rem', flexWrap: 'wrap' }}>
+                {/* Progress segmented track */}
+                <div style={{ margin: '0.85rem 0 0.65rem', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                   {playableWords.map((w, i) => (
                     <button
                       key={i}
                       onClick={() => jumpTo(i)}
                       title={w.word}
                       style={{
-                        flex: '1 1 0', minWidth: 8, maxWidth: 40, height: 5, borderRadius: 999,
-                        border: 'none', cursor: 'pointer', padding: 0,
-                        background: i <= currentIdx ? 'var(--color-primary)' : 'var(--border)',
+                        flex: '1 1 0',
+                        minWidth: 8,
+                        height: 5,
+                        borderRadius: 'var(--radius-xs)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                        background: i === currentIdx ? 'var(--color-primary)' : i < currentIdx ? '#93C5FD' : 'var(--border)',
                         transition: 'background var(--transition)',
                       }}
                     />
                   ))}
                 </div>
 
-                {/* AI tip + speak-sentence buttons */}
-                <div style={{ marginTop: '.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '.4rem' }}>
-                  <div style={{ display: 'flex', gap: '.4rem' }}>
-                    <button
-                      className="btn btn-ghost btn-sm"
-                      style={{ fontSize: '.75rem', gap: '.3rem', display: 'flex', alignItems: 'center' }}
-                      onClick={() => fetchTip(currentWord.word)}
-                      disabled={tipLoading || !currentWord}
-                      title="Get an AI learning tip for this sign"
-                    >
-                      {tipLoading ? <Spinner size="sm" /> : '💡'} AI Tip
+                {/* Playback Controls Row */}
+                <div className="tts-controls" style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button className="btn btn-ghost btn-sm" onClick={prev} disabled={currentIdx === 0}>
+                    ◀ Prev
+                  </button>
+
+                  {playing ? (
+                    <button className="btn btn-subtle btn-sm" onClick={pause} style={{ fontWeight: 600 }}>
+                      ⏸ Pause
                     </button>
-                    {/* Speak entire typed sentence */}
-                    {ttsSupported && text.trim() && (
-                      <button
-                        className={`btn btn-ghost btn-sm ${speaking ? 'btn-subtle' : ''}`}
-                        style={{ fontSize: '.75rem', display: 'flex', alignItems: 'center', gap: '.3rem' }}
-                        onClick={() => handleSpeak(text)}
-                        title={speaking ? 'Stop audio' : 'Speak full sentence aloud'}
-                      >
-                        {speaking ? '🔇 Stop Audio' : '🔊 Speak Sentence'}
-                      </button>
-                    )}
-                  </div>
-                </div>
+                  ) : (
+                    <button className="btn btn-primary btn-sm" onClick={play} disabled={!currentWord} style={{ fontWeight: 600 }}>
+                      ▶ Play
+                    </button>
+                  )}
 
-               
-
-                {/* Controls row */}
-                <div className="tts-controls">
-                  <button className="btn btn-ghost btn-sm" onClick={prev} disabled={currentIdx === 0}>Prev</button>
-
-                  {playing
-                    ? <button className="btn btn-subtle" onClick={pause}>⏸ Pause</button>
-                    : <button className="btn btn-primary" onClick={play} disabled={!currentWord}>▶ Play</button>
-                  }
-
-                  <button className="btn btn-ghost" onClick={stop}>--- Stop</button>
-                  <button className="btn btn-ghost btn-sm" onClick={next} disabled={currentIdx >= playableWords.length - 1}>Next</button>
-                  <button className="btn btn-ghost btn-sm" onClick={fullscreen} title="Fullscreen">--</button>
+                  <button className="btn btn-ghost btn-sm" onClick={stop}>
+                    ■ Reset
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={next} disabled={currentIdx >= playableWords.length - 1}>
+                    Next ▶
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={fullscreen} title="Fullscreen">
+                    ⛶ Fullscreen
+                  </button>
 
                   <button
-                    className={`btn btn-sm ${loop ? 'btn-primary' : 'btn-ghost'}`}
+                    className={`btn btn-sm ${loop ? 'btn-primary' : 'btn-outline'}`}
                     onClick={() => setLoop((l) => !l)}
-                    title="Loop sequence"
+                    title="Loop entire sequence"
                   >
                     🔁 Loop
                   </button>
 
                   <button
-                    className={`btn btn-sm ${autoAdvance ? 'btn-primary' : 'btn-ghost'}`}
+                    className={`btn btn-sm ${autoAdvance ? 'btn-primary' : 'btn-outline'}`}
                     onClick={() => setAutoAdvance((a) => !a)}
                     title="Auto-advance to next word"
                   >
-                    ↪ Auto
+                    ↪ Auto-Advance
                   </button>
 
-                  <div className="tts-speed">
-                    <span style={{ fontSize: '.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>Speed:</span>
+                  {/* Playback Speed selector */}
+                  <div className="tts-speed" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: 'auto' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>SPEED:</span>
                     {[0.5, 0.75, 1, 1.5].map((s) => (
                       <button
                         key={s}
                         className={`btn btn-sm ${speed === s ? 'btn-primary' : 'btn-ghost'}`}
                         onClick={() => changeSpeed(s)}
+                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}
                       >
                         {s}x
                       </button>
                     ))}
                   </div>
                 </div>
+
+                {/* AI Tip Action & Full Sentence TTS */}
+                <div style={{ marginTop: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '0.8rem', gap: '0.35rem', display: 'flex', alignItems: 'center' }}
+                    onClick={() => fetchTip(currentWord.word)}
+                    disabled={tipLoading || !currentWord}
+                    title="Get spatial landmark learning tip"
+                  >
+                    {tipLoading ? <Spinner size="sm" /> : '💡'} ASL Learning Tip
+                  </button>
+
+                  {ttsSupported && text.trim() && (
+                    <button
+                      className={`btn btn-ghost btn-sm ${speaking ? 'btn-subtle' : ''}`}
+                      style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                      onClick={() => handleSpeak(text)}
+                      title="Speak full sentence aloud"
+                    >
+                      {speaking ? '🔇 Stop Speech' : '🔊 Speak Full Sentence'}
+                    </button>
+                  )}
+                </div>
+
+                {/* AI Tip result display */}
+                {tip && (
+                  <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-surface)', border: '1px solid var(--border)', fontSize: '0.83rem' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--color-primary)', marginBottom: '0.2rem' }}>
+                      Sign Tip for "{tipWord}":
+                    </div>
+                    <div style={{ color: 'var(--text-main)', lineHeight: 1.5 }}>
+                      {tip.tip || tip.explanation || JSON.stringify(tip)}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="card" style={{ textAlign: 'center', padding: '2.5rem' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '.75rem' }}>--</div>
-                <h3>No Signs Found</h3>
-                <p style={{ color: 'var(--text-muted)', marginTop: '.5rem' }}>
-                  None of the words you entered are in the WLASL vocabulary.
-                  Try the word list on the right.
+                <h3>No Matching Signs</h3>
+                <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                  None of the typed words were matched in the WLASL dataset. Select words from the lexicon on the right.
                 </p>
               </div>
             )}
 
             {/* Word sequence strip */}
-            <div className="card" style={{ padding: '.85rem 1rem' }}>
-              <div style={{ fontSize: '.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '.6rem', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-                Sequence — {words.length} word{words.length !== 1 ? 's' : ''}
+            <div className="card" style={{ padding: '1rem 1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Sign Sequence — {words.length} Word{words.length !== 1 ? 's' : ''}
+                </div>
                 {coverage !== null && (
-                  <span style={{ marginLeft: '.75rem', color: coverage === 1 ? 'var(--color-success)' : 'var(--color-warning)' }}>
-                    ({Math.round(coverage * 100)}% covered)
+                  <span className={`badge ${coverage >= 0.8 ? 'badge-success' : 'badge-warning'}`}>
+                    {Math.round(coverage * 100)}% Coverage
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
                 {words.map((w, i) => {
                   const pidx = playableWords.indexOf(w);
                   const isActive = w.found && pidx === currentIdx;
-                  const borderColor = isActive ? 'var(--color-primary)' : w.found ? (w.fuzzy ? 'var(--color-warning)' : 'var(--border)') : 'var(--color-error)';
-                  const textColor   = isActive ? 'var(--color-primary)' : w.found ? 'var(--text-main)' : 'var(--color-error)';
-                  const titleText   = w.found
-                    ? (w.fuzzy ? `"${w.word}" → matched as "${w.matched_word}" — click to jump` : `Click to jump to "${w.word}"`)
-                    : `"${w.word}" not in vocabulary`;
                   return (
                     <button
                       key={i}
                       onClick={() => w.found ? jumpTo(pidx) : null}
                       style={{
-                        padding: '.3rem .75rem', borderRadius: 999,
-                        border: `2px solid ${borderColor}`,
-                        background: isActive ? 'color-mix(in srgb, var(--color-primary) 12%, transparent)' : 'transparent',
-                        color: textColor,
-                        fontWeight: isActive ? 700 : 400,
-                        fontSize: '.875rem', cursor: w.found ? 'pointer' : 'default',
-                        transition: 'all var(--transition)', opacity: w.found ? 1 : .55,
+                        padding: '0.35rem 0.75rem',
+                        borderRadius: 'var(--radius-sm)',
+                        border: `1.5px solid ${isActive ? 'var(--color-primary)' : w.found ? (w.fuzzy ? 'var(--color-warning)' : 'var(--border)') : 'var(--color-error)'}`,
+                        background: isActive ? 'var(--color-primary-light)' : 'var(--bg-surface)',
+                        color: isActive ? 'var(--color-primary)' : w.found ? 'var(--text-main)' : 'var(--color-error)',
+                        fontWeight: isActive ? 700 : 500,
+                        fontSize: '0.85rem',
+                        cursor: w.found ? 'pointer' : 'default',
+                        transition: 'all var(--transition)',
+                        opacity: w.found ? 1 : 0.6,
                       }}
-                      title={titleText}
+                      title={w.found ? `Jump to "${w.word}"` : `"${w.word}" not in dictionary`}
                     >
                       {w.found ? '' : '⚠ '}{w.word}{w.fuzzy && w.matched_word !== w.word ? ` (~${w.matched_word})` : ''}
                     </button>
@@ -745,71 +868,71 @@ export default function TextToSign() {
             </div>
           </div>
 
-          {/* -- Right: stats + vocabulary - */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
+          {/* ── Right: Stats & Vocabulary Dictionary ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', minWidth: 0 }}>
 
-            <div className="card" style={{ textAlign: 'center' }}>
+            {/* Translation Coverage Card */}
+            <div className="card" style={{ padding: '1.25rem', textAlign: 'center' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--color-primary)' }}>{playableWords.length}</div>
-                  <div style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>Signs Found</div>
+                  <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'var(--font-display)' }}>
+                    {playableWords.length}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
+                    Signs Synthesized
+                  </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '1.8rem', fontWeight: 800, color: notFoundWords.length ? 'var(--color-warning)' : 'var(--color-success)' }}>
+                  <div style={{ fontSize: '1.85rem', fontWeight: 800, color: notFoundWords.length ? 'var(--color-warning)' : 'var(--color-success)', fontFamily: 'var(--font-display)' }}>
                     {notFoundWords.length}
                   </div>
-                  <div style={{ fontSize: '.75rem', color: 'var(--text-muted)' }}>Skipped</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
+                    Skipped Words
+                  </div>
                 </div>
               </div>
+
               {coverage !== null && (
-                <div style={{ marginTop: '.85rem' }}>
+                <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border)' }}>
                   <div className="confidence-bar">
                     <div className="confidence-bar-fill" style={{ width: `${coverage * 100}%` }} />
                   </div>
-                  <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', marginTop: '.3rem' }}>
-                    {Math.round(coverage * 100)}% vocabulary coverage
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
+                    {Math.round(coverage * 100)}% WLASL Lexicon Coverage
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="card">
-              <h4 style={{ marginBottom: '.75rem' }}>How It Works</h4>
-              <ol style={{ paddingLeft: '1.1rem', fontSize: '.85rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
-                <li>Choose your language above, then type or <strong>-- speak</strong> your text.</li>
-                <li>Click <strong>--- Show Signs</strong>  - videos play automatically word-by-word.</li>
-                <li>Use <strong>-" Listen</strong> to hear the text read aloud in your language.</li>
-                <li>Use <strong>- Auto</strong> to toggle auto-advance.</li>
-                <li>Click any word chip below the video to jump to it.</li>
-                <li>Use <strong>-- Loop</strong> to repeat the full sentence.</li>
-              </ol>
-            </div>
-
-            {/* STT browser support notice */}
-            {!sttSupported && (
-              <div className="card" style={{ borderColor: 'var(--color-warning)', background: 'color-mix(in srgb, var(--color-warning) 6%, var(--bg-card))' }}>
-                <p style={{ fontSize: '.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                  -- Speech input requires Chrome, Edge, or Safari. Your browser doesn't support it.
-                </p>
-              </div>
-            )}
-
+            {/* Supported Vocabulary Card */}
             {vocabHints.length > 0 && (
-              <div className="card">
-                <h4 style={{ marginBottom: '.6rem' }}>
-                  Supported Words
-                  <span style={{ fontSize: '.75rem', color: 'var(--text-muted)', fontWeight: 400, marginLeft: '.5rem' }}>
-                    ({vocabHints.length} words)
+              <div className="card" style={{ padding: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>
+                    Supported Vocabulary
+                  </h4>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>
+                    {vocabHints.length} words
                   </span>
-                </h4>
-                <div style={{ maxHeight: 220, overflowY: 'auto' }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.3rem' }}>
+                </div>
+                <div style={{ maxHeight: 240, overflowY: 'auto', paddingRight: '0.25rem' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                     {vocabHints.map((w) => (
                       <button
                         key={w}
                         onClick={() => setText((prev) => prev ? `${prev} ${w}` : w)}
                         className="quick-chip"
-                        title={`Add "${w}" to input`}
+                        style={{
+                          fontSize: '0.75rem',
+                          padding: '0.2rem 0.55rem',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-sm)',
+                          background: 'var(--bg-surface)',
+                          cursor: 'pointer',
+                          color: 'var(--text-muted)',
+                          fontFamily: 'inherit',
+                        }}
+                        title={`Add "${w}" to text`}
                       >
                         {w}
                       </button>
@@ -818,74 +941,44 @@ export default function TextToSign() {
                 </div>
               </div>
             )}
+
+            {/* How It Works Card */}
+            <div className="card" style={{ padding: '1.25rem' }}>
+              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+                Synthesis Guidance
+              </h4>
+              <ol style={{ paddingLeft: '1.1rem', fontSize: '0.83rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.45rem', margin: 0 }}>
+                <li>Select your language, then type or <strong>voice-dictate</strong>.</li>
+                <li>Click <strong>Show Signs</strong> — video demonstration auto-plays.</li>
+                <li>Toggle <strong>Auto-Advance</strong> to sequence words smoothly.</li>
+                <li>Use <strong>Speed Controls</strong> (0.5x to 1.5x) for learning.</li>
+              </ol>
+            </div>
           </div>
         </div>
       )}
 
       <style>{`
-        /* Mic pulse animation */
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: .3; }
-        }
-
-        /* Input row */
         .tts-input-row {
           display: flex;
-          gap: .75rem;
+          gap: 0.85rem;
           align-items: flex-start;
           flex-wrap: wrap;
         }
-        .tts-input-row textarea { min-width: 0; flex: 1 1 220px; }
+        .tts-input-row textarea { min-width: 0; flex: 1 1 240px; }
 
-        /* Results grid */
         .tts-grid {
           display: grid;
-          grid-template-columns: minmax(0,1fr) 280px;
+          grid-template-columns: minmax(0, 1fr) 300px;
           gap: 1.5rem;
           align-items: start;
         }
 
-        /* Controls row */
-        .tts-controls {
-          display: flex;
-          gap: .4rem;
-          align-items: center;
-          flex-wrap: wrap;
-          margin-top: .25rem;
-        }
-        .tts-speed {
-          display: flex;
-          gap: .3rem;
-          align-items: center;
-          margin-left: auto;
-          flex-wrap: wrap;
-        }
-
-        /* Quick phrase chip */
-        .quick-chip {
-          font-size: .78rem;
-          padding: .2rem .65rem;
-          border: 1px solid var(--border);
-          border-radius: 999px;
-          background: var(--bg-surface);
-          cursor: pointer;
-          color: var(--text-muted);
-          transition: all var(--transition);
-          font-family: inherit;
-        }
-        .quick-chip:hover {
-          border-color: var(--color-primary);
-          color: var(--color-primary);
-        }
-
-        /* Mobile */
-        @media (max-width: 860px) {
+        @media (max-width: 900px) {
           .tts-grid { grid-template-columns: 1fr; }
         }
-        @media (max-width: 480px) {
-          .tts-controls { gap: .3rem; }
-          .tts-speed { margin-left: 0; width: 100%; }
+        @media (max-width: 520px) {
+          .tts-speed { margin-left: 0 !important; width: 100%; margin-top: 0.5rem; }
         }
       `}</style>
     </AppShell>

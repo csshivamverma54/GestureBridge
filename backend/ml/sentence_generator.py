@@ -109,10 +109,197 @@ def _capitalise_sentence(text: str) -> str:
     return text
 
 
-# Convert an ASL gloss sequence + NMM signals into an English sentence
+# Multilingual sentence and phrase translations for spoken languages
+_PHRASE_TRANSLATIONS: dict[str, dict[str, str]] = {
+    "Hindi": {
+        "hello": "नमस्ते।",
+        "hello.": "नमस्ते।",
+        "thank you": "धन्यवाद।",
+        "thank you.": "धन्यवाद।",
+        "thanks": "धन्यवाद।",
+        "please": "कृपया।",
+        "please.": "कृपया।",
+        "sorry": "माफ़ कीजिये।",
+        "sorry.": "माफ़ कीजिये।",
+        "excuse me": "क्षमा करें।",
+        "excuse me.": "क्षमा करें।",
+        "how are you": "आप कैसे हैं?",
+        "how are you?": "आप कैसे हैं?",
+        "i love you": "मैं तुमसे प्यार करता हूँ।",
+        "i love you.": "मैं तुमसे प्यार करता हूँ।",
+        "good morning": "शुभ प्रभात।",
+        "good morning.": "शुभ प्रभात।",
+        "good night": "शुभ रात्रि।",
+        "good night.": "शुभ रात्रि।",
+        "good afternoon": "शुभ दोपहर।",
+        "good afternoon.": "शुभ दोपहर।",
+        "welcome": "स्वागत है।",
+        "welcome.": "स्वागत है।",
+        "yes": "हाँ।",
+        "yes.": "हाँ।",
+        "no": "नहीं।",
+        "no.": "नहीं।",
+        "help": "कृपया मदद करें।",
+        "help.": "कृपया मदद करें।",
+        "help please": "कृपया मदद करें।",
+        "help please.": "कृपया मदद करें।",
+        "i am hungry": "मुझे भूख लगी है।",
+        "i am hungry.": "मुझे भूख लगी है।",
+        "are you hungry": "क्या आपको भूख लगी है?",
+        "are you hungry?": "क्या आपको भूख लगी है?",
+        "i am tired": "मैं थक गया हूँ।",
+        "i am tired.": "मैं थक गया हूँ।",
+        "i go to school": "मैं स्कूल जाता हूँ।",
+        "i go to school.": "मैं स्कूल जाता हूँ।",
+        "where do you go to school": "आप स्कूल कहाँ जाते हैं?",
+        "where do you go to school?": "आप स्कूल कहाँ जाते हैं?",
+        "are you going to the store": "क्या आप दुकान जा रहे हैं?",
+        "are you going to the store?": "क्या आप दुकान जा रहे हैं?",
+        "will you go tomorrow": "क्या आप कल जायेंगे?",
+        "will you go tomorrow?": "क्या आप कल जायेंगे?",
+        "i don't read the book": "मैं किताब नहीं पढ़ता हूँ।",
+        "i don't read the book.": "मैं किताब नहीं पढ़ता हूँ।",
+        "you eat": "आप खाते हैं।",
+        "you eat.": "आप खाते हैं।",
+        "i want water": "मुझे पानी चाहिए।",
+        "i want water.": "मुझे पानी चाहिए।",
+        "i need help": "मुझे मदद चाहिए।",
+        "i need help.": "मुझे मदद चाहिए।",
+        "i love family": "मुझे परिवार से प्यार है।",
+        "i love family.": "मुझे परिवार से प्यार है।",
+        "my name": "मेरा नाम।",
+        "my name.": "मेरा नाम।",
+    },
+    "Marathi": {
+        "hello": "नमस्कार.",
+        "hello.": "नमस्कार.",
+        "thank you": "धन्यवाद.",
+        "thank you.": "धन्यवाद.",
+        "thanks": "धन्यवाद.",
+        "please": "कृपया.",
+        "please.": "कृपया.",
+        "sorry": "क्षमस्व.",
+        "sorry.": "क्षमस्व.",
+        "excuse me": "माफ करा.",
+        "excuse me.": "माफ करा.",
+        "how are you": "तुम्ही कसे आहात?",
+        "how are you?": "तुम्ही कसे आहात?",
+        "i love you": "माझे तुझ्यावर प्रेम आहे.",
+        "i love you.": "माझे तुझ्यावर प्रेम आहे.",
+        "good morning": "शुभ सकाळ.",
+        "good morning.": "शुभ सकाळ.",
+        "good night": "शुभ रात्री.",
+        "good night.": "शुभ रात्री.",
+        "good afternoon": "शुभ दुपार.",
+        "good afternoon.": "शुभ दुपार.",
+        "welcome": "स्वागत आहे.",
+        "welcome.": "स्वागत आहे.",
+        "yes": "हो.",
+        "yes.": "हो.",
+        "no": "नाही.",
+        "no.": "नाही.",
+        "help": "कृपया मदत करा.",
+        "help.": "कृपया मदत करा.",
+        "help please": "कृपया मदत करा.",
+        "help please.": "कृपया मदत करा.",
+        "i am hungry": "मला भूक लागली आहे.",
+        "i am hungry.": "मला भूक लागली आहे.",
+        "are you hungry": "तुम्हाला भूक लागली आहे का?",
+        "are you hungry?": "तुम्हाला भूक लागली आहे का?",
+        "i am tired": "मी थकलो आहे.",
+        "i am tired.": "मी थकलो आहे.",
+        "i go to school": "मी शाळेत जातो.",
+        "i go to school.": "मी शाळेत जातो.",
+        "where do you go to school": "तुम्ही शाळेत कुठे जाता?",
+        "where do you go to school?": "तुम्ही शाळेत कुठे जाता?",
+        "are you going to the store": "तुम्ही दुकानात जात आहात का?",
+        "are you going to the store?": "तुम्ही दुकानात जात आहात का?",
+        "will you go tomorrow": "तुम्ही उद्या जाणार का?",
+        "will you go tomorrow?": "तुम्ही उद्या जाणार का?",
+        "i don't read the book": "मी पुस्तक वाचत नाही.",
+        "i don't read the book.": "मी पुस्तक वाचत नाही.",
+        "you eat": "तुम्ही खाता.",
+        "you eat.": "तुम्ही खाता.",
+        "i want water": "मला पाणी हवे आहे.",
+        "i want water.": "मला पाणी हवे आहे.",
+        "i need help": "मला मदतीची गरज आहे.",
+        "i need help.": "मला मदतीची गरज आहे.",
+        "i love family": "माझे कुटुंबावर प्रेम आहे.",
+        "i love family.": "माझे कुटुंबावर प्रेम आहे.",
+        "my name": "माझे नाव.",
+        "my name.": "माझे नाव.",
+    },
+}
+
+_WORD_MAP: dict[str, dict[str, str]] = {
+    "Hindi": {
+        "i": "मैं", "me": "मुझे", "my": "मेरा", "mine": "मेरा",
+        "you": "आप", "your": "आपका", "he": "वह", "him": "उसे",
+        "she": "वह", "her": "उसका", "we": "हम", "they": "वे",
+        "go": "जाना", "come": "आना", "eat": "खाना", "drink": "पीना",
+        "water": "पानी", "food": "खाना", "school": "स्कूल", "store": "दुकान",
+        "book": "किताब", "read": "पढ़ना", "write": "लिखना", "help": "मदद",
+        "friend": "दोस्त", "family": "परिवार", "happy": "खुश", "sad": "उदास",
+        "tired": "थका", "hungry": "भूखा", "good": "अच्छा", "bad": "बुरा",
+        "yes": "हाँ", "no": "नहीं", "not": "नहीं", "what": "क्या", "where": "कहाँ",
+        "who": "कौन", "why": "क्यों", "how": "कैसे", "when": "कब", "want": "चाहना",
+        "need": "ज़रूरत", "like": "पसंद", "love": "प्यार", "see": "देखना",
+    },
+    "Marathi": {
+        "i": "मी", "me": "मला", "my": "माझे", "mine": "माझे",
+        "you": "तुम्ही", "your": "तुमचे", "he": "तो", "him": "त्याला",
+        "she": "ती", "her": "तिचे", "we": "आम्ही", "they": "ते",
+        "go": "जाणे", "come": "येणे", "eat": "खाणे", "drink": "पिणे",
+        "water": "पाणी", "food": "अन्न", "school": "शाळा", "store": "दुकान",
+        "book": "पुस्तक", "read": "वाचणे", "write": "लिहिणे", "help": "मदत",
+        "friend": "मित्र", "family": "कुटुंब", "happy": "आनंदी", "sad": "दुःखी",
+        "tired": "थकलेला", "hungry": "भुकेलेला", "good": "चांगला", "bad": "वाईट",
+        "yes": "हो", "no": "नाही", "not": "नाही", "what": "काय", "where": "कुठे",
+        "who": "कोण", "why": "का", "how": "कसे", "when": "केव्हा", "want": "हवे",
+        "need": "गरज", "like": "आवडणे", "love": "प्रेम", "see": "पाहणे",
+    },
+}
+
+
+def translate_sentence(english_sentence: str, gloss_sequence: list[str], target_lang: str) -> str:
+    """Translate an English sentence or gloss sequence into Hindi or Marathi."""
+    if not target_lang or target_lang.lower() in ("english", "en", "asl", "isl"):
+        return english_sentence
+
+    norm_lang = "Hindi" if "hin" in target_lang.lower() else "Marathi" if "mar" in target_lang.lower() else None
+    if not norm_lang:
+        return english_sentence
+
+    clean_en = english_sentence.strip().lower()
+    clean_no_punct = re.sub(r"[.?!]+$", "", clean_en).strip()
+
+    lang_dict = _PHRASE_TRANSLATIONS.get(norm_lang, {})
+    if clean_en in lang_dict:
+        return lang_dict[clean_en]
+    if clean_no_punct in lang_dict:
+        return lang_dict[clean_no_punct]
+
+    # Try gloss sequence key
+    gloss_key = " ".join(g.lower() for g in gloss_sequence).strip()
+    if gloss_key in lang_dict:
+        return lang_dict[gloss_key]
+
+    # Word-by-word fallback with Devanagari sentence ending
+    word_dict = _WORD_MAP.get(norm_lang, {})
+    tokens = re.findall(r"\b[a-z']+\b", clean_en)
+    translated_tokens = [word_dict.get(t, t) for t in tokens if t not in ("the", "a", "an", "is", "am", "are", "do", "does")]
+    if translated_tokens:
+        stop_mark = "?" if "?" in english_sentence else ("।" if norm_lang == "Hindi" else ".")
+        return " ".join(translated_tokens) + stop_mark
+
+    return english_sentence
+
+
+# Convert an ASL gloss sequence + NMM signals into an English or multilingual sentence
 def generate_sentence(
     gloss_sequence: list[str],
     nmm_summary: Optional[dict] = None,
+    spoken_language: str = "English",
 ) -> str:
     if nmm_summary is None:
         nmm_summary = {}
@@ -248,6 +435,9 @@ def generate_sentence(
     sentence = re.sub(r'\s+', ' ', sentence).strip()
     sentence = re.sub(r'\s+([.?!])', r'\1', sentence)
     sentence = _capitalise_sentence(sentence)
+
+    if spoken_language and spoken_language.lower() not in ("english", "en", "asl", "isl"):
+        return translate_sentence(sentence, gloss_sequence, spoken_language)
 
     return sentence
 

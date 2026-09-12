@@ -13,16 +13,59 @@ def _unavailable():
     }), 503
 
 
+_OFFLINE_TIPS = {
+    "HELLO": {
+        "tip": "Place the open hand near your temple with palm facing outward and move it forward in an arching salute.",
+        "fun_fact": "The ASL sign for hello evolved directly from a military salute motion.",
+    },
+    "THANK YOU": {
+        "tip": "Touch your fingertips to your chin or lips with a flat hand, then extend your hand forward toward the person.",
+        "fun_fact": "This sign is closely related to the sign for 'good', but projected forward to show gratitude.",
+    },
+    "HELP": {
+        "tip": "Place a closed 'A' fist on top of your open flat palm, then elevate both hands upward together.",
+        "fun_fact": "The bottom palm lifting the fist represents physically supporting someone.",
+    },
+    "PLEASE": {
+        "tip": "Rub your flat hand in a gentle circular clockwise motion on your chest over your heart.",
+        "fun_fact": "Touching the heart area represents sincerity and polite affection.",
+    },
+    "YES": {
+        "tip": "Make an 'S' fist and nod it up and down from the wrist like a nodding head.",
+        "fun_fact": "The fist directly mimics the physiological nod of agreement.",
+    },
+    "NO": {
+        "tip": "Snap your index and middle fingers down together onto your thumb.",
+        "fun_fact": "This sign represents the rapid closure of lips when saying 'no'.",
+    },
+    "LOVE": {
+        "tip": "Cross both arms over your chest with fists closed, hugging your heart.",
+        "fun_fact": "The sign universally symbolizes embracing someone close to your chest.",
+    },
+    "FAMILY": {
+        "tip": "Form 'F' handshapes with both hands touching at the index and thumb, then trace a horizontal circle until little fingers meet.",
+        "fun_fact": "The circular path represents the unbroken circle of the family unit.",
+    },
+    "WATER": {
+        "tip": "Form a 'W' handshape with your three middle fingers and tap the side of your index finger against your chin twice.",
+        "fun_fact": "The 'W' handshape represents the English initial of water.",
+    },
+}
+
+
 # Rewrite a raw sign-to-text translation as fluent English
 @ai_bp.route("/improve-text", methods=["POST"])
 def improve_text():
-    if not is_configured():
-        return _unavailable()
-
     data = request.get_json(silent=True) or {}
     text = (data.get("text") or "").strip()
     if not text:
         return jsonify({"error": "Field 'text' is required"}), 400
+
+    if not is_configured():
+        clean = text[0].upper() + text[1:] if text else text
+        if not clean.endswith(('.', '!', '?')):
+            clean += '.'
+        return jsonify({"improved": clean, "source": "offline-rule"}), 200
 
     prompt = (
         "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
@@ -40,21 +83,36 @@ def improve_text():
         improved = generate(prompt, max_new_tokens=120, temperature=0.2,
                             stop_sequences=["<|eot_id|>", "\n\n"])
         improved = improved.replace("<|eot_id|>", "").strip()
-        return jsonify({"improved": improved or text}), 200
+        return jsonify({"improved": improved or text, "source": "watsonx"}), 200
     except Exception as exc:  # noqa: BLE001
-        return jsonify({"error": str(exc), "improved": text}), 500
+        return jsonify({"error": str(exc), "improved": text, "source": "fallback"}), 200
 
 
 # Return a concise learning tip and fun fact for an ASL sign word
 @ai_bp.route("/learning-tip", methods=["POST"])
 def learning_tip():
-    if not is_configured():
-        return _unavailable()
-
     data = request.get_json(silent=True) or {}
     word = (data.get("word") or "").strip().upper()
     if not word:
         return jsonify({"error": "Field 'word' is required"}), 400
+
+    if not is_configured():
+        lookup_word = word.replace("-", " ").strip()
+        if lookup_word in _OFFLINE_TIPS:
+            tip_data = _OFFLINE_TIPS[lookup_word]
+            return jsonify({
+                "word": word,
+                "tip": tip_data["tip"],
+                "fun_fact": tip_data["fun_fact"],
+                "source": "offline-curated",
+            }), 200
+
+        return jsonify({
+            "word": word,
+            "tip": f"Form the '{word.lower()}' sign smoothly within your central chest-to-head signing space with steady hand orientation.",
+            "fun_fact": f"Consistent practice and clear facial inflection will maximize recognition confidence for '{word.lower()}'.",
+            "source": "offline-heuristic",
+        }), 200
 
     prompt = (
         "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
@@ -83,7 +141,7 @@ def learning_tip():
             tip      = raw
             fun_fact = ""
 
-        return jsonify({"word": word, "tip": tip, "fun_fact": fun_fact}), 200
+        return jsonify({"word": word, "tip": tip, "fun_fact": fun_fact, "source": "watsonx"}), 200
     except Exception as exc:  # noqa: BLE001
         return jsonify({"error": str(exc)}), 500
 
@@ -91,13 +149,20 @@ def learning_tip():
 # Analyse a list of recent translations and return AI-generated learning insights
 @ai_bp.route("/sentence-insights", methods=["POST"])
 def sentence_insights():
-    if not is_configured():
-        return _unavailable()
-
     data = request.get_json(silent=True) or {}
     translations = data.get("translations", [])
     if not translations or not isinstance(translations, list):
         return jsonify({"error": "Field 'translations' must be a non-empty list"}), 400
+
+    if not is_configured():
+        unique_signs = list(dict.fromkeys(translations))[:5]
+        summary = (
+            f"Analyzed {len(translations)} recent sign transitions. "
+            f"Core active vocabulary: {', '.join(unique_signs) if unique_signs else 'gestures'}. "
+            "Maintain distinct boundary rests between signs to allow continuous NLP sentence formation. "
+            "Excellent consistency in your signing session!"
+        )
+        return jsonify({"insights": summary, "source": "offline-heuristic"}), 200
 
     sample = translations[:30]
     joined = ", ".join(f'"{t}"' for t in sample)

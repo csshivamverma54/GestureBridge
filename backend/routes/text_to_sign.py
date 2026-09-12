@@ -86,11 +86,109 @@ _SUFFIX_RULES: list[tuple[str, str]] = [
 _DOUBLE_CONS_RE = re.compile(r"([bcdfghjklmnpqrstvwxyz])\1$")
 
 
-# Lowercase and tokenise input text into a list of words
+# Lowercase and tokenise input text into a list of words, preserving Devanagari & Latin
 def _tokenise(text: str) -> list[str]:
     text = text.lower().strip()
-    text = re.sub(r"[^a-z\s']", " ", text)
+    # Keep standard letters a-z, Devanagari \u0900-\u097f, apostrophes and spaces
+    text = re.sub(r"[^a-z\u0900-\u097f\s']", " ", text)
     return text.split()
+
+
+# Multilingual dictionary: Hindi (Devanagari & Hinglish) and Marathi (Devanagari & Romanized) -> WLASL English sign glosses
+_MULTILINGUAL_MAP: dict[str, str] = {
+    # Greetings & Common Expressions
+    "नमस्ते": "hello", "namaste": "hello", "नमस्कार": "hello", "namaskar": "hello", "प्रणाम": "hello", "pranam": "hello", "हाय": "hello", "hi": "hello",
+    "धन्यवाद": "thank you", "dhanyavaad": "thank you", "dhanyavad": "thank you", "शुक्रिया": "thank you", "shukriya": "thank you", "आभार": "thank you", "aabhar": "thank you",
+    "मदद": "help", "madad": "help", "मदत": "help", "madat": "help", "सहायता": "help", "sahayata": "help",
+    "कृपया": "please", "kripya": "please", "krupaya": "please", "krpya": "please",
+    "हाँ": "yes", "haan": "yes", "ha": "yes", "हो": "yes", "ho": "yes", "जी": "yes",
+    "नहीं": "no", "nahi": "no", "nahin": "no", "नाही": "no", "ना": "no",
+    "अलविदा": "bye", "alvida": "bye", "बाय": "bye",
+    "सुप्रभात": "good morning", "suprabhat": "good morning", "शुभ प्रभात": "good morning", "shubh prabhat": "good morning",
+    "शुभ रात्रि": "good night", "shubh ratri": "good night",
+    "आप कैसे हैं": "how are you", "कसे आहात": "how are you", "tum kaise ho": "how are you", "aap kaise ho": "how are you",
+    "माफ़ करना": "sorry", "maaf karna": "sorry", "माफ करा": "sorry", "माफी": "sorry",
+
+    # Pronouns & People
+    "नाम": "name", "naam": "name", "नाव": "name", "naav": "name",
+    "मैं": "me", "main": "me", "मी": "me", "mee": "me", "mujhe": "me", "मला": "me",
+    "आप": "you", "aap": "you", "तुम": "you", "tum": "you", "तुम्ही": "you", "tumhi": "you", "तू": "you", "tu": "you",
+    "हम": "we", "hum": "we", "आम्ही": "we", "aamhi": "we",
+    "दोस्त": "friend", "dost": "friend", "मित्र": "friend", "mitra": "friend", "यार": "friend",
+    "परिवार": "family", "parivaar": "family", "parivar": "family", "कुटुंब": "family", "kutumb": "family",
+    "माँ": "mother", "माता": "mother", "maa": "mother", "mata": "mother", "आई": "mother", "aai": "mother",
+    "पिता": "father", "पिताजी": "father", "pita": "father", "बाबा": "father", "baba": "father",
+    "भाई": "brother", "bhai": "brother", "भाऊ": "brother", "bhau": "brother", "bhaiya": "brother",
+    "बहन": "sister", "behan": "sister", "बहीण": "sister", "bahin": "sister", "didi": "sister",
+    "बच्चा": "child", "baccha": "child", "मुलगा": "boy", "mulga": "boy", "लड़का": "boy", "ladka": "boy",
+    "लड़की": "girl", "ladki": "girl", "मुलगी": "girl", "mulgi": "girl",
+    "आदमी": "man", "aadmi": "man", "माणूस": "man", "manus": "man",
+    "महिला": "woman", "mahila": "woman", "औरत": "woman", "aurat": "woman", "स्त्री": "woman",
+    "डॉक्टर": "doctor", "doctor": "doctor", "वैद्य": "doctor",
+    "शिक्षक": "teacher", "shikshak": "teacher", "गुरु": "teacher", "गुरुजी": "teacher",
+    "छात्र": "student", "chhatra": "student", "विद्यार्थी": "student", "vidyarthi": "student",
+
+    # Everyday Needs, Places & Objects
+    "पानी": "water", "paani": "water", "pani": "water", "जल": "water",
+    "खाना": "food", "khana": "food", "भोजन": "food", "bhojan": "food", "जेवण": "food", "jevan": "food",
+    "दूध": "milk", "doodh": "milk", "dudh": "milk",
+    "चाय": "tea", "chai": "tea",
+    "घर": "home", "ghar": "home", "सदन": "home",
+    "स्कूल": "school", "विद्यालय": "school", "vidyalaya": "school", "शाळा": "school", "shala": "school",
+    "अस्पताल": "hospital", "aspatal": "hospital", "दवाखाना": "hospital", "davakhana": "hospital",
+    "किताब": "book", "kitab": "book", "पुस्तक": "book", "pustak": "book",
+    "काम": "work", "kaam": "work", "कामकाज": "work",
+    "गाड़ी": "car", "gaadi": "car", "gadi": "car", "कार": "car",
+    "बिल्ली": "cat", "billi": "cat", "मांजर": "cat", "manjar": "cat",
+    "कुत्ता": "dog", "kutta": "dog", "कुत्रा": "dog", "kultra": "dog",
+    "दिन": "day", "din": "day", "दिवस": "day", "divas": "day",
+    "रात": "night", "raat": "night", "रात्र": "night",
+    "आज": "today", "aaj": "today",
+    "कल": "tomorrow", "kal": "tomorrow", "उद्या": "tomorrow", "udya": "tomorrow",
+    "समय": "time", "samay": "time", "वेळ": "time", "vel": "time",
+
+    # Emotions, Actions & States
+    "प्यार": "love", "pyaar": "love", "प्रेम": "love", "prem": "love",
+    "अच्छा": "good", "accha": "good", "achha": "good", "छान": "good", "chhan": "good", "चांगला": "good",
+    "बुरा": "bad", "bura": "bad", "वाईट": "bad", "vait": "bad", "खराब": "bad",
+    "खुश": "happy", "khush": "happy", "आनंदी": "happy", "anandi": "happy",
+    "उदास": "sad", "udaas": "sad", "दुखी": "sad", "dukhi": "sad",
+    "बीमार": "sick", "bimar": "sick", "आजारी": "sick", "aajari": "sick",
+    "थका": "tired", "thaka": "tired", "दमलेला": "tired", "damlela": "tired",
+    "बड़ा": "big", "bada": "big", "मोठा": "big", "motha": "big",
+    "छोटा": "small", "chhota": "small", "लहान": "small", "lahan": "small",
+    "गरम": "hot", "garam": "hot",
+    "ठंडा": "cold", "thanda": "cold", "गार": "cold",
+    "तेज़": "fast", "tez": "fast",
+    "धीमा": "slow", "dheema": "slow", "हळू": "slow",
+    "सुंदर": "beautiful", "sundar": "beautiful",
+    "जाना": "go", "jaana": "go", "jaa": "go", "जा": "go",
+    "आना": "come", "aana": "come", "aa": "come", "ये": "come",
+    "पीना": "drink", "peena": "drink",
+    "सोना": "sleep", "sona": "sleep", "झोप": "sleep",
+    "देखना": "see", "dekhna": "see", "पहा": "see",
+    "सुनना": "hear", "sunna": "hear", "ऐका": "hear",
+    "बोलना": "speak", "bolna": "speak", "बोला": "speak",
+    "पढ़ना": "read", "padhna": "read", "वाचा": "read",
+    "लिखना": "write", "likhna": "write", "लिहा": "write",
+    "खेलना": "play", "khelna": "play", "खेळा": "play",
+    "सीखना": "learn", "seekhna": "learn", "शिका": "learn",
+    "समझना": "understand", "samajhna": "understand", "समजले": "understand",
+    "रुकना": "stop", "rukna": "stop", "थांबा": "stop",
+    "शुरू": "start", "shuru": "start",
+    "खत्म": "finish", "khatam": "finish", "पूर्ण": "finish",
+    "चाहना": "want", "chahna": "want", "हवे": "want",
+    "ज़रूरत": "need", "zaroorat": "need", "गरज": "need",
+    "सोचना": "think", "sochna": "think", "विचार": "think",
+    "जानना": "know", "jaanna": "know", "माहित": "know",
+    "पसंद": "like", "pasand": "like", "आवड": "like",
+    "क्या": "what", "kya": "what", "काय": "what", "kaay": "what",
+    "कहाँ": "where", "kahan": "where", "कुठे": "where", "kuthe": "where",
+    "कब": "when", "kab": "when", "केव्हा": "when", "keva": "when",
+    "क्यों": "why", "kyun": "why", "का": "why",
+    "कैसे": "how", "kaise": "how", "कसे": "how", "kase": "how",
+    "कौन": "who", "kaun": "who", "कोण": "who", "kon": "who",
+}
 
 
 # Return deduplicated stem candidates derived from suffix stripping rules
@@ -143,13 +241,32 @@ def _make_entry(matched_word: str, original_word: str, fuzzy: bool) -> dict:
     }
 
 
-# Resolve a list of tokens to WLASL vocabulary entries using bigram, exact, then fuzzy match
+# Resolve a list of tokens to WLASL vocabulary entries using multilingual, bigram, exact, then fuzzy match
 def _resolve_tokens(tokens: list[str]) -> list[dict]:
     results = []
     i = 0
     while i < len(tokens):
+        # 1. Check trigrams in multilingual map and WLASL lookup
+        if i + 2 < len(tokens):
+            trigram = f"{tokens[i]} {tokens[i+1]} {tokens[i+2]}"
+            if trigram in _MULTILINGUAL_MAP and _MULTILINGUAL_MAP[trigram] in _WORD_LOOKUP:
+                matched = _MULTILINGUAL_MAP[trigram]
+                results.append(_make_entry(matched, trigram, fuzzy=False))
+                i += 3
+                continue
+            if trigram in _WORD_LOOKUP:
+                results.append(_make_entry(trigram, trigram, fuzzy=False))
+                i += 3
+                continue
+
+        # 2. Check bigrams in multilingual map and WLASL lookup
         if i + 1 < len(tokens):
             bigram = f"{tokens[i]} {tokens[i+1]}"
+            if bigram in _MULTILINGUAL_MAP and _MULTILINGUAL_MAP[bigram] in _WORD_LOOKUP:
+                matched = _MULTILINGUAL_MAP[bigram]
+                results.append(_make_entry(matched, bigram, fuzzy=False))
+                i += 2
+                continue
             if bigram in _WORD_LOOKUP:
                 results.append(_make_entry(bigram, bigram, fuzzy=False))
                 i += 2
@@ -157,11 +274,20 @@ def _resolve_tokens(tokens: list[str]) -> list[dict]:
 
         word = tokens[i]
 
+        # 3. Check single token in multilingual map (Hindi / Marathi -> English sign gloss)
+        if word in _MULTILINGUAL_MAP and _MULTILINGUAL_MAP[word] in _WORD_LOOKUP:
+            matched = _MULTILINGUAL_MAP[word]
+            results.append(_make_entry(matched, word, fuzzy=False))
+            i += 1
+            continue
+
+        # 4. Check exact English WLASL sign gloss
         if word in _WORD_LOOKUP:
             results.append(_make_entry(word, word, fuzzy=False))
             i += 1
             continue
 
+        # 5. English Stemming & Fuzzy matching
         match = _fuzzy_match(word)
         if match:
             results.append(_make_entry(match, word, fuzzy=True))

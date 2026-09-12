@@ -8,6 +8,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import BrandLogo from './BrandLogo';
 
 /* ── SVG icon components ─────────────────────────────────── */
 const Icon = ({ d, size = 16 }) => (
@@ -79,43 +80,53 @@ export default function Sidebar({ open, onClose }) {
           padding: '0 1.25rem',
           height: 'var(--topbar-height)',
           borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', gap: '.625rem',
+          display: 'flex', alignItems: 'center', gap: '.65rem',
           flexShrink: 0,
         }}>
-          {/* Wordmark icon — geometric G */}
-          <div style={{
-            width: 30, height: 30, borderRadius: 7,
-            background: 'var(--color-primary)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 11V6.5a2.5 2.5 0 00-5 0v5M5 11h14M5 11a7 7 0 0014 0" />
-            </svg>
+          {/* Recreated Brand Logo */}
+          <BrandLogo size={32} />
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.975rem', letterSpacing: '-.02em', color: 'var(--text-main)' }}>
+              GestureBridge
+            </span>
           </div>
-          <span style={{ fontWeight: 700, fontSize: '.9rem', letterSpacing: '-.01em', color: 'var(--text-main)' }}>
-            GestureBridge
-          </span>
+        </div>
+
+        {/* Engine status indicator */}
+        <div style={{ padding: '.65rem 1rem .35rem' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '.45rem',
+            padding: '.35rem .6rem',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
+            fontSize: '.72rem',
+            fontWeight: 600,
+            color: 'var(--text-muted)',
+          }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-success)', flexShrink: 0 }} />
+            <span>Engine Active · On-Device</span>
+          </div>
         </div>
 
         {/* User block */}
         <div style={{
-          padding: '.875rem 1.25rem',
+          padding: '.75rem 1rem',
           borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', gap: '.625rem',
+          display: 'flex', alignItems: 'center', gap: '.65rem',
           flexShrink: 0,
         }}>
           <div style={{
-            width: 32, height: 32, borderRadius: '50%',
+            width: 34, height: 34, borderRadius: 'var(--radius-md)',
             background: 'var(--color-primary)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 600, fontSize: '.8rem', flexShrink: 0,
+            color: '#fff', fontWeight: 700, fontSize: '.825rem', flexShrink: 0,
+            boxShadow: 'var(--shadow-xs)',
           }}>
             {user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
           <div style={{ overflow: 'hidden', minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: '.8375rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontWeight: 600, fontSize: '.85rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user?.name || 'User'}
             </div>
             <div style={{ fontSize: '.725rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -126,7 +137,7 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '.75rem .75rem 0' }}>
-          <div className="section-label">Menu</div>
+          <div className="section-label" style={{ padding: '.35rem .6rem .45rem', fontSize: '.68rem', letterSpacing: '.08em' }}>Workspace</div>
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.path}
@@ -134,20 +145,20 @@ export default function Sidebar({ open, onClose }) {
               onClick={onClose}
               className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
             >
-              <Icon d={Icons[item.icon]} />
+              <Icon d={Icons[item.icon]} size={17} />
               {item.label}
             </NavLink>
           ))}
         </nav>
 
         {/* Bottom actions */}
-        <div style={{ padding: '.75rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '.125rem' }}>
+        <div style={{ padding: '.75rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '.25rem' }}>
           <button
             onClick={toggleTheme}
             className="nav-link"
             style={{ width: '100%', textAlign: 'left' }}
           >
-            <Icon d={theme === 'light' ? Icons.moon : Icons.sun} />
+            <Icon d={theme === 'light' ? Icons.moon : Icons.sun} size={16} />
             {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
           </button>
           <button
@@ -155,7 +166,7 @@ export default function Sidebar({ open, onClose }) {
             className="nav-link"
             style={{ width: '100%', textAlign: 'left', color: 'var(--color-error)' }}
           >
-            <Icon d={Icons.logout} />
+            <Icon d={Icons.logout} size={16} />
             Sign Out
           </button>
         </div>

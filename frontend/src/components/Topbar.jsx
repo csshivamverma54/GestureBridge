@@ -57,16 +57,47 @@ export default function Topbar({ title, onMenuClick }) {
         <MenuIcon />
       </button>
 
-      {/* Page title */}
-      <span style={{
-        flex: 1,
-        fontSize: '.8125rem',
-        fontWeight: 500,
+      {/* Page title / breadcrumb */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '.6rem' }}>
+        <span style={{
+          fontSize: '.75rem',
+          fontWeight: 600,
+          color: 'var(--text-light)',
+          textTransform: 'uppercase',
+          letterSpacing: '.06em',
+        }}>
+          Workspace
+        </span>
+        <span style={{ color: 'var(--border-strong)', fontSize: '.75rem' }}>/</span>
+        <span style={{
+          fontSize: '.85rem',
+          fontWeight: 600,
+          fontFamily: 'var(--font-display)',
+          color: 'var(--text-main)',
+          letterSpacing: '-.01em',
+        }}>
+          {title}
+        </span>
+      </div>
+
+      {/* Top telemetry tag */}
+      <div style={{
+        display: 'none',
+        alignItems: 'center',
+        gap: '.4rem',
+        padding: '.25rem .6rem',
+        borderRadius: 'var(--radius-sm)',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border)',
+        fontSize: '.75rem',
         color: 'var(--text-muted)',
-        letterSpacing: '.01em',
-      }}>
-        {title}
-      </span>
+      }} className="topbar-telemetry">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0110 0v4" />
+        </svg>
+        <span style={{ fontWeight: 500 }}>Zero Server Relay</span>
+      </div>
 
       {/* Theme toggle */}
       <button

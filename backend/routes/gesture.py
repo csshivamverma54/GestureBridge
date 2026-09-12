@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 
 from flask import Blueprint, jsonify, request
 
@@ -63,15 +63,17 @@ def predict():
     return jsonify(response), 200
 
 
-# Convert an ASL gloss sequence and NMM summary into an English sentence
+# Convert an ASL gloss sequence and NMM summary into an English or multilingual sentence
 @gesture.route("/generate-sentence", methods=["POST"])
 def generate_sentence_route():
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "Request body must be JSON"}), 400
 
-    glosses     = data.get("glosses", [])
-    nmm_payload = data.get("nmm", {})
+    glosses         = data.get("glosses", [])
+    nmm_payload     = data.get("nmm", {})
+    spoken_language = data.get("spoken_language") or data.get("language") or "English"
+    sign_language   = data.get("sign_language", "ASL")
 
     if not isinstance(glosses, list) or not glosses:
         return jsonify({"error": "Field 'glosses' must be a non-empty list"}), 400
@@ -92,14 +94,15 @@ def generate_sentence_route():
             if mouth_v  > 0.25: cues.append("intensifier (mouth open)")
             nmm_ctx = (" NMM signals: " + "; ".join(cues) + ".") if cues else ""
             gloss_str = " ".join(g.upper() for g in glosses)
+            script_note = " in Devanagari script" if spoken_language.lower() in ("hindi", "marathi") else ""
             prompt = (
                 "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
-                "You are an expert ASL-to-English interpreter. "
-                "Convert the ASL gloss sequence into a single fluent English sentence. "
-                "ASL uses topic-comment word order; reorder to natural English SVO. "
-                "Apply any NMM cues provided. Output ONLY the English sentence.\n"
+                f"You are an expert {sign_language}-to-{spoken_language} interpreter. "
+                f"Convert the sign gloss sequence into a single fluent {spoken_language} sentence{script_note}. "
+                "Sign language uses topic-comment word order; reorder to natural spoken word order. "
+                f"Apply any NMM cues provided. Output ONLY the {spoken_language} sentence.\n"
                 "<|eot_id|><|start_header_id|>user<|end_header_id|>\n"
-                f"ASL glosses: {gloss_str}.{nmm_ctx}\n"
+                f"Glosses: {gloss_str}.{nmm_ctx}\n"
                 "<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n"
             )
             sentence = wx_generate(prompt, max_new_tokens=100, temperature=0.2,
@@ -107,12 +110,13 @@ def generate_sentence_route():
             sentence = sentence.replace("<|eot_id|>", "").strip()
             if sentence:
                 return jsonify({"sentence": sentence, "glosses": glosses,
-                                "nmm": nmm_payload, "source": "watsonx"}), 200
+                                "nmm": nmm_payload, "source": "watsonx",
+                                "spoken_language": spoken_language, "sign_language": sign_language}), 200
     except Exception:  # noqa: BLE001
         pass
 
     try:
-        sentence = generate_sentence(glosses, nmm_payload)
+        sentence = generate_sentence(glosses, nmm_payload, spoken_language=spoken_language)
     except Exception as exc:  # noqa: BLE001
         return jsonify({"error": f"Sentence generation failed: {str(exc)}"}), 500
 
@@ -121,6 +125,8 @@ def generate_sentence_route():
         "glosses":  glosses,
         "nmm":      nmm_payload,
         "source":   "rule-based",
+        "spoken_language": spoken_language,
+        "sign_language": sign_language,
     }), 200
 
 
@@ -148,7 +154,8 @@ def generate_letter_sentence_route():
     if not data:
         return jsonify({"error": "Request body must be JSON"}), 400
 
-    letters = data.get("letters", "")
+    letters         = data.get("letters", "")
+    spoken_language = data.get("spoken_language") or data.get("language") or "English"
     if not isinstance(letters, str):
         return jsonify({"error": "Field 'letters' must be a string"}), 400
 
@@ -174,15 +181,29 @@ def generate_letter_sentence_route():
             payload     = _json.loads(raw)
             best        = payload.get("word", word)
             suggestions = payload.get("suggestions", [])
-            return jsonify({"sentence": best, "suggestions": suggestions,
-                            "source": "watsonx"}), 200
+            from ml.sentence_generator import translate_sentence
+            trans = translate_sentence(best, [best], spoken_language)
+            return jsonify({
+                "sentence": best,
+                "translation": trans if trans != best else None,
+                "suggestions": suggestions,
+                "source": "watsonx",
+                "spoken_language": spoken_language,
+            }), 200
     except Exception:  # noqa: BLE001
         pass
 
     suggestions = LetterSession.suggest(word, n=3)
     best = suggestions[0] if suggestions else word
-    return jsonify({"sentence": best, "suggestions": suggestions,
-                    "source": "rule-based"}), 200
+    from ml.sentence_generator import translate_sentence
+    trans = translate_sentence(best, [best], spoken_language)
+    return jsonify({
+        "sentence": best,
+        "translation": trans if trans != best else None,
+        "suggestions": suggestions,
+        "source": "rule-based",
+        "spoken_language": spoken_language,
+    }), 200
 
 
 # Return whether the gesture and letter ML models are loaded and ready

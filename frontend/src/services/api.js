@@ -116,18 +116,18 @@ export const predictLetter = (landmarks, indexTipXY = null) =>
   });
 
 /**
- * POST /generate-sentence  { glosses, nmm }
- * → { sentence, glosses, nmm }
+ * POST /generate-sentence  { glosses, nmm, spoken_language, sign_language }
+ * → { sentence, glosses, nmm, spoken_language, sign_language }
  */
-export const generateSentence = (glosses, nmm = {}) =>
-  api.post('/generate-sentence', { glosses, nmm });
+export const generateSentence = (glosses, nmm = {}, spokenLanguage = 'English', signLanguage = 'ASL') =>
+  api.post('/generate-sentence', { glosses, nmm, spoken_language: spokenLanguage, sign_language: signLanguage });
 
 /**
- * POST /generate-letter-sentence  { letters }
- * → { sentence, suggestions[] }
+ * POST /generate-letter-sentence  { letters, spoken_language }
+ * → { sentence, suggestions[], translation? }
  */
-export const generateLetterSentence = (letters) =>
-  api.post('/generate-letter-sentence', { letters });
+export const generateLetterSentence = (letters, spokenLanguage = 'English') =>
+  api.post('/generate-letter-sentence', { letters, spoken_language: spokenLanguage });
 
 /** GET /model/status */
 export const getModelStatus = () => api.get('/model/status');
@@ -139,19 +139,31 @@ export const reloadModel = () => api.post('/model/reload');
 // HISTORY
 // ═══════════════════════════════════════════════════════════════
 
-/** GET /history/:userId */
-export const getHistory = (userId) => api.get(`/history/${userId}`);
+/** GET /history/:userId? (or /history) */
+export const getHistory = (userId, limit = 500, page = 1, mode = null) => {
+  const cleanId = (userId || '').trim();
+  const path = cleanId ? `/history/${encodeURIComponent(cleanId)}` : '/history';
+  const params = new URLSearchParams();
+  if (limit) params.set('limit', limit);
+  if (page && page > 1) params.set('page', page);
+  if (mode && mode !== 'all') params.set('mode', mode);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return api.get(`${path}${query}`);
+};
+
+/** POST /history { user_id, predicted_text, confidence?, top5?, nmm? } */
+export const saveHistory = (payload) => api.post('/history', payload);
 
 // ═══════════════════════════════════════════════════════════════
 // TEXT TO SIGN
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * POST /text-to-sign  { text, language? }
+ * POST /text-to-sign  { text, language?, sign_language? }
  * → { words, coverage, total_words, found_words }
  */
-export const textToSign = (text, language = 'ASL') =>
-  api.post('/text-to-sign', { text, language });
+export const textToSign = (text, language = 'English', signLanguage = 'ASL') =>
+  api.post('/text-to-sign', { text, language, spoken_language: language, sign_language: signLanguage });
 
 /** GET /text-to-sign/vocabulary → { words[], count } */
 export const getVocabulary = () => api.get('/text-to-sign/vocabulary');

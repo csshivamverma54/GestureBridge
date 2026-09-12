@@ -1,0 +1,21 @@
+﻿<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="118" fill="#FFFFFF"/>
+  <rect x="2" y="2" width="508" height="508" rx="116" stroke="#E5E7EB" stroke-width="4"/>
+  <!-- Bar 1: Outer Left Acoustic Wave -->
+  <rect x="116" y="220" width="24" height="72" rx="12" fill="#1E293B"/>
+  <!-- Bar 2: Mid Left Acoustic Wave with Sync Dot -->
+  <rect x="156" y="180" width="24" height="152" rx="12" fill="#1E293B"/>
+  <circle cx="168" cy="256" r="6" fill="#FFFFFF"/>
+  <!-- Bar 3: Tall Left Acoustic Wave -->
+  <rect x="196" y="144" width="24" height="224" rx="12" fill="#1E293B"/>
+  <!-- Bar 4: Center Neural Bridge (Royal Blue) with Core Sync Dot -->
+  <rect x="244" y="120" width="24" height="272" rx="12" fill="#2563EB"/>
+  <circle cx="256" cy="256" r="6" fill="#FFFFFF"/>
+  <!-- Bar 5: Right Transition Wave (Azure Blue) -->
+  <rect x="292" y="144" width="24" height="224" rx="12" fill="#4F83F5"/>
+  <!-- Bar 6: Mid Right Visual Gesture Wave (Amber) with Sync Dot -->
+  <rect x="332" y="180" width="24" height="152" rx="12" fill="#F59E0B"/>
+  <circle cx="344" cy="256" r="6" fill="#FFFFFF"/>
+  <!-- Bar 7: Outer Right Visual Gesture Wave (Amber) -->
+  <rect x="372" y="220" width="24" height="72" rx="12" fill="#F59E0B"/>
+</svg>
