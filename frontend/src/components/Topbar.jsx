@@ -1,5 +1,5 @@
 /**
- * Topbar — fixed header with breadcrumb title, hamburger (mobile), theme toggle.
+ * Topbar — fixed glassmorphic header with breadcrumb title, hamburger (mobile), theme toggle.
  */
 
 import React from 'react';
@@ -34,15 +34,17 @@ export default function Topbar({ title, onMenuClick }) {
 
   return (
     <header
-      className="topbar"
+      className="topbar glass-surface"
       style={{
         position: 'fixed', top: 0,
         left: 'var(--sidebar-width)', right: 0,
         height: 'var(--topbar-height)',
-        background: 'var(--bg-card)',
+        borderTop: 'none',
+        borderLeft: 'none',
+        borderRight: 'none',
         borderBottom: '1px solid var(--border)',
         display: 'flex', alignItems: 'center',
-        padding: '0 1.5rem',
+        padding: '0 1.75rem',
         zIndex: 30,
         gap: '.875rem',
       }}
@@ -58,23 +60,23 @@ export default function Topbar({ title, onMenuClick }) {
       </button>
 
       {/* Page title / breadcrumb */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '.6rem' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '.55rem' }}>
         <span style={{
-          fontSize: '.75rem',
-          fontWeight: 600,
-          color: 'var(--text-light)',
+          fontSize: '.74rem',
+          fontWeight: 700,
+          color: 'var(--color-primary)',
           textTransform: 'uppercase',
-          letterSpacing: '.06em',
+          letterSpacing: '.08em',
         }}>
           Workspace
         </span>
-        <span style={{ color: 'var(--border-strong)', fontSize: '.75rem' }}>/</span>
+        <span style={{ color: 'var(--border-strong)', fontSize: '.8rem' }}>/</span>
         <span style={{
-          fontSize: '.85rem',
-          fontWeight: 600,
+          fontSize: '.92rem',
+          fontWeight: 700,
           fontFamily: 'var(--font-display)',
           color: 'var(--text-main)',
-          letterSpacing: '-.01em',
+          letterSpacing: '-.015em',
         }}>
           {title}
         </span>
@@ -84,19 +86,17 @@ export default function Topbar({ title, onMenuClick }) {
       <div style={{
         display: 'none',
         alignItems: 'center',
-        gap: '.4rem',
-        padding: '.25rem .6rem',
-        borderRadius: 'var(--radius-sm)',
-        background: 'var(--bg-surface)',
+        gap: '.45rem',
+        padding: '.32rem .85rem',
+        borderRadius: 'var(--radius-full)',
+        background: 'var(--bg-card)',
         border: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-xs)',
         fontSize: '.75rem',
         color: 'var(--text-muted)',
       }} className="topbar-telemetry">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-          <path d="M7 11V7a5 5 0 0110 0v4" />
-        </svg>
-        <span style={{ fontWeight: 500 }}>Zero Server Relay</span>
+        <span className="status-dot online" />
+        <span style={{ fontWeight: 600 }}>Zero Server Relay</span>
       </div>
 
       {/* Theme toggle */}

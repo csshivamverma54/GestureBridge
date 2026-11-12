@@ -1,19 +1,15 @@
 /**
  * AuthCallback — handles the redirect from Flask after Google OAuth.
  *
- * Flask redirects to:
- *   /auth/callback?token=<jwt>&name=<name>&email=<email>
- *   /auth/callback?error=<message>   (on failure)
- *
- * This page reads the query params, stores the session in localStorage
- * via AuthContext.login(), then navigates to /dashboard.
- * It renders nothing visible — it's a pure transition screen.
+ * Preserves 100% of OAuth token parsing and navigation while styling the
+ * transition view with the GestureBridge 3D studio aesthetic.
  */
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Spinner } from '../components/LoadingSpinner';
+import BrandLogo from '../components/BrandLogo';
 
 export default function AuthCallback() {
   const { login } = useAuth();
@@ -34,11 +30,7 @@ export default function AuthCallback() {
     }
 
     if (token && email) {
-      // login() writes to localStorage synchronously and schedules a React
-      // state update.  We must let that update flush before navigating so
-      // ProtectedRoute sees user !== null and doesn't redirect back to /login.
       login(token, { name: name || email.split('@')[0], email });
-      // requestAnimationFrame fires after React flushes the state update.
       requestAnimationFrame(() => navigate('/dashboard', { replace: true }));
     } else {
       navigate('/login', { replace: true });
@@ -49,28 +41,35 @@ export default function AuthCallback() {
     <div style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg-page)', gap: '1rem',
+      background: 'var(--bg-page)', padding: '1.5rem',
     }}>
-      {error ? (
-        <>
-          <p style={{ color: 'var(--color-error)', fontWeight: 600 }}>
-            Google sign-in failed
-          </p>
-          <p style={{ color: 'var(--text-muted)', fontSize: '.875rem', maxWidth: 360, textAlign: 'center' }}>
-            {error}
-          </p>
-          <p style={{ color: 'var(--text-light)', fontSize: '.8rem' }}>
-            Redirecting to login…
-          </p>
-        </>
-      ) : (
-        <>
-          <Spinner size="lg" />
-          <p style={{ color: 'var(--text-muted)', fontSize: '.9rem' }}>
-            Signing you in with Google…
-          </p>
-        </>
-      )}
+      <div className="card" style={{
+        maxWidth: 380, width: '100%', textAlign: 'center',
+        padding: '2.25rem 1.75rem', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', gap: '1rem',
+      }}>
+        <BrandLogo size={42} />
+        {error ? (
+          <>
+            <p style={{ color: 'var(--color-error)', fontWeight: 700, margin: 0 }}>
+              Google sign-in failed
+            </p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '.875rem', margin: 0 }}>
+              {error}
+            </p>
+            <p style={{ color: 'var(--text-light)', fontSize: '.8rem', margin: 0 }}>
+              Redirecting to login…
+            </p>
+          </>
+        ) : (
+          <>
+            <Spinner size="lg" />
+            <p style={{ color: 'var(--text-main)', fontSize: '.95rem', fontWeight: 600, margin: 0 }}>
+              Signing you in with Google…
+            </p>
+          </>
+        )}
+      </div>
     </div>
   );
 }

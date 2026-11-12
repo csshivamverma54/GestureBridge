@@ -1,63 +1,75 @@
 /**
  * Landing Page — GestureBridge public marketing page.
  *
- * Fixes applied:
- *  - Auth CTAs appear exactly once (nav) + once (hero). All other sections
- *    use the primary register CTA only — no repeated "Sign In" links.
- *  - Animated number counter on stats strip (runs once on scroll into view).
- *  - Full mobile responsiveness via CSS media queries.
- *  - Browser permissions notice for camera / microphone access.
+ * Redesigned in the warm-cream, glossy 3D claymorphism aesthetic inspired by
+ * the primary visual reference while preserving all existing routes, anchor
+ * sections, theme toggle, mobile menu, and animated counter stats.
  */
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useSettings } from '../context/SettingsContext';
 import BrandLogo from '../components/BrandLogo';
+import Hero3DScene, { Feature3DIcon } from '../components/Hero3DScene';
 
 /* ── SVG helpers ───────────────────────────────────────────────── */
 const Icon = ({ d, size = 20 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round">
     {Array.isArray(d) ? d.map((p, i) => <path key={i} d={p} />) : <path d={d} />}
   </svg>
 );
 const MoonIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
   </svg>
 );
 const SunIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
     <circle cx="12" cy="12" r="5" />
   </svg>
 );
 
 /* ── Static data ───────────────────────────────────────────────── */
-const FEATURES = [
-  { icon: ['M18 11V6.5a2.5 2.5 0 00-5 0v5M5 11h14M5 11a7 7 0 0014 0'], title: 'Sign to Text',        desc: 'Webcam-based real-time ASL recognition. The model reads hand gestures frame-by-frame and outputs text with a confidence score.', accent: '#2563EB', bg: '#EFF6FF' },
-  { icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',    title: 'Text to Sign',        desc: 'Type any word and GestureBridge retrieves the matching WLASL sign video — bridging communication in the other direction.', accent: '#7C3AED', bg: '#F5F3FF' },
-  { icon: ['M12 2L2 7l10 5 10-5-10-5z','M2 17l10 5 10-5','M2 12l10 5 10-5'], title: 'LSTM Neural Network', desc: 'Bidirectional LSTM trained on 200 + WLASL sign classes using bilateral landmark sequences for high-accuracy recognition.',   accent: '#0891B2', bg: '#ECFEFF' },
-  { icon: ['M12 8v4l3 3','M3.05 11a9 9 0 110 2'],                            title: 'Translation History',  desc: 'Every session is persisted to your account. Search, review, and export past translations at any time.',                     accent: '#059669', bg: '#ECFDF5' },
-  { icon: ['M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z','M12 9a3 3 0 100 6 3 3 0 000-6z'], title: 'Live Confidence',  desc: 'Each prediction ships with a percentage and top-5 alternatives so you can verify or refine the result instantly.', accent: '#D97706', bg: '#FFFBEB' },
-  { icon: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'],                  title: 'Secure & Private',    desc: 'JWT-authenticated accounts, optional privacy mode. No raw video is ever sent to the server — landmark processing is on-device.', accent: '#DC2626', bg: '#FFF1F2' },
+const KEY_HIGHLIGHTS = [
+  {
+    type: 'hand',
+    title: 'Natural Interaction',
+    desc: 'Use simple hand gestures for effortless, two-way communication.',
+  },
+  {
+    type: 'bolt',
+    title: 'Real-Time Response',
+    desc: 'Get instant feedback with low-latency on-device inference.',
+  },
+  {
+    type: 'cubes',
+    title: 'Wide Compatibility',
+    desc: 'Works smoothly in your browser across devices and platforms.',
+  },
 ];
 
-/**
- * STATS — items with `end` get a counter animation; others show `value` as-is.
- * format: optional function to render the final/animated number.
- */
+const FEATURES = [
+  { icon: ['M18 11V6.5a2.5 2.5 0 00-5 0v5M5 11h14M5 11a7 7 0 0014 0'], title: 'Sign to Text',        desc: 'Webcam-based real-time ASL recognition. The model reads hand gestures frame-by-frame and outputs text with a confidence score.', accent: '#6B4CFF', bg: '#F2EEFF' },
+  { icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',    title: 'Text to Sign',        desc: 'Type any word and GestureBridge retrieves the matching WLASL sign video — bridging communication in the other direction.', accent: '#EC4899', bg: '#FDF2F8' },
+  { icon: ['M12 2L2 7l10 5 10-5-10-5z','M2 17l10 5 10-5','M2 12l10 5 10-5'], title: 'LSTM Neural Network', desc: 'Bidirectional LSTM trained on 200+ WLASL sign classes using bilateral landmark sequences for high-accuracy recognition.',   accent: '#0EA5E9', bg: '#F0F9FF' },
+  { icon: ['M12 8v4l3 3','M3.05 11a9 9 0 110 2'],                            title: 'Translation History',  desc: 'Every session is persisted to your account. Search, review, and export past translations at any time.',                     accent: '#10B981', bg: '#ECFDF5' },
+  { icon: ['M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z','M12 9a3 3 0 100 6 3 3 0 000-6z'], title: 'Live Confidence',  desc: 'Each prediction ships with a percentage and top-5 alternatives so you can verify or refine the result instantly.', accent: '#F59E0B', bg: '#FFFBEB' },
+  { icon: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'],                  title: 'Secure & Private',    desc: 'JWT-authenticated accounts, optional privacy mode. No raw video is ever sent to the server — landmark processing is on-device.', accent: '#FB7185', bg: '#FFF1F2' },
+];
+
 const STATS = [
-  { end: 200, suffix: '+', label: 'Sign Classes',     icon: ['M12 2L2 7l10 5 10-5-10-5z','M2 17l10 5 10-5','M2 12l10 5 10-5'] },
-  { value: '< 1s',         label: 'Inference Latency', icon: ['M12 8v4l3 3','M3.05 11a9 9 0 110 2'] },
-  { value: 'WLASL',        label: 'Training Dataset',  icon: ['M4 19.5A2.5 2.5 0 016.5 17H20'] },
-  { end: 100, suffix: '%', label: 'Browser-Based',     icon: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'] },
+  { end: 200, suffix: '+', label: 'Sign Classes',     icon: ['M12 2L2 7l10 5 10-5-10-5z','M2 17l10 5 10-5','M2 12l10 5 10-5'], color: '#6B4CFF' },
+  { value: '< 1s',         label: 'Inference Latency', icon: ['M12 8v4l3 3','M3.05 11a9 9 0 110 2'], color: '#F59E0B' },
+  { value: 'WLASL',        label: 'Training Dataset',  icon: ['M4 19.5A2.5 2.5 0 016.5 17H20'], color: '#0EA5E9' },
+  { end: 100, suffix: '%', label: 'Browser-Based',     icon: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'], color: '#10B981' },
 ];
 
 const STEPS = [
-  { n:'01', title:'Enable Camera',    desc:'Grant webcam access. MediaPipe tracks 21 bilateral hand landmarks per frame directly in your browser — no video leaves your device.',                       icon:['M23 7l-7 5 7 5V7z','M1 5h15a2 2 0 012 2v10a2 2 0 01-2 2H1'] },
-  { n:'02', title:'Perform a Sign',   desc:'Sign naturally in front of the camera. The LSTM model analyses a 45-frame window and predicts the word with a confidence score.',                          icon:['M18 11V6.5a2.5 2.5 0 00-5 0v5M5 11h14M5 11a7 7 0 0014 0'] },
-  { n:'03', title:'Read the Output',  desc:'Stable predictions are committed to a sentence automatically. Copy the text or use undo and clear to refine your translation.',                            icon:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
+  { n:'01', title:'Enable Camera',    desc:'Grant webcam access. MediaPipe tracks 21 bilateral hand landmarks per frame directly in your browser — no video leaves your device.',                       icon:['M23 7l-7 5 7 5V7z','M1 5h15a2 2 0 012 2v10a2 2 0 01-2 2H1'], accent:'#6B4CFF' },
+  { n:'02', title:'Perform a Sign',   desc:'Sign naturally in front of the camera. The LSTM model analyses a 45-frame window and predicts the word with a confidence score.',                          icon:['M18 11V6.5a2.5 2.5 0 00-5 0v5M5 11h14M5 11a7 7 0 0014 0'], accent:'#F59E0B' },
+  { n:'03', title:'Read the Output',  desc:'Stable predictions are committed to a sentence automatically. Copy the text or use undo and clear to refine your translation.',                            icon:'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z', accent:'#10B981' },
 ];
 
 /* ── Animated counter hook ─────────────────────────────────────── */
@@ -69,7 +81,6 @@ function useCounter(end, duration = 1400, started = false) {
     const step = (ts) => {
       if (!startTime) startTime = ts;
       const progress = Math.min((ts - startTime) / duration, 1);
-      // ease-out quad
       const eased = 1 - (1 - progress) * (1 - progress);
       setCount(Math.floor(eased * end));
       if (progress < 1) requestAnimationFrame(step);
@@ -80,21 +91,33 @@ function useCounter(end, duration = 1400, started = false) {
 }
 
 /* ── Single stat cell with optional counter ────────────────────── */
-function StatCell({ stat, started, dark }) {
+function StatCell({ stat, started }) {
   const count = useCounter(stat.end, 1400, started);
   const display = stat.end != null
     ? `${count}${stat.suffix || ''}`
     : stat.value;
 
   return (
-    <div style={{ textAlign: 'center' }}>
-      <div style={{ display:'flex', justifyContent:'center', marginBottom:'.4rem', opacity:.7 }}>
-        <Icon d={stat.icon} size={16} />
+    <div style={{ textAlign: 'center', padding: '.75rem .5rem' }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: 12,
+        background: `${stat.color}18`,
+        color: stat.color,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        margin: '0 auto .65rem',
+      }}>
+        <Icon d={stat.icon} size={18} />
       </div>
-      <div style={{ fontSize:'1.75rem', fontWeight:800, color:'var(--color-primary)', letterSpacing:'-.03em', lineHeight:1, fontVariantNumeric:'tabular-nums' }}>
+      <div style={{
+        fontSize: '1.9rem', fontWeight: 800,
+        fontFamily: 'var(--font-display)',
+        color: 'var(--text-main)',
+        letterSpacing: '-.03em', lineHeight: 1,
+        fontVariantNumeric: 'tabular-nums',
+      }}>
         {display}
       </div>
-      <div style={{ fontSize:'.78rem', color:'var(--text-muted)', marginTop:'.3rem', fontWeight:500 }}>
+      <div style={{ fontSize: '.8rem', color: 'var(--text-muted)', marginTop: '.4rem', fontWeight: 600 }}>
         {stat.label}
       </div>
     </div>
@@ -104,76 +127,129 @@ function StatCell({ stat, started, dark }) {
 /* ── Main component ────────────────────────────────────────────── */
 export default function Landing() {
   const { toggleTheme, theme } = useSettings();
-  const [scrolled,      setScrolled]      = useState(false);
-  const [statsVisible,  setStatsVisible]  = useState(false);
+  const [scrolled,       setScrolled]       = useState(false);
+  const [statsVisible,   setStatsVisible]   = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const statsRef = useRef(null);
   const dark = theme === 'dark';
 
-  // Sticky nav scroll effect
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // IntersectionObserver to trigger counter when stats strip enters viewport
   useEffect(() => {
     if (!statsRef.current) return;
     const obs = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { setStatsVisible(true); obs.disconnect(); } },
-      { threshold: 0.3 }
+      { threshold: 0.25 }
     );
     obs.observe(statsRef.current);
     return () => obs.disconnect();
   }, []);
 
-  // Close mobile menu on route link click
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
-
-  const featureBg = (bg, accent) => dark ? `${accent}18` : bg;
+  const featureBg = (bg, accent) => dark ? `${accent}1F` : bg;
 
   return (
-    <div style={{ minHeight:'100vh', background:'var(--bg-page)', color:'var(--text-main)' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--bg-page)',
+      color: 'var(--text-main)',
+      position: 'relative',
+      overflowX: 'hidden',
+    }}>
+      {/* ══════════════════════════════════════════
+          AMBIENT BACKGROUND CURVES & GLOWS
+      ══════════════════════════════════════════ */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0,
+          height: 680,
+          background: dark
+            ? 'radial-gradient(ellipse 75% 65% at 75% 22%, rgba(124, 92, 255, 0.22), transparent 70%), radial-gradient(ellipse 55% 50% at 15% 18%, rgba(45, 212, 191, 0.08), transparent 65%)'
+            : 'radial-gradient(ellipse 72% 68% at 78% 24%, rgba(167, 139, 250, 0.24), transparent 70%), radial-gradient(ellipse 55% 55% at 52% 48%, rgba(254, 215, 170, 0.30), transparent 68%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      />
+
+      {/* Decorative subtle curved arc line across hero */}
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 1440 420"
+        preserveAspectRatio="none"
+        style={{
+          position: 'absolute',
+          top: 140,
+          left: 0,
+          width: '100%',
+          height: 360,
+          pointerEvents: 'none',
+          zIndex: 0,
+          opacity: dark ? 0.14 : 0.45,
+        }}
+      >
+        <path
+          d="M-60 360 C 260 360, 420 260, 720 190 C 1020 120, 1220 40, 1500 20"
+          fill="none"
+          stroke={dark ? '#8468FF' : '#DDD6FE'}
+          strokeWidth="2"
+        />
+      </svg>
 
       {/* ══════════════════════════════════════════
-          NAVIGATION  — auth links appear here only
+          NAVIGATION
       ══════════════════════════════════════════ */}
       <nav style={{
-        position:'sticky', top:0, zIndex:200,
+        position: 'sticky', top: 0, zIndex: 200,
         background: scrolled
-          ? (dark ? 'rgba(13,17,23,0.94)' : 'rgba(255,255,255,0.94)')
-          : 'var(--bg-card)',
-        backdropFilter: scrolled ? 'blur(12px)' : 'none',
-        WebkitBackdropFilter: scrolled ? 'blur(12px)' : 'none',
-        borderBottom:'1px solid var(--border)',
-        padding:'0 clamp(1rem, 4vw, 2.5rem)',
-        height:60,
-        display:'flex', alignItems:'center', gap:'.75rem',
-        transition:'background 0.2s',
+          ? (dark ? 'rgba(13, 12, 20, 0.88)' : 'rgba(250, 248, 245, 0.88)')
+          : 'transparent',
+        backdropFilter: scrolled ? 'blur(16px)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'blur(16px)' : 'none',
+        borderBottom: scrolled ? '1px solid var(--border)' : '1px solid transparent',
+        padding: '0 clamp(1rem, 4vw, 3rem)',
+        height: 72,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem',
+        transition: 'background 0.25s, border-color 0.25s',
       }}>
         {/* Brand */}
-        <Link to="/" onClick={closeMobileMenu} style={{ display:'flex', alignItems:'center', gap:'.55rem', flex:1, textDecoration:'none' }}>
-          <BrandLogo size={30} />
-          <span style={{ fontWeight:800, fontSize:'.95rem', letterSpacing:'-.02em', color:'var(--text-main)' }}>
+        <Link to="/" onClick={closeMobileMenu} style={{ display: 'flex', alignItems: 'center', gap: '.6rem', textDecoration: 'none' }}>
+          <BrandLogo size={36} />
+          <span style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: '1.18rem',
+            letterSpacing: '-.03em',
+            color: 'var(--text-main)',
+          }}>
             GestureBridge
           </span>
         </Link>
 
-        {/* Desktop anchor links */}
+        {/* Centered Desktop Navigation Links */}
         <div className="landing-desktop-links">
-          <a href="#features"    className="landing-nav-link">Features</a>
+          <a href="#top"          className="landing-nav-link active-nav">Home</a>
+          <a href="#key-features" className="landing-nav-link">Features</a>
           <a href="#how-it-works" className="landing-nav-link">How It Works</a>
           <a href="#permissions"  className="landing-nav-link">Permissions</a>
         </div>
 
         {/* Theme + auth — desktop */}
         <div className="landing-desktop-auth">
-          <button onClick={toggleTheme} className="btn-icon" aria-label="Toggle theme">
+          <button onClick={toggleTheme} className="btn-icon" aria-label="Toggle theme" title="Toggle theme">
             {dark ? <SunIcon /> : <MoonIcon />}
           </button>
-          <Link to="/login" className="btn btn-ghost btn-sm">Sign In</Link>
-          <Link to="/register" className="btn btn-primary btn-sm" style={{ fontWeight:600 }}>Get Started</Link>
+          <Link to="/login" className="btn btn-ghost btn-sm" style={{ borderColor: 'transparent', fontWeight: 600 }}>
+            Sign In
+          </Link>
+          <Link to="/register" className="btn btn-ink btn-sm" style={{ padding: '.58rem 1.25rem' }}>
+            Get Started <span aria-hidden="true">→</span>
+          </Link>
         </div>
 
         {/* Mobile: theme + hamburger */}
@@ -190,231 +266,360 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* Mobile dropdown menu — nav links only, no duplicate auth buttons */}
+      {/* Mobile dropdown menu */}
       {mobileMenuOpen && (
-        <div style={{
-          position:'sticky', top:60, zIndex:190,
-          background:'var(--bg-card)',
-          borderBottom:'1px solid var(--border)',
-          padding:'.5rem 1.25rem .75rem',
-          display:'flex', flexDirection:'column', gap:'.25rem',
+        <div className="glass-surface" style={{
+          position: 'sticky', top: 72, zIndex: 190,
+          borderBottom: '1px solid var(--border)',
+          padding: '.75rem 1.25rem 1rem',
+          display: 'flex', flexDirection: 'column', gap: '.35rem',
         }}>
-          <a href="#features"     className="landing-nav-link" onClick={closeMobileMenu} style={{ display:'block', padding:'.6rem .75rem' }}>Features</a>
-          <a href="#how-it-works" className="landing-nav-link" onClick={closeMobileMenu} style={{ display:'block', padding:'.6rem .75rem' }}>How It Works</a>
-          <a href="#permissions"  className="landing-nav-link" onClick={closeMobileMenu} style={{ display:'block', padding:'.6rem .75rem' }}>Permissions</a>
+          <a href="#top"          className="landing-nav-link" onClick={closeMobileMenu} style={{ display: 'block', padding: '.6rem .75rem' }}>Home</a>
+          <a href="#key-features" className="landing-nav-link" onClick={closeMobileMenu} style={{ display: 'block', padding: '.6rem .75rem' }}>Features</a>
+          <a href="#how-it-works" className="landing-nav-link" onClick={closeMobileMenu} style={{ display: 'block', padding: '.6rem .75rem' }}>How It Works</a>
+          <a href="#permissions"  className="landing-nav-link" onClick={closeMobileMenu} style={{ display: 'block', padding: '.6rem .75rem' }}>Permissions</a>
+          <div style={{ display: 'flex', gap: '.5rem', marginTop: '.5rem', paddingTop: '.5rem', borderTop: '1px solid var(--border)' }}>
+            <Link to="/login" onClick={closeMobileMenu} className="btn btn-outline btn-sm" style={{ flex: 1 }}>Sign In</Link>
+            <Link to="/register" onClick={closeMobileMenu} className="btn btn-ink btn-sm" style={{ flex: 1 }}>Get Started →</Link>
+          </div>
         </div>
       )}
 
       {/* ══════════════════════════════════════════
-          HERO — Stitch Warm Kinetic Clarity
+          HERO SECTION
       ══════════════════════════════════════════ */}
-      <section style={{
-        padding:'clamp(3rem, 6vw, 5rem) clamp(1rem, 4vw, 2.5rem) clamp(2.5rem, 5vw, 4rem)',
-        maxWidth: 1200, margin:'0 auto',
-      }}>
+      <section
+        id="top"
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          padding: 'clamp(1.75rem, 4vw, 3.25rem) clamp(1rem, 4vw, 3rem) clamp(2rem, 4vw, 3.5rem)',
+          maxWidth: 1240,
+          margin: '0 auto',
+        }}
+      >
+        {/* Subtle decorative 3D golden capsule peeking bottom-left */}
+        <div
+          aria-hidden="true"
+          className="hide-on-mobile float-slow"
+          style={{
+            position: 'absolute',
+            left: '-56px',
+            bottom: '32px',
+            width: 84,
+            height: 44,
+            borderRadius: 999,
+            background: 'linear-gradient(135deg, #FDE68A 0%, #F59E0B 60%, #D97706 100%)',
+            boxShadow: '0 16px 32px rgba(245, 158, 11, 0.28)',
+            transform: 'rotate(24deg)',
+            pointerEvents: 'none',
+            opacity: dark ? 0.65 : 0.9,
+          }}
+        />
+
         <div className="landing-hero-grid" style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1.15fr) minmax(0, 0.85fr)',
-          gap: 'clamp(2rem, 4vw, 3.5rem)',
+          gridTemplateColumns: 'minmax(0, 1.05fr) minmax(0, 0.95fr)',
+          gap: 'clamp(1.5rem, 4vw, 3rem)',
           alignItems: 'center',
         }}>
-          {/* Left Column: Headline & Action */}
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:'.5rem', marginBottom:'1.25rem' }}>
-              <span className="badge badge-neutral" style={{ gap:'.4rem', padding:'.3rem .75rem', fontSize:'.72rem', fontWeight: 600 }}>
-                <span className="status-dot online" style={{ width: 6, height: 6 }} />
-                Zero Server Video Streaming · Privacy Standard
+          {/* Left Column: Expressive Headline & Pill CTAs */}
+          <div style={{ textAlign: 'left', position: 'relative', zIndex: 2 }}>
+            <div style={{ marginBottom: '1.35rem' }}>
+              <span className="pill-badge">
+                <span className="status-dot online" />
+                <span>AI-Powered Gesture Recognition</span>
               </span>
             </div>
 
             <h1 style={{
-              marginBottom:'1.25rem',
-              lineHeight: 1.15,
-              fontSize: 'clamp(2rem, 3.8vw, 3rem)',
+              marginBottom: '1.2rem',
+              lineHeight: 1.08,
+              fontSize: 'clamp(2.35rem, 4.8vw, 3.85rem)',
               fontFamily: 'var(--font-display)',
-              letterSpacing: '-0.025em',
+              fontWeight: 800,
+              letterSpacing: '-0.035em',
             }}>
-              Bridging Deaf and hearing conversation in real time, directly in your browser.
+              Control. Interact.
+              <br />
+              With a <span className="gradient-text">Gesture.</span>
             </h1>
 
             <p style={{
-              fontSize:'1rem',
-              color:'var(--text-muted)',
-              maxWidth: 540,
-              marginBottom:'2rem',
-              lineHeight: 1.7,
+              fontSize: '1.05rem',
+              color: 'var(--text-muted)',
+              maxWidth: 500,
+              marginBottom: '2rem',
+              lineHeight: 1.65,
             }}>
-              On-device MediaPipe landmark tracking runs 100% locally. Zero video streaming to servers,
-              guaranteed privacy. Instant two-way ASL translation with verified sub-50ms inference.
+              GestureBridge brings your hands to life — turning simple ASL &amp; ISL gestures into
+              real-time text and speech directly in your browser with zero video leaving your device.
             </p>
 
-            {/* CTAs */}
-            <div style={{ display:'flex', gap:'.875rem', alignItems: 'center', flexWrap:'wrap', marginBottom: '2.5rem' }}>
-              <Link to="/register" className="btn btn-primary btn-lg" style={{ gap:'.5rem', padding: '.75rem 1.6rem' }}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 11V6.5a2.5 2.5 0 00-5 0v5M5 11h14M5 11a7 7 0 0014 0" />
-                </svg>
-                Get Started
+            {/* Primary & Secondary Pill CTAs */}
+            <div style={{ display: 'flex', gap: '.9rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '2.5rem' }}>
+              <Link to="/register" className="btn btn-ink btn-lg" style={{ gap: '.65rem', padding: '.85rem 1.7rem' }}>
+                <span>Try It Now</span>
+                <span style={{
+                  width: 22, height: 22, borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.22)',
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.65rem',
+                }}>
+                  ▶
+                </span>
               </Link>
-              <a href="#how-it-works" className="btn btn-outline btn-lg" style={{ gap:'.5rem', padding: '.75rem 1.4rem' }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <polygon points="10 8 16 12 10 16 10 8" />
-                </svg>
-                How it works
+              <a href="#key-features" className="btn btn-outline btn-lg" style={{ padding: '.85rem 1.6rem' }}>
+                Learn More <span aria-hidden="true">↓</span>
               </a>
             </div>
 
-            {/* In-hero telemetry stats strip */}
+            {/* Clean Telemetry Strip */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '1rem',
-              paddingTop: '1.5rem',
+              gap: '1.25rem',
+              paddingTop: '1.4rem',
               borderTop: '1px solid var(--border)',
+              maxWidth: 480,
             }}>
               <div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>0ms</div>
-                <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '.15rem' }}>Cloud Transmission</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text-main)', letterSpacing: '-0.025em' }}>0ms</div>
+                <div style={{ fontSize: '.76rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '.15rem' }}>Cloud Transmission</div>
               </div>
               <div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--color-primary)', letterSpacing: '-0.02em' }}>21 Pts</div>
-                <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '.15rem' }}>3D Hand Coordinates</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--color-primary)', letterSpacing: '-0.025em' }}>21 Pts</div>
+                <div style={{ fontSize: '.76rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '.15rem' }}>3D Hand Coordinates</div>
               </div>
               <div>
-                <div style={{ fontSize: '1.35rem', fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--color-tertiary)', letterSpacing: '-0.02em' }}>98.4%</div>
-                <div style={{ fontSize: '.75rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '.15rem' }}>Vocabulary Accuracy</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--color-tertiary)', letterSpacing: '-0.025em' }}>98.4%</div>
+                <div style={{ fontSize: '.76rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: '.15rem' }}>Vocabulary Accuracy</div>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Stitch MediaPipe HUD preview card */}
-          <div className="card" style={{
-            padding: '1.25rem',
-            background: dark ? '#161B22' : '#FFFFFF',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-xl)',
-            boxShadow: 'var(--shadow-md)',
+          {/* Right Column: Interactive 3D Hand & Spatial Elements */}
+          <div>
+            <Hero3DScene dark={dark} />
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          KEY FEATURES ASYMMETRIC SHOWCASE (Ref Image Bottom)
+      ══════════════════════════════════════════ */}
+      <section
+        id="key-features"
+        style={{
+          position: 'relative',
+          zIndex: 2,
+          background: dark ? 'rgba(21, 20, 33, 0.72)' : 'rgba(255, 255, 255, 0.72)',
+          borderTop: '1px solid var(--border)',
+          borderBottom: '1px solid var(--border)',
+          borderRadius: '36px 36px 0 0',
+          padding: 'clamp(3rem, 5vw, 4.5rem) clamp(1rem, 4vw, 3rem)',
+          marginTop: '1rem',
+        }}
+      >
+        <div style={{ maxWidth: 1240, margin: '0 auto' }}>
+          <div className="key-features-split" style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 0.9fr) minmax(0, 2fr)',
+            gap: 'clamp(1.75rem, 4vw, 3rem)',
+            alignItems: 'center',
           }}>
-            {/* HUD Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '.45rem' }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-secondary)' }} />
-                <span style={{ fontSize: '.75rem', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  MEDIAPIPE 3D - v0.10
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-                <span className="badge badge-success" style={{ fontSize: '.68rem', padding: '.15rem .5rem' }}>
-                  ● Tracking Locked
-                </span>
-              </div>
-            </div>
-
-            {/* Hand tracking skeletal graphic canvas */}
-            <div style={{
-              background: dark ? '#0D1117' : '#1A1D24',
-              borderRadius: 'var(--radius-lg)',
-              padding: '1.75rem 1rem',
-              position: 'relative',
-              overflow: 'hidden',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 230,
-            }}>
-              {/* Background grid dots */}
-              <div style={{
-                position: 'absolute', inset: 0, opacity: 0.15,
-                backgroundImage: 'radial-gradient(circle, #94A3B8 1px, transparent 1px)',
-                backgroundSize: '16px 16px',
-              }} />
-
-              {/* Hand skeleton SVG */}
-              <svg width="220" height="190" viewBox="0 0 220 190" style={{ position: 'relative', zIndex: 2 }}>
-                {/* Connecting lines */}
-                <line x1="110" y1="170" x2="65" y2="120" stroke="#3B82F6" strokeWidth="1.75" />
-                <line x1="65" y1="120" x2="45" y2="70" stroke="#3B82F6" strokeWidth="1.75" />
-                <line x1="45" y1="70" x2="35" y2="45" stroke="#F59E0B" strokeWidth="1.75" />
-
-                <line x1="110" y1="170" x2="90" y2="105" stroke="#3B82F6" strokeWidth="1.75" />
-                <line x1="90" y1="105" x2="80" y2="60" stroke="#3B82F6" strokeWidth="1.75" />
-                <line x1="80" y1="60" x2="75" y2="30" stroke="#F59E0B" strokeWidth="1.75" />
-
-                <line x1="110" y1="170" x2="110" y2="95" stroke="#3B82F6" strokeWidth="1.75" />
-                <line x1="110" y1="95" x2="110" y2="50" stroke="#3B82F6" strokeWidth="1.75" />
-                <line x1="110" y1="50" x2="110" y2="20" stroke="#F59E0B" strokeWidth="1.75" />
-
-                <line x1="110" y1="170" x2="130" y2="105" stroke="#3B82F6" strokeWidth="1.75" />
-                <line x1="130" y1="105" x2="140" y2="60" stroke="#3B82F6" strokeWidth="1.75" />
-                <line x1="140" y1="60" x2="145" y2="30" stroke="#F59E0B" strokeWidth="1.75" />
-
-                <line x1="110" y1="170" x2="155" y2="125" stroke="#3B82F6" strokeWidth="1.75" />
-                <line x1="155" y1="125" x2="175" y2="85" stroke="#3B82F6" strokeWidth="1.75" />
-                <line x1="175" y1="85" x2="185" y2="55" stroke="#F59E0B" strokeWidth="1.75" />
-
-                {/* Palm boundary */}
-                <polygon points="110,170 65,120 90,105 110,95 130,105 155,125" fill="#2563EB" fillOpacity="0.12" stroke="#60A5FA" strokeWidth="1" strokeDasharray="3 3" />
-
-                {/* Keypoint nodes */}
-                <circle cx="110" cy="170" r="5" fill="#2563EB" stroke="#fff" strokeWidth="1.5" />
-                <circle cx="65" cy="120" r="3.5" fill="#60A5FA" />
-                <circle cx="45" cy="70" r="3.5" fill="#60A5FA" />
-                <circle cx="35" cy="45" r="4" fill="#F59E0B" stroke="#fff" strokeWidth="1.5" />
-
-                <circle cx="90" cy="105" r="3.5" fill="#60A5FA" />
-                <circle cx="80" cy="60" r="3.5" fill="#60A5FA" />
-                <circle cx="75" cy="30" r="4" fill="#F59E0B" stroke="#fff" strokeWidth="1.5" />
-
-                <circle cx="110" cy="95" r="3.5" fill="#60A5FA" />
-                <circle cx="110" cy="50" r="3.5" fill="#60A5FA" />
-                <circle cx="110" cy="20" r="4" fill="#F59E0B" stroke="#fff" strokeWidth="1.5" />
-
-                <circle cx="130" cy="105" r="3.5" fill="#60A5FA" />
-                <circle cx="140" cy="60" r="3.5" fill="#60A5FA" />
-                <circle cx="145" cy="30" r="4" fill="#F59E0B" stroke="#fff" strokeWidth="1.5" />
-
-                <circle cx="155" cy="125" r="3.5" fill="#60A5FA" />
-                <circle cx="175" cy="85" r="3.5" fill="#60A5FA" />
-                <circle cx="185" cy="55" r="4" fill="#F59E0B" stroke="#fff" strokeWidth="1.5" />
-              </svg>
-
-              {/* HUD readout box */}
-              <div style={{
-                position: 'absolute', bottom: 10, left: 10,
-                background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)',
-                padding: '.25rem .55rem', borderRadius: 4,
-                fontSize: '.68rem', fontFamily: 'var(--font-mono)', color: '#93C5FD',
-              }}>
-                Pose: [X: +0.24, Y: -0.12, Z: -0.08]
-              </div>
-            </div>
-
-            {/* Bottom HUD classifier footer */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '.75rem', fontSize: '.72rem', color: 'var(--text-muted)' }}>
-              <span>Active Model: <strong>WLASL-BiLSTM</strong></span>
-              <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-primary)', fontWeight: 600 }}>
-                ASL_OPEN_B [98.4%]
+            {/* Left Copy */}
+            <div>
+              <span className="badge badge-primary" style={{ marginBottom: '1rem' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-primary)' }} />
+                Key Features
               </span>
+              <h2 style={{
+                fontSize: 'clamp(1.75rem, 3.2vw, 2.35rem)',
+                fontWeight: 800,
+                lineHeight: 1.15,
+                letterSpacing: '-0.03em',
+                marginBottom: '.9rem',
+              }}>
+                Smart Gestures.
+                <br />
+                Endless <span className="gradient-text-warm">Possibilities.</span>
+              </h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '.94rem', marginBottom: '1.25rem', lineHeight: 1.65 }}>
+                Experience seamless interaction with our cutting-edge sign recognition and synthesis technology.
+              </p>
+              <a
+                href="#features"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '.4rem',
+                  color: 'var(--color-primary)',
+                  fontWeight: 700,
+                  fontSize: '.9rem',
+                }}
+              >
+                Explore Features <span aria-hidden="true">→</span>
+              </a>
+            </div>
+
+            {/* Right 3 Glossy 3D Cards */}
+            <div className="highlights-grid">
+              {KEY_HIGHLIGHTS.map((item) => (
+                <div
+                  key={item.title}
+                  className="card-3d"
+                  style={{
+                    padding: '1.85rem 1.4rem',
+                    textAlign: 'center',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '.9rem',
+                  }}
+                >
+                  <Feature3DIcon type={item.type} size={88} />
+                  <div>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 800, marginBottom: '.35rem' }}>
+                      {item.title}
+                    </h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '.84rem', lineHeight: 1.55, margin: 0 }}>
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════
-          PERMISSIONS INFO — camera / mic / device
+          STATS STRIP (Animated Counter)
+      ══════════════════════════════════════════ */}
+      <section
+        ref={statsRef}
+        style={{
+          padding: 'clamp(2.25rem, 4vw, 3.25rem) clamp(1rem, 4vw, 3rem)',
+          maxWidth: 1240,
+          margin: '0 auto',
+        }}
+      >
+        <div
+          className="card"
+          style={{
+            padding: '1.75rem 1.5rem',
+            background: dark ? 'var(--bg-card)' : 'linear-gradient(135deg, #FFFFFF 0%, #F7F4FF 100%)',
+          }}
+        >
+          <div className="stats-grid">
+            {STATS.map((s) => (
+              <StatCell key={s.label} stat={s} started={statsVisible} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          FULL FEATURES BENTO GRID
+      ══════════════════════════════════════════ */}
+      <section
+        id="features"
+        style={{
+          padding: 'clamp(2.5rem, 5vw, 4.5rem) clamp(1rem, 4vw, 3rem)',
+          maxWidth: 1240,
+          margin: '0 auto',
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: '2.75rem' }}>
+          <span className="badge badge-primary" style={{ marginBottom: '.75rem' }}>Capabilities</span>
+          <h2 style={{ marginBottom: '.65rem' }}>Everything you need for bi-directional sign translation</h2>
+          <p style={{ color: 'var(--text-muted)', maxWidth: 580, margin: '0 auto' }}>
+            Built with MediaPipe Holistic, a custom bidirectional LSTM neural network, and WLASL video synthesis.
+          </p>
+        </div>
+
+        <div className="features-grid">
+          {FEATURES.map((f) => (
+            <div key={f.title} className="card-3d" style={{ padding: '1.65rem', display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 16,
+                background: featureBg(f.bg, f.accent),
+                color: f.accent,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: `0 8px 18px -6px ${f.accent}40`,
+              }}>
+                <Icon d={f.icon} size={22} />
+              </div>
+              <h3 style={{ fontSize: '1.08rem', fontWeight: 800, margin: 0 }}>{f.title}</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '.875rem', lineHeight: 1.65, margin: 0 }}>{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          HOW IT WORKS
+      ══════════════════════════════════════════ */}
+      <section
+        id="how-it-works"
+        style={{
+          padding: 'clamp(2.5rem, 5vw, 4.5rem) clamp(1rem, 4vw, 3rem)',
+          maxWidth: 1240,
+          margin: '0 auto',
+        }}
+      >
+        <div style={{ textAlign: 'center', marginBottom: '2.75rem' }}>
+          <span className="badge badge-primary" style={{ marginBottom: '.75rem' }}>Workflow</span>
+          <h2 style={{ marginBottom: '.65rem' }}>From webcam gesture to spoken word in three steps</h2>
+          <p style={{ color: 'var(--text-muted)', maxWidth: 540, margin: '0 auto' }}>
+            No special hardware or downloads required — everything runs right inside your modern web browser.
+          </p>
+        </div>
+
+        <div className="steps-grid">
+          {STEPS.map((st) => (
+            <div key={st.n} className="card-3d" style={{ padding: '1.75rem', position: 'relative' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.1rem' }}>
+                <div style={{
+                  width: 46, height: 46, borderRadius: 15,
+                  background: `${st.accent}1A`,
+                  color: st.accent,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Icon d={st.icon} size={21} />
+                </div>
+                <span style={{
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 800,
+                  fontSize: '1.5rem',
+                  color: st.accent,
+                  opacity: 0.45,
+                }}>
+                  {st.n}
+                </span>
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: '.5rem' }}>{st.title}</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '.875rem', lineHeight: 1.65, margin: 0 }}>{st.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          PERMISSIONS INFO — camera / mic / privacy
       ══════════════════════════════════════════ */}
       <section id="permissions" style={{
-        background: dark ? '#0D1F42' : '#F0F9FF',
-        borderTop:`1px solid ${dark ? '#1E3A5F' : '#BAE6FD'}`,
-        borderBottom:`1px solid ${dark ? '#1E3A5F' : '#BAE6FD'}`,
-        padding:'clamp(2.5rem, 5vw, 4rem) clamp(1rem, 4vw, 2.5rem)',
+        background: dark ? 'rgba(29, 27, 46, 0.55)' : 'linear-gradient(180deg, #F5F2FF 0%, #FAF8F5 100%)',
+        borderTop: '1px solid var(--border)',
+        borderBottom: '1px solid var(--border)',
+        padding: 'clamp(3rem, 5vw, 4.5rem) clamp(1rem, 4vw, 3rem)',
       }}>
-        <div style={{ maxWidth:880, margin:'0 auto' }}>
-          <div style={{ textAlign:'center', marginBottom:'2.5rem' }}>
-            <div className="section-eyebrow" style={{ color: dark ? '#38BDF8' : '#0284C7' }}>Browser Permissions</div>
-            <h2 style={{ marginBottom:'.6rem' }}>What your browser will ask for</h2>
-            <p style={{ color:'var(--text-muted)', fontSize:'.9375rem', maxWidth:520, margin:'0 auto' }}>
+        <div style={{ maxWidth: 1020, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+            <span className="badge badge-primary" style={{ marginBottom: '.75rem' }}>Browser Permissions</span>
+            <h2 style={{ marginBottom: '.6rem' }}>What your browser will ask for</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '.95rem', maxWidth: 540, margin: '0 auto' }}>
               GestureBridge requires webcam access to detect hand gestures.
               All processing happens locally — nothing is uploaded.
             </p>
@@ -425,54 +630,52 @@ export default function Landing() {
               {
                 icon: ['M23 7l-7 5 7 5V7z','M1 5h15a2 2 0 012 2v10a2 2 0 01-2 2H1'],
                 title: 'Camera (Required)',
-                color: '#2563EB',
+                color: '#6B4CFF',
                 required: true,
                 desc: 'The Sign-to-Text feature streams your webcam feed to MediaPipe for hand-landmark detection. No frames are sent to our servers.',
                 tip: 'When prompted by the browser, click "Allow". You can revoke access from the address bar at any time.',
               },
               {
                 icon: ['M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z','M19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8'],
-                title: 'Microphone (Not used)',
-                color: '#059669',
+                title: 'Microphone (Optional)',
+                color: '#10B981',
                 required: false,
-                desc: 'GestureBridge does not use your microphone. No audio is captured or processed at any point.',
-                tip: 'Your browser may list it when you open the permissions dialog. You do not need to grant it.',
+                desc: 'Sign-to-Text does not capture audio. Microphone is only requested if you choose to dictate text in Text-to-Sign voice mode.',
+                tip: 'Your browser only asks when you press the Voice Input button. You can decline it and type normally.',
               },
               {
                 icon: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'],
                 title: 'Privacy guarantee',
-                color: '#7C3AED',
+                color: '#F59E0B',
                 required: false,
                 desc: 'All landmark extraction runs entirely in your browser via WebAssembly (MediaPipe). Raw pixels never leave your device.',
                 tip: 'Enable Privacy Mode in Account → Privacy to disable saving translation history to your account.',
               },
             ].map(p => (
-              <div key={p.title} className="card" style={{ display:'flex', flexDirection:'column', gap:'.75rem' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:'.75rem' }}>
-                  <div style={{ width:40, height:40, borderRadius:10, background: dark ? `${p.color}22` : `${p.color}15`, color:p.color, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <Icon d={p.icon} size={18} />
+              <div key={p.title} className="card-3d" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.8rem' }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 14,
+                    background: `${p.color}18`, color: p.color,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <Icon d={p.icon} size={19} />
                   </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontWeight:700, fontSize:'.9rem', color:'var(--text-main)' }}>{p.title}</div>
-                    <span style={{
-                      display:'inline-block', marginTop:'.15rem',
-                      fontSize:'.68rem', fontWeight:700, letterSpacing:'.06em', textTransform:'uppercase',
-                      padding:'.1rem .45rem', borderRadius:4,
-                      background: p.required ? (dark ? '#1E3A5F' : '#DBEAFE') : (dark ? '#022C22' : '#D1FAE5'),
-                      color: p.required ? (dark ? '#93C5FD' : '#1D4ED8') : (dark ? '#6EE7B7' : '#065F46'),
-                    }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 700, fontSize: '.95rem', color: 'var(--text-main)' }}>{p.title}</div>
+                    <span className={`badge ${p.required ? 'badge-primary' : 'badge-success'}`} style={{ marginTop: '.25rem', fontSize: '.65rem', padding: '.15rem .5rem' }}>
                       {p.required ? 'Required' : 'Not required'}
                     </span>
                   </div>
                 </div>
-                <p style={{ color:'var(--text-muted)', fontSize:'.8375rem', lineHeight:1.65, margin:0 }}>{p.desc}</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '.85rem', lineHeight: 1.65, margin: 0 }}>{p.desc}</p>
                 <div style={{
-                  display:'flex', alignItems:'flex-start', gap:'.5rem',
-                  padding:'.6rem .75rem', borderRadius:'var(--radius-sm)',
-                  background: dark ? 'rgba(255,255,255,.04)' : 'var(--bg-surface)',
-                  fontSize:'.78rem', color:'var(--text-muted)', lineHeight:1.55,
+                  display: 'flex', alignItems: 'flex-start', gap: '.5rem',
+                  padding: '.7rem .85rem', borderRadius: 'var(--radius-md)',
+                  background: 'var(--bg-surface)',
+                  fontSize: '.78rem', color: 'var(--text-muted)', lineHeight: 1.55,
                 }}>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginTop:'.1rem' }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '.15rem', color: p.color }}>
                     <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
                   </svg>
                   {p.tip}
@@ -482,160 +685,164 @@ export default function Landing() {
           </div>
 
           {/* Browser-specific tips */}
-          <div style={{
-            marginTop:'2rem', padding:'1rem 1.25rem',
-            borderRadius:'var(--radius-md)',
-            background: dark ? 'rgba(255,255,255,.04)' : '#fff',
-            border:`1px solid ${dark ? '#1E3A5F' : '#BAE6FD'}`,
-            display:'flex', gap:'.75rem', alignItems:'flex-start', flexWrap:'wrap',
+          <div className="card" style={{
+            marginTop: '1.75rem',
+            padding: '1.1rem 1.4rem',
+            display: 'flex', gap: '.85rem', alignItems: 'flex-start', flexWrap: 'wrap',
           }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dark ? '#38BDF8' : '#0284C7'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginTop:'.15rem' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: '.15rem' }}>
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
             </svg>
-            <div style={{ fontSize:'.8375rem', color:'var(--text-muted)', lineHeight:1.65 }}>
-              <strong style={{ color:'var(--text-main)' }}>Camera not working?</strong>
-              {' '}Check your browser's site permissions (address bar → lock icon → Camera → Allow).
+            <div style={{ fontSize: '.85rem', color: 'var(--text-muted)', lineHeight: 1.65, flex: 1 }}>
+              <strong style={{ color: 'var(--text-main)' }}>Camera not working?</strong>
+              {' '}Check your browser&apos;s site permissions (address bar → lock icon → Camera → Allow).
               On mobile, go to <strong>Settings → Apps → Browser → Permissions → Camera</strong> and enable it.
-              HTTPS is required on most browsers for webcam access — the app must be served over a secure connection in production.
+              HTTPS is required on most browsers for webcam access in production.
             </div>
           </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════
-          CTA BANNER — register only
+          CTA BANNER
       ══════════════════════════════════════════ */}
-      <section style={{
-        background:'var(--color-primary)',
-        padding:'clamp(3rem, 6vw, 5rem) clamp(1rem, 4vw, 2.5rem)',
-        textAlign:'center',
-      }}>
-        <h2 style={{ color:'#fff', marginBottom:'.75rem', fontSize:'clamp(1.35rem, 3vw, 1.9rem)' }}>
-          Ready to break the communication barrier?
-        </h2>
-        <p style={{ color:'rgba(255,255,255,.8)', marginBottom:'2rem', fontSize:'.9375rem', maxWidth:480, margin:'0 auto 2rem' }}>
-          Create a free account and translate your first sign in under a minute.
-        </p>
-        <Link to="/register" className="btn btn-lg" style={{
-          background:'#fff', color:'var(--color-primary)',
-          border:'1px solid transparent', fontWeight:700, minWidth:220,
-          display:'inline-flex', alignItems:'center', gap:'.5rem', justifyContent:'center',
+      <section style={{ padding: 'clamp(2.5rem, 5vw, 4rem) clamp(1rem, 4vw, 3rem)' }}>
+        <div style={{
+          maxWidth: 1120,
+          margin: '0 auto',
+          background: 'linear-gradient(135deg, #6B4CFF 0%, #8B5CF6 52%, #EC4899 100%)',
+          borderRadius: '32px',
+          padding: 'clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 4vw, 3rem)',
+          textAlign: 'center',
+          boxShadow: '0 24px 54px -14px rgba(107, 76, 255, 0.42)',
+          position: 'relative',
+          overflow: 'hidden',
         }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
-          </svg>
-          Create Free Account
-        </Link>
+          {/* Soft decorative gloss orbs inside banner */}
+          <div aria-hidden="true" style={{ position: 'absolute', top: -60, right: -40, width: 220, height: 220, borderRadius: '50%', background: 'rgba(255,255,255,0.12)', pointerEvents: 'none' }} />
+          <div aria-hidden="true" style={{ position: 'absolute', bottom: -80, left: -40, width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
+
+          <h2 style={{ color: '#fff', marginBottom: '.75rem', fontSize: 'clamp(1.5rem, 3.2vw, 2.25rem)', position: 'relative' }}>
+            Ready to break the communication barrier?
+          </h2>
+          <p style={{ color: 'rgba(255,255,255,.88)', fontSize: '.98rem', maxWidth: 500, margin: '0 auto 2rem', position: 'relative' }}>
+            Create a free account and translate your first sign in under a minute.
+          </p>
+          <Link to="/register" className="btn btn-lg" style={{
+            background: '#FFFFFF', color: '#181823',
+            border: '1px solid transparent', fontWeight: 700, minWidth: 230,
+            boxShadow: '0 12px 28px rgba(0,0,0,0.18)',
+            position: 'relative',
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+            Create Free Account
+          </Link>
+        </div>
       </section>
 
       {/* ══════════════════════════════════════════
-          FOOTER — no auth links duplicated
+          FOOTER
       ══════════════════════════════════════════ */}
       <footer style={{
-        background:'var(--bg-card)',
-        borderTop:'1px solid var(--border)',
-        padding:'clamp(1rem, 2vw, 1.5rem) clamp(1rem, 4vw, 2.5rem)',
-        display:'flex', alignItems:'center', justifyContent:'space-between',
-        flexWrap:'wrap', gap:'.75rem',
+        background: 'var(--bg-card)',
+        borderTop: '1px solid var(--border)',
+        padding: '1.35rem clamp(1rem, 4vw, 3rem)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: '.75rem',
       }}>
-        <div style={{ display:'flex', alignItems:'center', gap:'.5rem' }}>
-          <BrandLogo size={22} />
-          <span style={{ color:'var(--text-light)', fontSize:'.8rem', fontWeight:600 }}>GestureBridge</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '.55rem' }}>
+          <BrandLogo size={24} />
+          <span style={{ color: 'var(--text-main)', fontSize: '.86rem', fontWeight: 700, fontFamily: 'var(--font-display)' }}>GestureBridge</span>
         </div>
-        <span style={{ color:'var(--text-light)', fontSize:'.8rem', textAlign:'center' }}>
+        <span style={{ color: 'var(--text-muted)', fontSize: '.8rem', textAlign: 'center' }}>
           © {new Date().getFullYear()} GestureBridge &nbsp;·&nbsp; React · Flask · PyTorch · MediaPipe
         </span>
-        <div style={{ display:'flex', gap:'.75rem', alignItems:'center' }}>
-          <a href="#features"    style={{ color:'var(--text-light)', fontSize:'.8rem' }}>Features</a>
-          <a href="#permissions" style={{ color:'var(--text-light)', fontSize:'.8rem' }}>Permissions</a>
+        <div style={{ display: 'flex', gap: '1.1rem', alignItems: 'center' }}>
+          <a href="#features"    style={{ color: 'var(--text-muted)', fontSize: '.82rem', fontWeight: 500 }}>Features</a>
+          <a href="#how-it-works" style={{ color: 'var(--text-muted)', fontSize: '.82rem', fontWeight: 500 }}>How It Works</a>
+          <a href="#permissions" style={{ color: 'var(--text-muted)', fontSize: '.82rem', fontWeight: 500 }}>Permissions</a>
         </div>
       </footer>
 
       {/* ── Scoped CSS ──────────────────────────────────────────── */}
       <style>{`
-        /* ── Nav ── */
         .landing-nav-link {
-          padding: .35rem .7rem;
-          font-size: .875rem; font-weight: 500;
+          padding: .45rem .85rem;
+          font-size: .88rem;
+          font-weight: 500;
           color: var(--text-muted);
           text-decoration: none;
-          border-radius: var(--radius-sm);
+          border-radius: var(--radius-full);
           transition: color 0.15s, background 0.15s;
           white-space: nowrap;
+          position: relative;
         }
         .landing-nav-link:hover { color: var(--text-main); background: var(--bg-surface); }
-        .landing-desktop-links  { display: flex; gap: .15rem; align-items: center; }
-        .landing-desktop-auth   { display: flex; gap: .5rem; align-items: center; }
-        .landing-mobile-controls { display: none; gap: .5rem; align-items: center; }
-
-        /* ── Section label ── */
-        .section-eyebrow {
-          display: inline-block;
-          font-size: .72rem; font-weight: 700;
-          letter-spacing: .1em; text-transform: uppercase;
-          color: var(--color-primary); margin-bottom: .6rem;
+        .landing-nav-link.active-nav { color: var(--color-primary); font-weight: 700; }
+        .landing-nav-link.active-nav::after {
+          content: '';
+          position: absolute;
+          left: .9rem;
+          right: .9rem;
+          bottom: 2px;
+          height: 2px;
+          border-radius: 2px;
+          background: var(--color-primary);
         }
 
-        /* ── Grids — responsive ── */
+        .landing-desktop-links   { display: flex; gap: .35rem; align-items: center; }
+        .landing-desktop-auth    { display: flex; gap: .6rem; align-items: center; }
+        .landing-mobile-controls { display: none; gap: .5rem; align-items: center; }
+
+        .highlights-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1.15rem;
+        }
         .stats-grid {
-          max-width: 860px; margin: 0 auto;
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 1.5rem;
+          gap: 1.25rem;
         }
         .features-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 1.25rem;
+          gap: 1.35rem;
         }
         .steps-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 1.5rem;
-        }
-        .modes-grid {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 1.25rem;
+          gap: 1.35rem;
         }
         .permissions-grid {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
-          gap: 1.25rem;
+          gap: 1.35rem;
         }
 
-        /* ── Feature / mode card hover ── */
-        .feature-card { transition: transform 0.18s ease, box-shadow 0.18s ease; }
-        .feature-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md) !important; }
-        .mode-card:hover { box-shadow: var(--shadow-md) !important; }
-
-        /* ── Tablet (≤1024px) ── */
         @media (max-width: 1024px) {
-          .features-grid    { grid-template-columns: repeat(2, 1fr); }
-          .permissions-grid { grid-template-columns: repeat(2, 1fr); }
+          .key-features-split { grid-template-columns: 1fr !important; }
+          .features-grid      { grid-template-columns: repeat(2, 1fr); }
+          .permissions-grid   { grid-template-columns: repeat(2, 1fr); }
         }
 
-        /* ── Hero & Tablet/Mobile (≤900px) ── */
         @media (max-width: 900px) {
           .landing-hero-grid { grid-template-columns: 1fr !important; }
         }
 
-        /* ── Mobile (≤768px) ── */
         @media (max-width: 768px) {
-          .landing-desktop-links  { display: none; }
-          .landing-desktop-auth   { display: none; }
+          .landing-desktop-links   { display: none; }
+          .landing-desktop-auth    { display: none; }
           .landing-mobile-controls { display: flex; }
+          .hide-on-mobile          { display: none !important; }
 
-          .stats-grid        { grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+          .highlights-grid   { grid-template-columns: 1fr; }
+          .stats-grid        { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
           .features-grid     { grid-template-columns: 1fr; }
           .steps-grid        { grid-template-columns: 1fr; }
-          .modes-grid        { grid-template-columns: 1fr; }
           .permissions-grid  { grid-template-columns: 1fr; }
-        }
-
-        /* ── Small mobile (≤480px) ── */
-        @media (max-width: 480px) {
-          .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
         }
       `}</style>
     </div>
