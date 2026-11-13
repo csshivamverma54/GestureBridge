@@ -245,8 +245,8 @@ export default function Landing() {
             onClick={toggleTheme}
             className="btn-icon"
             aria-pressed={dark}
-            aria-label={dark ? 'Switch to light mode (ISL WELCOME)' : 'Switch to dark mode (ASL WELCOME)'}
-            title={dark ? 'Light Mode (ISL WELCOME)' : 'Dark Mode (ASL WELCOME)'}
+            aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={dark ? 'Light Mode' : 'Dark Mode'}
           >
             {dark ? <SunIcon /> : <MoonIcon />}
           </button>
@@ -264,8 +264,8 @@ export default function Landing() {
             onClick={toggleTheme}
             className="btn-icon"
             aria-pressed={dark}
-            aria-label={dark ? 'Switch to light mode (ISL WELCOME)' : 'Switch to dark mode (ASL WELCOME)'}
-            title={dark ? 'Light Mode (ISL WELCOME)' : 'Dark Mode (ASL WELCOME)'}
+            aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={dark ? 'Light Mode' : 'Dark Mode'}
           >
             {dark ? <SunIcon /> : <MoonIcon />}
           </button>

@@ -85,15 +85,17 @@ export default function TextToSign() {
 
   /* -- Dataset status (local videos present) - */
   const [localVideosAvailable, setLocalVideosAvailable] = useState(null); // null = loading
+  const [datasetInfo, setDatasetInfo] = useState({ local: false, cdn: false, cdnUrl: '' });
 
   /* -- Playback - */
-  const [currentIdx,  setCurrentIdx]  = useState(0);
-  const [playing,     setPlaying]     = useState(false);
-  const [speed,       setSpeed]       = useState(1);
-  const [loop,        setLoop]        = useState(false);
-  const [autoAdvance, setAutoAdvance] = useState(true);
-  const [videoError,  setVideoError]  = useState(false);
-  const [useFallback, setUseFallback] = useState(false);
+  const [currentIdx,   setCurrentIdx]   = useState(0);
+  const [candidateIdx, setCandidateIdx] = useState(0);
+  const [playing,      setPlaying]      = useState(false);
+  const [speed,        setSpeed]        = useState(1);
+  const [loop,         setLoop]         = useState(false);
+  const [autoAdvance,  setAutoAdvance]  = useState(true);
+  const [videoError,   setVideoError]   = useState(false);
+  const [useFallback,  setUseFallback]  = useState(false);
   const videoTimeoutRef = useRef(null); // auto-skip timer for dead external URLs
 
   /* -- AI Learning Tip - */
@@ -121,7 +123,12 @@ export default function TextToSign() {
 
   useEffect(() => { autoRef.current    = autoAdvance; }, [autoAdvance]);
   useEffect(() => { loopRef.current    = loop;         }, [loop]);
-  useEffect(() => { currentIdxRef.current = currentIdx; setVideoError(false); setUseFallback(false); }, [currentIdx]);
+  useEffect(() => {
+    currentIdxRef.current = currentIdx;
+    setVideoError(false);
+    setUseFallback(false);
+    setCandidateIdx(0);
+  }, [currentIdx]);
   useEffect(() => { playingRef.current = playing;      }, [playing]);
 
   /* -- Voices load async in some browsers - */
@@ -150,7 +157,14 @@ export default function TextToSign() {
       .then(({ data }) => setVocabHints(data.words || []))
       .catch(() => {});
     api.get('/text-to-sign/status')
-      .then(({ data }) => setLocalVideosAvailable(data.local_videos_available ?? false))
+      .then(({ data }) => {
+        setLocalVideosAvailable(data.local_videos_available ?? false);
+        setDatasetInfo({
+          local: data.local_videos_available ?? false,
+          cdn: data.cdn_enabled ?? false,
+          cdnUrl: data.cdn_url ?? '',
+        });
+      })
       .catch(() => setLocalVideosAvailable(false));
   }, []);
 
@@ -369,12 +383,14 @@ export default function TextToSign() {
             fontSize: '0.85rem',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: 'var(--color-warning)', marginBottom: '0.25rem' }}>
-            <span>⚠</span>
-            <span>External Video CDN Mode</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: datasetInfo.cdn ? 'var(--color-primary)' : 'var(--color-warning)', marginBottom: '0.25rem' }}>
+            <span>{datasetInfo.cdn ? '🌐' : '⚠'}</span>
+            <span>{datasetInfo.cdn ? 'Hugging Face Cloud CDN Streaming' : 'External Video CDN Fallback'}</span>
           </div>
           <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            Local video dataset is not mounted. The system will stream from external WLASL CDN archives with an 8-second auto-skip fallback.
+            {datasetInfo.cdn
+              ? 'Streaming verified WLASL sign demonstration videos directly from Hugging Face dataset CDN.'
+              : 'Local video dataset is not mounted. The system will stream from external WLASL CDN archives with candidate fallback.'}
           </p>
         </div>
       )}
@@ -601,13 +617,14 @@ export default function TextToSign() {
                 {/* Video element viewport */}
                 <div style={{ position: 'relative', background: 'radial-gradient(circle at 50% 45%, #1E1B33 0%, #0D0C14 100%)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', aspectRatio: '16/9', border: '1px solid var(--border)' }}>
                   {currentWord && !videoError && (() => {
-                    const localSrc = currentWord.video_url ? videoUrl(currentWord.video_url) : null;
-                    const extSrc   = currentWord.external_url || null;
-                    const src      = useFallback ? extSrc : (localSrc || extSrc);
+                    const candidate = (currentWord.all_entries && currentWord.all_entries[candidateIdx]) || null;
+                    const candidateSrc = candidate?.video_url ? videoUrl(candidate.video_url) : (candidate?.external_url || null);
+                    const defaultSrc = currentWord.video_url ? videoUrl(currentWord.video_url) : (currentWord.external_url || null);
+                    const src = candidateSrc || defaultSrc;
                     if (!src) return null;
                     return (
                       <video
-                        key={`${currentIdx}-${useFallback ? 'ext' : 'local'}`}
+                        key={`${currentIdx}-${candidateIdx}`}
                         ref={videoRef}
                         src={src}
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
@@ -623,8 +640,8 @@ export default function TextToSign() {
                         }}
                         onError={() => {
                           clearVideoTimeout();
-                          if (!useFallback && extSrc && src !== extSrc) {
-                            setUseFallback(true);
+                          if (currentWord.all_entries && candidateIdx + 1 < currentWord.all_entries.length) {
+                            setCandidateIdx((prev) => prev + 1);
                           } else {
                             setVideoError(true);
                           }
@@ -640,8 +657,8 @@ export default function TextToSign() {
                         onLoadStart={() => {
                           clearVideoTimeout();
                           videoTimeoutRef.current = setTimeout(() => {
-                            if (!useFallback && extSrc && src !== extSrc) {
-                              setUseFallback(true);
+                            if (currentWord.all_entries && candidateIdx + 1 < currentWord.all_entries.length) {
+                              setCandidateIdx((prev) => prev + 1);
                             } else {
                               setVideoError(true);
                             }
@@ -666,7 +683,7 @@ export default function TextToSign() {
                       <button
                         className="btn btn-outline btn-sm"
                         style={{ color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.28)', background: 'rgba(255,255,255,0.08)' }}
-                        onClick={() => { clearVideoTimeout(); setVideoError(false); setUseFallback(false); handleVideoEnded(); }}
+                        onClick={() => { clearVideoTimeout(); setVideoError(false); setUseFallback(false); setCandidateIdx(0); handleVideoEnded(); }}
                       >
                         Skip to next sign →
                       </button>

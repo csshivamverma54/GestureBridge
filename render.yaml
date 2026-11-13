@@ -43,6 +43,8 @@ services:
         value: https://gesturebridge1.onrender.com
       - key: FLASK_DEBUG
         value: "0"
+      - key: WLASL_CDN_URL
+        value: https://huggingface.co/datasets/csshivamverma54/gesturebridge-wlasl/resolve/main/videos
 
   # ── Frontend (React static site) ─────────────────────────────────────────
   # URL: https://gesturebridge1.onrender.com
@@ -61,6 +63,11 @@ services:
       - type: rewrite
         source: /*
         destination: /index.html
+
+    headers:
+      - path: /assets/*.mp4
+        name: Cache-Control
+        value: public, max-age=604800, stale-while-revalidate=86400
 
     envVars:
       # Backend origin — baked into the JS bundle at Vite build time

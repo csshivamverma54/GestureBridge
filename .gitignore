@@ -1,4 +1,4 @@
-﻿# -- Python -----------------------------------------------------------
+# -- Python -----------------------------------------------------------
 __pycache__/
 *.py[cod]
 *.pyo
@@ -70,6 +70,12 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# -- Reports & documentation drafts (do not push to git) -------------
+*.docx
+*.pdf
+GestureBridge_Project_Report*
+scratch/
 
 # -- Misc -------------------------------------------------------------
 *.log

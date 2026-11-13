@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
-import { getSignModeForTheme } from './sign3d/signDefinitions';
+import { SIGN_MODES, getSignModeForTheme } from './sign3d/signDefinitions';
 
 const AslWelcomeStage = lazy(() => import('./sign3d/AslWelcomeStage'));
 const IslWelcomeStage = lazy(() => import('./sign3d/IslWelcomeStage'));
@@ -28,11 +28,11 @@ class SignStageErrorBoundary extends React.Component {
 }
 
 /**
- * Hero3DScene — Dual ISL/ASL 3D WELCOME Hero & Compact Auth Showcase
+ * Hero3DScene — Dual ISL & ASL WELCOME Hero Demonstration & Compact Auth Showcase
  *
- * On Landing (`compact = false`), maps the existing theme state directly:
- *   - Light theme -> ISL (Indian Sign Language) WELCOME [ISLRTC official entry: two-handed inviting sweep]
- *   - Dark theme  -> ASL (American Sign Language) WELCOME [StrongASL verified: one-handed palm-up sweep]
+ * On Landing (`compact = false`), displays verified sign demonstration stages
+ * (ISL by default, with one-click toggle to ASL) with native MP4 playback,
+ * range scrubbing, single-load lifecycle, and stable HTTP caching.
  *
  * When `compact = true` (Auth page), preserves the compact showcase unchanged.
  */
@@ -40,6 +40,11 @@ export default function Hero3DScene({ dark = false, compact = false }) {
   const containerRef = useRef(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [activeLang, setActiveLang] = useState(dark ? 'ASL' : 'ISL');
+
+  useEffect(() => {
+    setActiveLang(dark ? 'ASL' : 'ISL');
+  }, [dark]);
 
   useEffect(() => {
     const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -52,54 +57,100 @@ export default function Hero3DScene({ dark = false, compact = false }) {
   }, []);
 
   if (!compact) {
-    const mode = getSignModeForTheme(dark);
+    const isIsl = activeLang === 'ISL';
+    const mode = isIsl ? SIGN_MODES.light : SIGN_MODES.dark;
+
     return (
-      <div className="fade-in" key={mode.code}>
+      <div className="fade-in" key={`hero-stage-${activeLang}`}>
+        {/* Language Switcher Tabs */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '0.6rem',
+            padding: '0 0.25rem',
+          }}
+        >
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+            Linguistic Demonstration:
+          </div>
+          <div
+            style={{
+              display: 'inline-flex',
+              background: 'rgba(30, 27, 75, 0.45)',
+              padding: '2px',
+              borderRadius: '999px',
+              border: '1px solid rgba(167, 139, 250, 0.25)',
+              gap: '2px',
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveLang('ISL')}
+              style={{
+                background: isIsl ? 'var(--color-primary)' : 'transparent',
+                color: isIsl ? '#FFFFFF' : 'var(--text-muted)',
+                border: 'none',
+                borderRadius: '999px',
+                padding: '0.22rem 0.75rem',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              aria-label="Switch to Indian Sign Language (ISL)"
+            >
+              ISL (Indian)
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveLang('ASL')}
+              style={{
+                background: !isIsl ? 'var(--color-primary)' : 'transparent',
+                color: !isIsl ? '#FFFFFF' : 'var(--text-muted)',
+                border: 'none',
+                borderRadius: '999px',
+                padding: '0.22rem 0.75rem',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              aria-label="Switch to American Sign Language (ASL)"
+            >
+              ASL (American)
+            </button>
+          </div>
+        </div>
+
         <SignStageErrorBoundary
           fallbackTitle={`${mode.code} — ${mode.word}`}
           fallbackText={mode.movementSummary || mode.verificationNote}
         >
-          {dark ? (
-            <Suspense
-              fallback={
-                <div
-                  className="card"
-                  style={{
-                    minHeight: 390,
-                    borderRadius: '28px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--text-muted)',
-                  }}
-                >
-                  Loading ASL 3D Stage…
-                </div>
-              }
-            >
-              <AslWelcomeStage mode={mode} />
-            </Suspense>
-          ) : (
-            <Suspense
-              fallback={
-                <div
-                  className="card"
-                  style={{
-                    minHeight: 390,
-                    borderRadius: '28px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'var(--text-muted)',
-                  }}
-                >
-                  Loading ISL 3D Stage…
-                </div>
-              }
-            >
+          <Suspense
+            fallback={
+              <div
+                className="card"
+                style={{
+                  minHeight: 390,
+                  borderRadius: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                Loading {mode.code} Welcome Stage…
+              </div>
+            }
+          >
+            {isIsl ? (
               <IslWelcomeStage mode={mode} />
-            </Suspense>
-          )}
+            ) : (
+              <AslWelcomeStage mode={mode} />
+            )}
+          </Suspense>
         </SignStageErrorBoundary>
       </div>
     );
