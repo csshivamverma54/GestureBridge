@@ -1,12 +1,40 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { getSignModeForTheme } from './sign3d/signDefinitions';
+
+const AslWelcomeStage = lazy(() => import('./sign3d/AslWelcomeStage'));
+const IslWelcomeStage = lazy(() => import('./sign3d/IslWelcomeStage'));
+
+class SignStageErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+          <h4 style={{ marginBottom: '0.4rem' }}>{this.props.fallbackTitle}</h4>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
+            {this.props.fallbackText}
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 /**
- * Hero3DScene — Interactive 3D Claymorphism Hand & Floating Spatial UI
+ * Hero3DScene — Dual ISL/ASL 3D WELCOME Hero & Compact Auth Showcase
  *
- * Recreates the glossy, warm, creative 3D visual centerpiece from the design
- * language using layered CSS 3D perspective, pointer-responsive parallax,
- * multi-stop subsurface SVG shading, and GPU-friendly CSS float animations.
- * Respects prefers-reduced-motion and adapts cleanly to light/dark themes.
+ * On Landing (`compact = false`), maps the existing theme state directly:
+ *   - Light theme -> ISL (Indian Sign Language) WELCOME [ISLRTC official entry: two-handed inviting sweep]
+ *   - Dark theme  -> ASL (American Sign Language) WELCOME [StrongASL verified: one-handed palm-up sweep]
+ *
+ * When `compact = true` (Auth page), preserves the compact showcase unchanged.
  */
 export default function Hero3DScene({ dark = false, compact = false }) {
   const containerRef = useRef(null);
@@ -22,6 +50,60 @@ export default function Hero3DScene({ dark = false, compact = false }) {
       return () => mq.removeEventListener?.('change', listener);
     }
   }, []);
+
+  if (!compact) {
+    const mode = getSignModeForTheme(dark);
+    return (
+      <div className="fade-in" key={mode.code}>
+        <SignStageErrorBoundary
+          fallbackTitle={`${mode.code} — ${mode.word}`}
+          fallbackText={mode.movementSummary || mode.verificationNote}
+        >
+          {dark ? (
+            <Suspense
+              fallback={
+                <div
+                  className="card"
+                  style={{
+                    minHeight: 390,
+                    borderRadius: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  Loading ASL 3D Stage…
+                </div>
+              }
+            >
+              <AslWelcomeStage mode={mode} />
+            </Suspense>
+          ) : (
+            <Suspense
+              fallback={
+                <div
+                  className="card"
+                  style={{
+                    minHeight: 390,
+                    borderRadius: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  Loading ISL 3D Stage…
+                </div>
+              }
+            >
+              <IslWelcomeStage mode={mode} />
+            </Suspense>
+          )}
+        </SignStageErrorBoundary>
+      </div>
+    );
+  }
 
   const handleMouseMove = (e) => {
     if (reducedMotion || !containerRef.current) return;

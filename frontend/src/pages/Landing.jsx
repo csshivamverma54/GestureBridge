@@ -241,7 +241,13 @@ export default function Landing() {
 
         {/* Theme + auth — desktop */}
         <div className="landing-desktop-auth">
-          <button onClick={toggleTheme} className="btn-icon" aria-label="Toggle theme" title="Toggle theme">
+          <button
+            onClick={toggleTheme}
+            className="btn-icon"
+            aria-pressed={dark}
+            aria-label={dark ? 'Switch to light mode (ISL WELCOME)' : 'Switch to dark mode (ASL WELCOME)'}
+            title={dark ? 'Light Mode (ISL WELCOME)' : 'Dark Mode (ASL WELCOME)'}
+          >
             {dark ? <SunIcon /> : <MoonIcon />}
           </button>
           <Link to="/login" className="btn btn-ghost btn-sm" style={{ borderColor: 'transparent', fontWeight: 600 }}>
@@ -254,7 +260,13 @@ export default function Landing() {
 
         {/* Mobile: theme + hamburger */}
         <div className="landing-mobile-controls">
-          <button onClick={toggleTheme} className="btn-icon" aria-label="Toggle theme">
+          <button
+            onClick={toggleTheme}
+            className="btn-icon"
+            aria-pressed={dark}
+            aria-label={dark ? 'Switch to light mode (ISL WELCOME)' : 'Switch to dark mode (ASL WELCOME)'}
+            title={dark ? 'Light Mode (ISL WELCOME)' : 'Dark Mode (ASL WELCOME)'}
+          >
             {dark ? <SunIcon /> : <MoonIcon />}
           </button>
           <button className="btn-icon" onClick={() => setMobileMenuOpen(v => !v)} aria-label="Open menu">
