@@ -175,6 +175,9 @@ export const getVocabulary = () => api.get('/text-to-sign/vocabulary');
  */
 export const videoUrl = (videoPath) => {
   if (!videoPath) return null;
+  if (videoPath.startsWith('http://') || videoPath.startsWith('https://')) {
+    return videoPath;
+  }
   // If VITE_API_URL is set (external deploy), prepend it; otherwise same-origin.
   return BASE_URL ? `${BASE_URL}${videoPath}` : videoPath;
 };

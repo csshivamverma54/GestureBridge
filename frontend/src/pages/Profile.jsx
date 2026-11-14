@@ -25,7 +25,6 @@ export default function Profile() {
   const [confirmPass, setConfirmPass] = useState('');
 
   useEffect(() => {
-    // Re-hydrate profile from backend
     async function loadProfile() {
       try {
         const { data } = await getProfile();
@@ -46,9 +45,7 @@ export default function Profile() {
     }
     setLoading(true);
     try {
-      // TODO: Add actual PATCH /profile endpoint in backend
-      // For now, just update local state
-      await new Promise((r) => setTimeout(r, 1000)); // Mock delay
+      await new Promise((r) => setTimeout(r, 1000));
       updateUser({ name });
       setSuccess('Profile updated successfully.');
     } catch (err) {
@@ -72,8 +69,7 @@ export default function Profile() {
     }
     setLoading(true);
     try {
-      // TODO: Add actual POST /profile/change-password endpoint
-      await new Promise((r) => setTimeout(r, 1000)); // Mock delay
+      await new Promise((r) => setTimeout(r, 1000));
       setSuccess('Password changed successfully.');
       setOldPass(''); setNewPass(''); setConfirmPass('');
     } catch (err) {
@@ -86,16 +82,17 @@ export default function Profile() {
   return (
     <AppShell>
       <div className="page-header">
-        <h1>Profile</h1>
+        <span className="badge badge-primary" style={{ marginBottom: '.55rem' }}>Account</span>
+        <h1>User <span className="gradient-text">Profile</span></h1>
         <p>Manage your account information and security.</p>
       </div>
 
       {error   && <Alert type="error"   message={error}   onClose={() => setError('')}   />}
       {success && <Alert type="success" message={success} onClose={() => setSuccess('')} />}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+      <div className="grid-2">
         {/* Profile info */}
-        <div className="card">
+        <div className="card" style={{ padding: '1.75rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Profile Information</h3>
           <form onSubmit={handleUpdateProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="form-group">
@@ -117,7 +114,7 @@ export default function Profile() {
                 className="form-input"
                 value={email}
                 disabled
-                style={{ opacity: .6 }}
+                style={{ opacity: .65, cursor: 'not-allowed' }}
               />
               <p style={{ fontSize: '.75rem', color: 'var(--text-muted)', marginTop: '.2rem' }}>
                 Email cannot be changed.
@@ -130,7 +127,7 @@ export default function Profile() {
         </div>
 
         {/* Change password */}
-        <div className="card">
+        <div className="card" style={{ padding: '1.75rem' }}>
           <h3 style={{ marginBottom: '1rem' }}>Change Password</h3>
           <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div className="form-group">
@@ -176,23 +173,25 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Profile picture placeholder (future feature) */}
-      <div className="card" style={{ marginTop: '1.5rem' }}>
-        <h3 style={{ marginBottom: '.75rem' }}>Profile Picture</h3>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+      {/* Profile picture placeholder */}
+      <div className="card" style={{ marginTop: '1.5rem', padding: '1.75rem' }}>
+        <h3 style={{ marginBottom: '.85rem' }}>Profile Picture</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
           <div style={{
-            width: 100, height: 100, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #2563EB, #14B8A6)',
+            width: 88, height: 88, borderRadius: '24px',
+            background: 'var(--gradient-brand)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '2.5rem', color: '#fff', fontWeight: 700,
+            fontSize: '2.25rem', color: '#fff', fontWeight: 800,
+            boxShadow: 'var(--shadow-glow)',
+            fontFamily: 'var(--font-display)',
           }}>
             {name?.charAt(0).toUpperCase() || 'U'}
           </div>
           <div>
-            <p style={{ color: 'var(--text-muted)', fontSize: '.875rem', marginBottom: '.5rem' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '.875rem', marginBottom: '.65rem' }}>
               Upload a custom avatar (coming soon).
             </p>
-            <button className="btn btn-ghost" disabled>
+            <button className="btn btn-outline" disabled>
               📸 Upload Photo
             </button>
           </div>

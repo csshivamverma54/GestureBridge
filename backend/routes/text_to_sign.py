@@ -11,6 +11,10 @@ _BACKEND_DIR = _ROUTES_DIR.parent
 _VIDEOS_DIR  = _BACKEND_DIR / "data" / "WLASL" / "videos"
 _JSON_PATH   = _BACKEND_DIR / "data" / "WLASL" / "curated_WLASL.json"
 
+# Hugging Face or public CDN base URL for direct MP4 streaming
+WLASL_CDN_URL = os.getenv("WLASL_CDN_URL", "").rstrip("/")
+USE_LOCAL_VIDEOS = os.getenv("USE_LOCAL_VIDEOS", "false").lower() in ("true", "1")
+
 text_to_sign = Blueprint("text_to_sign", __name__)
 
 _SPLIT_ORDER = {"val": 0, "train": 1, "test": 2}
@@ -37,7 +41,7 @@ def _build_lookup() -> dict:
             entry_dict = {"video_id": vid, "external_url": ext_url}
             if mp4.exists():
                 local_candidates.append((rank, entry_dict))
-            elif ext_url:
+            else:
                 remote_candidates.append((rank, entry_dict))
 
         local_candidates.sort(key=lambda x: x[0])
@@ -223,21 +227,43 @@ def _fuzzy_match(word: str) -> str | None:
     return None
 
 
+def _get_stream_url(vid: str, fallback_ext: str | None = None) -> str | None:
+    padded = str(vid).zfill(5)
+    # When local videos are disabled and CDN is configured, stream directly from Hugging Face CDN
+    if WLASL_CDN_URL and not USE_LOCAL_VIDEOS:
+        return f"{WLASL_CDN_URL}/{padded}.mp4"
+    local = _VIDEOS_DIR / f"{padded}.mp4"
+    if local.exists() and USE_LOCAL_VIDEOS:
+        return f"/video/{padded}"
+    if WLASL_CDN_URL:
+        return f"{WLASL_CDN_URL}/{padded}.mp4"
+    return f"/video/{padded}"
+
+
 # Build the result dict for a successfully matched vocabulary word
 def _make_entry(matched_word: str, original_word: str, fuzzy: bool) -> dict:
     entries = _WORD_LOOKUP[matched_word]
     best    = entries[0]
     vid     = best["video_id"]
-    local   = _VIDEOS_DIR / f"{vid}.mp4"
+    stream_url = _get_stream_url(vid, best.get("external_url"))
+
+    augmented_entries = []
+    for e in entries:
+        evid = e["video_id"]
+        augmented_entries.append({
+            **e,
+            "video_url": _get_stream_url(evid, e.get("external_url")),
+        })
+
     return {
         "word":         original_word,
         "matched_word": matched_word,
         "found":        True,
         "fuzzy":        fuzzy,
         "video_id":     vid,
-        "video_url":    f"/video/{vid}" if local.exists() else None,
-        "external_url": best["external_url"],
-        "all_entries":  entries,
+        "video_url":    stream_url,
+        "external_url": best.get("external_url"),
+        "all_entries":  augmented_entries,
     }
 
 
@@ -306,15 +332,18 @@ def _resolve_tokens(tokens: list[str]) -> list[dict]:
     return results
 
 
-# Report whether the local WLASL video dataset is present on disk
+# Report whether the local WLASL video dataset is present on disk or CDN is enabled
 @text_to_sign.route("/text-to-sign/status", methods=["GET"])
 def dataset_status():
-    has_local = _VIDEOS_DIR.exists() and any(_VIDEOS_DIR.glob("*.mp4"))
-    sample_count = sum(1 for _ in _VIDEOS_DIR.glob("*.mp4")) if has_local else 0
+    has_local = USE_LOCAL_VIDEOS and _VIDEOS_DIR.exists() and any(_VIDEOS_DIR.glob("*.mp4"))
+    sample_count = sum(1 for _ in _VIDEOS_DIR.glob("*.mp4")) if (_VIDEOS_DIR.exists() and any(_VIDEOS_DIR.glob("*.mp4"))) else 0
     return jsonify({
         "local_videos_available": has_local,
+        "use_local_videos": USE_LOCAL_VIDEOS,
         "local_video_count": sample_count,
         "videos_dir": str(_VIDEOS_DIR),
+        "cdn_enabled": bool(WLASL_CDN_URL),
+        "cdn_url": WLASL_CDN_URL or None,
     }), 200
 
 
@@ -363,10 +392,27 @@ def serve_video(video_id: str):
         abort(400, description="Invalid video_id format")
 
     padded = video_id.zfill(5)
+    # If local videos are turned off and CDN is available, redirect to Hugging Face CDN
+    if WLASL_CDN_URL and not USE_LOCAL_VIDEOS:
+        from flask import redirect
+        return redirect(f"{WLASL_CDN_URL}/{padded}.mp4", code=302)
+
     mp4_path = _VIDEOS_DIR / f"{padded}.mp4"
 
     if not mp4_path.exists():
-        abort(404, description=f"Video {padded}.mp4 not found in local dataset")
+        if WLASL_CDN_URL:
+            from flask import redirect
+            return redirect(f"{WLASL_CDN_URL}/{padded}.mp4", code=302)
+
+        demo_path = _VIDEOS_DIR / "demo.mp4"
+        if demo_path.exists():
+            mp4_path = demo_path
+        else:
+            frontend_asset = _BACKEND_DIR.parent / "frontend" / "public" / "assets" / "asl-welcome-demo.mp4"
+            if frontend_asset.exists():
+                mp4_path = frontend_asset
+            else:
+                abort(404, description=f"Video {padded}.mp4 not found in local dataset")
 
     return send_file(
         str(mp4_path),

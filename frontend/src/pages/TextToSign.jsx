@@ -85,15 +85,17 @@ export default function TextToSign() {
 
   /* -- Dataset status (local videos present) - */
   const [localVideosAvailable, setLocalVideosAvailable] = useState(null); // null = loading
+  const [datasetInfo, setDatasetInfo] = useState({ local: false, cdn: false, cdnUrl: '' });
 
   /* -- Playback - */
-  const [currentIdx,  setCurrentIdx]  = useState(0);
-  const [playing,     setPlaying]     = useState(false);
-  const [speed,       setSpeed]       = useState(1);
-  const [loop,        setLoop]        = useState(false);
-  const [autoAdvance, setAutoAdvance] = useState(true);
-  const [videoError,  setVideoError]  = useState(false);
-  const [useFallback, setUseFallback] = useState(false);
+  const [currentIdx,   setCurrentIdx]   = useState(0);
+  const [candidateIdx, setCandidateIdx] = useState(0);
+  const [playing,      setPlaying]      = useState(false);
+  const [speed,        setSpeed]        = useState(1);
+  const [loop,         setLoop]         = useState(false);
+  const [autoAdvance,  setAutoAdvance]  = useState(true);
+  const [videoError,   setVideoError]   = useState(false);
+  const [useFallback,  setUseFallback]  = useState(false);
   const videoTimeoutRef = useRef(null); // auto-skip timer for dead external URLs
 
   /* -- AI Learning Tip - */
@@ -121,7 +123,12 @@ export default function TextToSign() {
 
   useEffect(() => { autoRef.current    = autoAdvance; }, [autoAdvance]);
   useEffect(() => { loopRef.current    = loop;         }, [loop]);
-  useEffect(() => { currentIdxRef.current = currentIdx; setVideoError(false); setUseFallback(false); }, [currentIdx]);
+  useEffect(() => {
+    currentIdxRef.current = currentIdx;
+    setVideoError(false);
+    setUseFallback(false);
+    setCandidateIdx(0);
+  }, [currentIdx]);
   useEffect(() => { playingRef.current = playing;      }, [playing]);
 
   /* -- Voices load async in some browsers - */
@@ -150,7 +157,14 @@ export default function TextToSign() {
       .then(({ data }) => setVocabHints(data.words || []))
       .catch(() => {});
     api.get('/text-to-sign/status')
-      .then(({ data }) => setLocalVideosAvailable(data.local_videos_available ?? false))
+      .then(({ data }) => {
+        setLocalVideosAvailable(data.local_videos_available ?? false);
+        setDatasetInfo({
+          local: data.local_videos_available ?? false,
+          cdn: data.cdn_enabled ?? false,
+          cdnUrl: data.cdn_url ?? '',
+        });
+      })
       .catch(() => setLocalVideosAvailable(false));
   }, []);
 
@@ -336,24 +350,22 @@ export default function TextToSign() {
 
   return (
     <AppShell>
-      {/* ── Page Header with Stitch Telemetry Badges ── */}
+      {/* ── Page Header with Warm 3D Telemetry Badges ── */}
       <div className="page-header" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.55rem', flexWrap: 'wrap' }}>
           <span className="badge badge-primary">
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-primary)', display: 'inline-block' }} />
+            <span className="status-dot online" style={{ width: 6, height: 6 }} />
             WLASL Video Synthesis
           </span>
           <span className="badge badge-neutral">Frame-by-Frame Sync</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>
-            2,000+ Sign Dictionaries
-          </span>
+          <span className="telemetry-pill">2,000+ Sign Dictionaries</span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.85rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: '0.35rem' }}>
-          Text to Sign Translation
+        <h1 style={{ fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.35rem' }}>
+          Text to Sign <span className="gradient-text">Translation</span>
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0, maxWidth: '680px', lineHeight: 1.5 }}>
-          Type or speak an English phrase. GestureBridge plays verified WLASL sign language video demonstrations for each word in sequence.
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', margin: 0, maxWidth: '680px', lineHeight: 1.55 }}>
+          Type or speak an {activeSpoken} phrase. GestureBridge plays verified {activeSign} sign language video demonstrations for each word in sequence.
         </p>
       </div>
 
@@ -363,49 +375,49 @@ export default function TextToSign() {
       {/* ── Dataset notice banner ── */}
       {localVideosAvailable === false && (
         <div
+          className="card"
           style={{
             marginBottom: '1.25rem',
-            padding: '1rem 1.25rem',
+            padding: '1rem 1.35rem',
             background: 'var(--bg-surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)',
             fontSize: '0.85rem',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: 'var(--color-warning)', marginBottom: '0.25rem' }}>
-            <span>⚠</span>
-            <span>External Video CDN Mode</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: datasetInfo.cdn ? 'var(--color-primary)' : 'var(--color-warning)', marginBottom: '0.25rem' }}>
+            <span>{datasetInfo.cdn ? '🌐' : '⚠'}</span>
+            <span>{datasetInfo.cdn ? 'Hugging Face Cloud CDN Streaming' : 'External Video CDN Fallback'}</span>
           </div>
           <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            Local video dataset is not mounted. The system will stream from external WLASL CDN archives with an 8-second auto-skip fallback.
+            {datasetInfo.cdn
+              ? 'Streaming verified WLASL sign demonstration videos directly from Hugging Face dataset CDN.'
+              : 'Local video dataset is not mounted. The system will stream from external WLASL CDN archives with candidate fallback.'}
           </p>
         </div>
       )}
 
       {/* ── Dual Language Selector Bar (Sign Dialect + Spoken Voice) ── */}
       <div
+        className="card"
         style={{
-          marginBottom: '1.25rem',
+          marginBottom: '1.35rem',
           display: 'flex',
           alignItems: 'center',
           gap: '1.5rem',
           flexWrap: 'wrap',
-          background: 'var(--bg-card)',
-          padding: '0.85rem 1.15rem',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border)',
+          padding: '0.9rem 1.25rem',
+          borderRadius: 'var(--radius-xl)',
         }}
       >
         {/* Spoken / Written Natural Language */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
           <label style={{ fontSize: '0.82rem', color: 'var(--text-main)', fontWeight: 700, whiteSpace: 'nowrap' }}>
-            🗣️ Spoken Voice & Text:
+            🗣️ Spoken Voice &amp; Text:
           </label>
           <select
             value={activeSpoken}
             onChange={(e) => updateSettings({ spokenLanguage: e.target.value })}
             className="form-select"
-            style={{ fontSize: '0.85rem', padding: '0.35rem 2rem 0.35rem 0.75rem', width: 'auto', minWidth: 170 }}
+            style={{ fontSize: '0.85rem', padding: '0.38rem 2rem 0.38rem 0.8rem', width: 'auto', minWidth: 170 }}
           >
             {SUPPORTED_SPOKEN_LANGUAGES.map((l) => (
               <option key={l.value} value={l.value}>
@@ -424,7 +436,7 @@ export default function TextToSign() {
             value={activeSign}
             onChange={(e) => updateSettings({ signLanguage: e.target.value })}
             className="form-select"
-            style={{ fontSize: '0.85rem', padding: '0.35rem 2rem 0.35rem 0.75rem', width: 'auto', minWidth: 180 }}
+            style={{ fontSize: '0.85rem', padding: '0.38rem 2rem 0.38rem 0.8rem', width: 'auto', minWidth: 180 }}
           >
             {SUPPORTED_SIGN_LANGUAGES.map((s) => (
               <option key={s.value} value={s.value}>
@@ -434,16 +446,16 @@ export default function TextToSign() {
           </select>
         </div>
 
-        <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)', marginLeft: 'auto' }}>
+        <span className="telemetry-pill" style={{ marginLeft: 'auto', fontSize: '0.73rem' }}>
           AUDIO LOCALE: {locale}
         </span>
       </div>
 
       {/* ── Input Card ── */}
-      <div className="card" style={{ marginBottom: '1.75rem', padding: '1.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Enter Text or Speak</h3>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-light)' }}>Press Ctrl+Enter to Translate</span>
+      <div className="card" style={{ marginBottom: '1.75rem', padding: '1.55rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.9rem', flexWrap: 'wrap', gap: '.5rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1.12rem', fontWeight: 800 }}>Enter Text or Speak</h3>
+          <span style={{ fontSize: '0.76rem', color: 'var(--text-light)', fontWeight: 600 }}>Press Ctrl+Enter to Translate</span>
         </div>
 
         <div className="tts-input-row">
@@ -457,17 +469,17 @@ export default function TextToSign() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
-            style={{ flex: 1, minWidth: 0, fontSize: '0.95rem', resize: 'vertical' }}
+            style={{ flex: 1, minWidth: 0, fontSize: '0.96rem', resize: 'vertical' }}
             onKeyDown={(e) => { if (e.key === 'Enter' && e.ctrlKey) handleGenerate(); }}
           />
 
           {/* Action buttons column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flexShrink: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', flexShrink: 0 }}>
             <button
-              className="btn btn-primary btn-lg"
+              className="btn btn-ink btn-lg"
               onClick={handleGenerate}
               disabled={loading || !text.trim()}
-              style={{ whiteSpace: 'nowrap', height: '42px', fontWeight: 600 }}
+              style={{ whiteSpace: 'nowrap', height: '44px', fontWeight: 600 }}
             >
               {loading ? <><Spinner size="sm" /> Translating…</> : '▶ Show Signs'}
             </button>
@@ -478,7 +490,7 @@ export default function TextToSign() {
                 className={`btn btn-sm ${listening ? 'btn-danger' : 'btn-subtle'}`}
                 onClick={listening ? stopListening : startListening}
                 title={listening ? 'Stop recording' : `Speak in ${activeSpoken}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center', height: '36px' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center', height: '38px' }}
               >
                 {listening ? (
                   <>
@@ -497,7 +509,7 @@ export default function TextToSign() {
                 onClick={() => handleSpeak()}
                 disabled={!text.trim()}
                 title={speaking ? 'Stop speaking' : `Read text aloud in ${activeSpoken}`}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center', height: '36px' }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'center', height: '38px' }}
               >
                 {speaking ? '🔇 Stop Voice' : '🔊 Hear Audio'}
               </button>
@@ -507,15 +519,15 @@ export default function TextToSign() {
 
         {/* Live mic indicator */}
         {listening && (
-          <div style={{ marginTop: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--color-error)' }}>
+          <div style={{ marginTop: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', color: 'var(--color-error)', fontWeight: 600 }}>
             <span style={{ animation: 'pulse 1s infinite', fontSize: '1rem' }}>●</span>
             Listening in <strong>{SUPPORTED_SPOKEN_LANGUAGES.find((l) => l.value === activeSpoken)?.nativeName || activeSpoken}</strong> — speak clearly into microphone
           </div>
         )}
 
-        {/* Quick phrase chips (Non-pill 6px radius) */}
-        <div style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: '0.25rem' }}>
+        {/* Quick phrase chips */}
+        <div style={{ marginTop: '1.1rem', display: 'flex', flexWrap: 'wrap', gap: '0.45rem', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.73rem', color: 'var(--text-light)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: '0.25rem' }}>
             Quick Phrases ({activeSpoken}):
           </span>
           {(QUICK_PHRASES_BY_LANG[activeSpoken] || QUICK_PHRASES_BY_LANG.English).map((p) => (
@@ -524,15 +536,15 @@ export default function TextToSign() {
               onClick={() => setText(p)}
               className="quick-chip"
               style={{
-                fontSize: '0.78rem',
-                padding: '0.25rem 0.65rem',
+                fontSize: '0.79rem',
+                padding: '0.32rem 0.85rem',
                 border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-sm)',
+                borderRadius: 'var(--radius-full)',
                 background: 'var(--bg-surface)',
                 cursor: 'pointer',
-                color: 'var(--text-muted)',
+                color: 'var(--text-main)',
                 fontFamily: 'inherit',
-                fontWeight: 500,
+                fontWeight: 600,
                 transition: 'all var(--transition)',
               }}
             >
@@ -563,15 +575,15 @@ export default function TextToSign() {
             )}
 
             {playableWords.length > 0 ? (
-              <div className="card" style={{ padding: '1.25rem' }}>
+              <div className="card" style={{ padding: '1.35rem' }}>
 
                 {/* Word header + counter + speak-word button */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.95rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
                       Active Sign Demonstration
                     </span>
-                    <h2 style={{ color: 'var(--color-primary)', fontSize: 'clamp(1.35rem, 4vw, 1.85rem)', fontWeight: 800, lineHeight: 1.1, marginTop: '0.15rem', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
+                    <h2 style={{ color: 'var(--color-primary)', fontSize: 'clamp(1.4rem, 4vw, 1.95rem)', fontWeight: 800, lineHeight: 1.1, marginTop: '0.15rem', fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>
                       {currentWord.word}
                       {currentWord.fuzzy && currentWord.matched_word !== currentWord.word && (
                         <span style={{ fontSize: '0.6em', fontWeight: 500, color: 'var(--text-muted)', marginLeft: '0.4rem' }}>
@@ -584,7 +596,7 @@ export default function TextToSign() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                     {ttsSupported && currentWord && (
                       <button
-                        className="btn btn-ghost btn-sm"
+                        className="btn btn-outline btn-sm"
                         onClick={() => handleSpeak(currentWord.word)}
                         title={`Pronounce "${currentWord.word}"`}
                         style={{ fontSize: '0.8rem', gap: '0.3rem' }}
@@ -593,8 +605,8 @@ export default function TextToSign() {
                       </button>
                     )}
 
-                    <div style={{ textAlign: 'right', background: 'var(--bg-surface)', padding: '0.35rem 0.75rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
-                      <span style={{ fontSize: '0.68rem', color: 'var(--text-light)', textTransform: 'uppercase', display: 'block', fontWeight: 600 }}>Sequence</span>
+                    <div style={{ textAlign: 'right', background: 'var(--bg-surface)', padding: '0.4rem 0.9rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: '0.66rem', color: 'var(--text-light)', textTransform: 'uppercase', display: 'block', fontWeight: 700 }}>Sequence</span>
                       <div style={{ fontWeight: 800, fontSize: '0.95rem', fontFamily: 'var(--font-mono)', color: 'var(--text-main)' }}>
                         {currentIdx + 1} / {playableWords.length}
                       </div>
@@ -603,15 +615,16 @@ export default function TextToSign() {
                 </div>
 
                 {/* Video element viewport */}
-                <div style={{ position: 'relative', background: '#0B1120', borderRadius: 'var(--radius-lg)', overflow: 'hidden', aspectRatio: '16/9', border: '1px solid var(--border)' }}>
+                <div style={{ position: 'relative', background: 'radial-gradient(circle at 50% 45%, #1E1B33 0%, #0D0C14 100%)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', aspectRatio: '16/9', border: '1px solid var(--border)' }}>
                   {currentWord && !videoError && (() => {
-                    const localSrc = currentWord.video_url ? videoUrl(currentWord.video_url) : null;
-                    const extSrc   = currentWord.external_url || null;
-                    const src      = useFallback ? extSrc : (localSrc || extSrc);
+                    const candidate = (currentWord.all_entries && currentWord.all_entries[candidateIdx]) || null;
+                    const candidateSrc = candidate?.video_url ? videoUrl(candidate.video_url) : (candidate?.external_url || null);
+                    const defaultSrc = currentWord.video_url ? videoUrl(currentWord.video_url) : (currentWord.external_url || null);
+                    const src = candidateSrc || defaultSrc;
                     if (!src) return null;
                     return (
                       <video
-                        key={`${currentIdx}-${useFallback ? 'ext' : 'local'}`}
+                        key={`${currentIdx}-${candidateIdx}`}
                         ref={videoRef}
                         src={src}
                         style={{ width: '100%', height: '100%', objectFit: 'contain' }}
@@ -627,8 +640,8 @@ export default function TextToSign() {
                         }}
                         onError={() => {
                           clearVideoTimeout();
-                          if (!useFallback && extSrc && src !== extSrc) {
-                            setUseFallback(true);
+                          if (currentWord.all_entries && candidateIdx + 1 < currentWord.all_entries.length) {
+                            setCandidateIdx((prev) => prev + 1);
                           } else {
                             setVideoError(true);
                           }
@@ -644,8 +657,8 @@ export default function TextToSign() {
                         onLoadStart={() => {
                           clearVideoTimeout();
                           videoTimeoutRef.current = setTimeout(() => {
-                            if (!useFallback && extSrc && src !== extSrc) {
-                              setUseFallback(true);
+                            if (currentWord.all_entries && candidateIdx + 1 < currentWord.all_entries.length) {
+                              setCandidateIdx((prev) => prev + 1);
                             } else {
                               setVideoError(true);
                             }
@@ -658,19 +671,19 @@ export default function TextToSign() {
                   })()}
 
                   {currentWord && videoError && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', color: '#94A3B8', padding: '1.25rem', textAlign: 'center' }}>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', color: '#C4B5FD', padding: '1.25rem', textAlign: 'center' }}>
                       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                         <path d="M23 7l-7 5 7 5V7z" />
                         <rect x="1" y="5" width="15" height="14" rx="2" />
                         <line x1="1" y1="1" x2="23" y2="23" />
                       </svg>
-                      <p style={{ fontSize: '0.875rem', margin: 0 }}>
-                        Video stream unavailable for <strong style={{ color: '#E2E8F0' }}>"{currentWord.word}"</strong>.
+                      <p style={{ fontSize: '0.88rem', margin: 0 }}>
+                        Video stream unavailable for <strong style={{ color: '#FFFFFF' }}>&quot;{currentWord.word}&quot;</strong>.
                       </p>
                       <button
                         className="btn btn-outline btn-sm"
-                        style={{ color: '#E2E8F0', borderColor: '#475569' }}
-                        onClick={() => { clearVideoTimeout(); setVideoError(false); setUseFallback(false); handleVideoEnded(); }}
+                        style={{ color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.28)', background: 'rgba(255,255,255,0.08)' }}
+                        onClick={() => { clearVideoTimeout(); setVideoError(false); setUseFallback(false); setCandidateIdx(0); handleVideoEnded(); }}
                       >
                         Skip to next sign →
                       </button>
@@ -687,7 +700,7 @@ export default function TextToSign() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: 'rgba(0,0,0,0.35)',
+                        background: 'rgba(13, 12, 20, 0.38)',
                         border: 'none',
                         cursor: 'pointer',
                         color: '#fff',
@@ -695,13 +708,22 @@ export default function TextToSign() {
                         transition: 'background var(--transition)',
                       }}
                     >
-                      ▶
+                      <span style={{
+                        width: 68, height: 68, borderRadius: '50%',
+                        background: 'var(--gradient-brand)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 14px 30px rgba(107, 76, 255, 0.5)',
+                        fontSize: '1.6rem',
+                        paddingLeft: 4,
+                      }}>
+                        ▶
+                      </span>
                     </button>
                   )}
                 </div>
 
                 {/* Progress segmented track */}
-                <div style={{ margin: '0.85rem 0 0.65rem', display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                <div style={{ margin: '0.95rem 0 0.7rem', display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
                   {playableWords.map((w, i) => (
                     <button
                       key={i}
@@ -709,13 +731,13 @@ export default function TextToSign() {
                       title={w.word}
                       style={{
                         flex: '1 1 0',
-                        minWidth: 8,
-                        height: 5,
-                        borderRadius: 'var(--radius-xs)',
+                        minWidth: 10,
+                        height: 6,
+                        borderRadius: 'var(--radius-full)',
                         border: 'none',
                         cursor: 'pointer',
                         padding: 0,
-                        background: i === currentIdx ? 'var(--color-primary)' : i < currentIdx ? '#93C5FD' : 'var(--border)',
+                        background: i === currentIdx ? 'var(--color-primary)' : i < currentIdx ? '#C4B5FD' : 'var(--bg-surface-high)',
                         transition: 'background var(--transition)',
                       }}
                     />
@@ -723,7 +745,7 @@ export default function TextToSign() {
                 </div>
 
                 {/* Playback Controls Row */}
-                <div className="tts-controls" style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <div className="tts-controls" style={{ marginTop: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <button className="btn btn-ghost btn-sm" onClick={prev} disabled={currentIdx === 0}>
                     ◀ Prev
                   </button>
@@ -766,13 +788,13 @@ export default function TextToSign() {
 
                   {/* Playback Speed selector */}
                   <div className="tts-speed" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: 'auto' }}>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>SPEED:</span>
+                    <span style={{ fontSize: '0.73rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>SPEED:</span>
                     {[0.5, 0.75, 1, 1.5].map((s) => (
                       <button
                         key={s}
                         className={`btn btn-sm ${speed === s ? 'btn-primary' : 'btn-ghost'}`}
                         onClick={() => changeSpeed(s)}
-                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}
+                        style={{ padding: '0.24rem 0.6rem', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}
                       >
                         {s}x
                       </button>
@@ -781,9 +803,9 @@ export default function TextToSign() {
                 </div>
 
                 {/* AI Tip Action & Full Sentence TTS */}
-                <div style={{ marginTop: '0.85rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div style={{ marginTop: '0.95rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                   <button
-                    className="btn btn-ghost btn-sm"
+                    className="btn btn-outline btn-sm"
                     style={{ fontSize: '0.8rem', gap: '0.35rem', display: 'flex', alignItems: 'center' }}
                     onClick={() => fetchTip(currentWord.word)}
                     disabled={tipLoading || !currentWord}
@@ -794,7 +816,7 @@ export default function TextToSign() {
 
                   {ttsSupported && text.trim() && (
                     <button
-                      className={`btn btn-ghost btn-sm ${speaking ? 'btn-subtle' : ''}`}
+                      className={`btn btn-outline btn-sm ${speaking ? 'btn-subtle' : ''}`}
                       style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                       onClick={() => handleSpeak(text)}
                       title="Speak full sentence aloud"
@@ -806,11 +828,11 @@ export default function TextToSign() {
 
                 {/* AI Tip result display */}
                 {tip && (
-                  <div style={{ marginTop: '0.75rem', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', background: 'var(--bg-surface)', border: '1px solid var(--border)', fontSize: '0.83rem' }}>
-                    <div style={{ fontWeight: 700, color: 'var(--color-primary)', marginBottom: '0.2rem' }}>
-                      Sign Tip for "{tipWord}":
+                  <div style={{ marginTop: '0.85rem', padding: '0.85rem 1.1rem', borderRadius: 'var(--radius-lg)', background: 'var(--bg-surface)', border: '1px solid var(--border)', fontSize: '0.85rem' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--color-primary)', marginBottom: '0.25rem' }}>
+                      Sign Tip for &quot;{tipWord}&quot;:
                     </div>
-                    <div style={{ color: 'var(--text-main)', lineHeight: 1.5 }}>
+                    <div style={{ color: 'var(--text-main)', lineHeight: 1.55 }}>
                       {tip.tip || tip.explanation || JSON.stringify(tip)}
                     </div>
                   </div>
@@ -826,8 +848,8 @@ export default function TextToSign() {
             )}
 
             {/* Word sequence strip */}
-            <div className="card" style={{ padding: '1rem 1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+            <div className="card" style={{ padding: '1.15rem 1.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '.4rem' }}>
                 <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Sign Sequence — {words.length} Word{words.length !== 1 ? 's' : ''}
                 </div>
@@ -847,16 +869,16 @@ export default function TextToSign() {
                       key={i}
                       onClick={() => w.found ? jumpTo(pidx) : null}
                       style={{
-                        padding: '0.35rem 0.75rem',
-                        borderRadius: 'var(--radius-sm)',
+                        padding: '0.38rem 0.85rem',
+                        borderRadius: 'var(--radius-full)',
                         border: `1.5px solid ${isActive ? 'var(--color-primary)' : w.found ? (w.fuzzy ? 'var(--color-warning)' : 'var(--border)') : 'var(--color-error)'}`,
                         background: isActive ? 'var(--color-primary-light)' : 'var(--bg-surface)',
                         color: isActive ? 'var(--color-primary)' : w.found ? 'var(--text-main)' : 'var(--color-error)',
-                        fontWeight: isActive ? 700 : 500,
-                        fontSize: '0.85rem',
+                        fontWeight: isActive ? 700 : 600,
+                        fontSize: '0.84rem',
                         cursor: w.found ? 'pointer' : 'default',
                         transition: 'all var(--transition)',
-                        opacity: w.found ? 1 : 0.6,
+                        opacity: w.found ? 1 : 0.65,
                       }}
                       title={w.found ? `Jump to "${w.word}"` : `"${w.word}" not in dictionary`}
                     >
@@ -872,32 +894,32 @@ export default function TextToSign() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', minWidth: 0 }}>
 
             {/* Translation Coverage Card */}
-            <div className="card" style={{ padding: '1.25rem', textAlign: 'center' }}>
+            <div className="card" style={{ padding: '1.35rem', textAlign: 'center' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'var(--font-display)' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'var(--font-display)' }}>
                     {playableWords.length}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
                     Signs Synthesized
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '1.85rem', fontWeight: 800, color: notFoundWords.length ? 'var(--color-warning)' : 'var(--color-success)', fontFamily: 'var(--font-display)' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 800, color: notFoundWords.length ? 'var(--color-warning)' : 'var(--color-success)', fontFamily: 'var(--font-display)' }}>
                     {notFoundWords.length}
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>
                     Skipped Words
                   </div>
                 </div>
               </div>
 
               {coverage !== null && (
-                <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border)' }}>
+                <div style={{ marginTop: '1rem', paddingTop: '0.9rem', borderTop: '1px solid var(--border)' }}>
                   <div className="confidence-bar">
                     <div className="confidence-bar-fill" style={{ width: `${coverage * 100}%` }} />
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.35rem', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.4rem', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
                     {Math.round(coverage * 100)}% WLASL Lexicon Coverage
                   </div>
                 </div>
@@ -906,31 +928,32 @@ export default function TextToSign() {
 
             {/* Supported Vocabulary Card */}
             {vocabHints.length > 0 && (
-              <div className="card" style={{ padding: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>
+              <div className="card" style={{ padding: '1.35rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800 }}>
                     Supported Vocabulary
                   </h4>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>
+                  <span className="badge badge-neutral" style={{ fontFamily: 'var(--font-mono)' }}>
                     {vocabHints.length} words
                   </span>
                 </div>
                 <div style={{ maxHeight: 240, overflowY: 'auto', paddingRight: '0.25rem' }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                     {vocabHints.map((w) => (
                       <button
                         key={w}
                         onClick={() => setText((prev) => prev ? `${prev} ${w}` : w)}
                         className="quick-chip"
                         style={{
-                          fontSize: '0.75rem',
-                          padding: '0.2rem 0.55rem',
+                          fontSize: '0.76rem',
+                          padding: '0.25rem 0.65rem',
                           border: '1px solid var(--border)',
-                          borderRadius: 'var(--radius-sm)',
+                          borderRadius: 'var(--radius-full)',
                           background: 'var(--bg-surface)',
                           cursor: 'pointer',
-                          color: 'var(--text-muted)',
+                          color: 'var(--text-main)',
                           fontFamily: 'inherit',
+                          fontWeight: 500,
                         }}
                         title={`Add "${w}" to text`}
                       >
@@ -943,11 +966,11 @@ export default function TextToSign() {
             )}
 
             {/* How It Works Card */}
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+            <div className="card" style={{ padding: '1.35rem' }}>
+              <h4 style={{ fontSize: '0.98rem', fontWeight: 800, marginBottom: '0.8rem' }}>
                 Synthesis Guidance
               </h4>
-              <ol style={{ paddingLeft: '1.1rem', fontSize: '0.83rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.45rem', margin: 0 }}>
+              <ol style={{ paddingLeft: '1.1rem', fontSize: '0.84rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: 0 }}>
                 <li>Select your language, then type or <strong>voice-dictate</strong>.</li>
                 <li>Click <strong>Show Signs</strong> — video demonstration auto-plays.</li>
                 <li>Toggle <strong>Auto-Advance</strong> to sequence words smoothly.</li>
@@ -961,7 +984,7 @@ export default function TextToSign() {
       <style>{`
         .tts-input-row {
           display: flex;
-          gap: 0.85rem;
+          gap: 0.9rem;
           align-items: flex-start;
           flex-wrap: wrap;
         }
@@ -969,9 +992,15 @@ export default function TextToSign() {
 
         .tts-grid {
           display: grid;
-          grid-template-columns: minmax(0, 1fr) 300px;
+          grid-template-columns: minmax(0, 1fr) 315px;
           gap: 1.5rem;
           align-items: start;
+        }
+
+        .quick-chip:hover {
+          border-color: var(--color-primary) !important;
+          color: var(--color-primary) !important;
+          background: var(--color-primary-light) !important;
         }
 
         @media (max-width: 900px) {

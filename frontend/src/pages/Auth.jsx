@@ -1,14 +1,9 @@
 /**
  * Auth Page - Login - Register - OTP Verification - Guest access.
  *
- * Visual Reskin matching Stitch "Warm Kinetic Clarity" specification:
- * - Clean split-card layout with 16px radius and 1px border
- * - MediaPipe 21-keypoint hand tracking HUD preview on left panel
- * - Privacy guarantee & zero server video streaming badge
- * - 8px radius form controls, primary blue CTA, Google OAuth & Guest buttons
- * - OTP 6-digit verification card
- *
- * ALL functionality, state, API calls, routes, and error handling preserved 100%.
+ * Redesigned in the warm-cream, glossy 3D claymorphism aesthetic while preserving
+ * 100% of authentication flows, OTP verification, Google OAuth, Guest access,
+ * validation, state, and API calls.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -19,8 +14,8 @@ import api from '../services/api';
 import Alert from '../components/Alert';
 import { Spinner } from '../components/LoadingSpinner';
 import { useSettings } from '../context/SettingsContext';
-
 import BrandLogo from '../components/BrandLogo';
+import Hero3DScene from '../components/Hero3DScene';
 
 /* -- Icons -- */
 const MoonIcon = () => (
@@ -43,164 +38,6 @@ const GoogleIcon = () => (
     <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
     <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
   </svg>
-);
-
-
-
-/* -- Hand Tracking Skeleton Graphic -- */
-const HandTrackingGraphic = () => (
-  <div style={{
-    position: 'relative',
-    width: '100%',
-    height: '210px',
-    background: 'radial-gradient(ellipse at center, #1E293B 0%, #0B1120 100%)',
-    borderRadius: '12px',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    overflow: 'hidden',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '1.25rem',
-  }}>
-    {/* Grid backdrop */}
-    <div style={{
-      position: 'absolute',
-      inset: 0,
-      backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
-      backgroundSize: '20px 20px',
-      pointerEvents: 'none',
-    }} />
-
-    {/* Top telemetry badges */}
-    <div style={{
-      position: 'absolute',
-      top: '10px',
-      left: '12px',
-      right: '12px',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      zIndex: 2,
-    }}>
-      <span style={{
-        background: 'rgba(37, 99, 235, 0.2)',
-        border: '1px solid rgba(59, 130, 246, 0.4)',
-        color: '#93C5FD',
-        padding: '2px 8px',
-        borderRadius: '6px',
-        fontSize: '0.68rem',
-        fontFamily: 'var(--font-mono)',
-        fontWeight: 600,
-        letterSpacing: '0.04em',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '5px',
-      }}>
-        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#3B82F6', display: 'inline-block' }} />
-        21-KEYPOINTS ACTIVE
-      </span>
-      <span style={{
-        background: 'rgba(15, 23, 42, 0.8)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        color: '#94A3B8',
-        padding: '2px 8px',
-        borderRadius: '6px',
-        fontSize: '0.68rem',
-        fontFamily: 'var(--font-mono)',
-      }}>
-        60 FPS · WEBGPU
-      </span>
-    </div>
-
-    {/* Hand Landmark Skeleton SVG */}
-    <svg width="200" height="155" viewBox="0 0 220 180" fill="none" style={{ position: 'relative', zIndex: 1 }}>
-      {/* Palm connections */}
-      <line x1="110" y1="165" x2="70" y2="135" stroke="#3B82F6" strokeWidth="2" strokeDasharray="3 3" />
-      <line x1="110" y1="165" x2="95" y2="110" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="110" y1="165" x2="115" y2="105" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="110" y1="165" x2="135" y2="115" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="110" y1="165" x2="155" y2="130" stroke="#3B82F6" strokeWidth="2" />
-
-      {/* Palm bridge */}
-      <line x1="70" y1="135" x2="95" y2="110" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="95" y1="110" x2="115" y2="105" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="115" y1="105" x2="135" y2="115" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="135" y1="115" x2="155" y2="130" stroke="#3B82F6" strokeWidth="2" />
-
-      {/* Thumb */}
-      <line x1="70" y1="135" x2="55" y2="115" stroke="#F59E0B" strokeWidth="2" />
-      <line x1="55" y1="115" x2="48" y2="95" stroke="#F59E0B" strokeWidth="2" />
-      <line x1="48" y1="95" x2="42" y2="75" stroke="#F59E0B" strokeWidth="2" />
-
-      {/* Index */}
-      <line x1="95" y1="110" x2="90" y2="80" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="90" y1="80" x2="88" y2="55" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="88" y1="55" x2="86" y2="30" stroke="#3B82F6" strokeWidth="2" />
-
-      {/* Middle */}
-      <line x1="115" y1="105" x2="115" y2="72" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="115" y1="72" x2="115" y2="45" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="115" y1="45" x2="115" y2="20" stroke="#3B82F6" strokeWidth="2" />
-
-      {/* Ring */}
-      <line x1="135" y1="115" x2="138" y2="82" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="138" y1="82" x2="140" y2="58" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="140" y1="58" x2="142" y2="35" stroke="#3B82F6" strokeWidth="2" />
-
-      {/* Pinky */}
-      <line x1="155" y1="130" x2="162" y2="105" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="162" y1="105" x2="166" y2="85" stroke="#3B82F6" strokeWidth="2" />
-      <line x1="166" y1="85" x2="170" y2="65" stroke="#3B82F6" strokeWidth="2" />
-
-      {/* Wrist */}
-      <circle cx="110" cy="165" r="5" fill="#2563EB" stroke="#FFFFFF" strokeWidth="1.5" />
-      {/* Thumb points */}
-      <circle cx="70" cy="135" r="3.5" fill="#3B82F6" />
-      <circle cx="55" cy="115" r="3.5" fill="#F59E0B" />
-      <circle cx="48" cy="95" r="3.5" fill="#F59E0B" />
-      <circle cx="42" cy="75" r="4.5" fill="#F59E0B" stroke="#FFFFFF" strokeWidth="1.5" />
-      {/* Index points */}
-      <circle cx="95" cy="110" r="3.5" fill="#3B82F6" />
-      <circle cx="90" cy="80" r="3.5" fill="#3B82F6" />
-      <circle cx="88" cy="55" r="3.5" fill="#3B82F6" />
-      <circle cx="86" cy="30" r="4.5" fill="#2563EB" stroke="#FFFFFF" strokeWidth="1.5" />
-      {/* Middle points */}
-      <circle cx="115" cy="105" r="3.5" fill="#3B82F6" />
-      <circle cx="115" cy="72" r="3.5" fill="#3B82F6" />
-      <circle cx="115" cy="45" r="3.5" fill="#3B82F6" />
-      <circle cx="115" cy="20" r="4.5" fill="#2563EB" stroke="#FFFFFF" strokeWidth="1.5" />
-      {/* Ring points */}
-      <circle cx="135" cy="115" r="3.5" fill="#3B82F6" />
-      <circle cx="138" cy="82" r="3.5" fill="#3B82F6" />
-      <circle cx="140" cy="58" r="3.5" fill="#3B82F6" />
-      <circle cx="142" cy="35" r="4.5" fill="#2563EB" stroke="#FFFFFF" strokeWidth="1.5" />
-      {/* Pinky points */}
-      <circle cx="155" cy="130" r="3.5" fill="#3B82F6" />
-      <circle cx="162" cy="105" r="3.5" fill="#3B82F6" />
-      <circle cx="166" cy="85" r="3.5" fill="#3B82F6" />
-      <circle cx="170" cy="65" r="4.5" fill="#2563EB" stroke="#FFFFFF" strokeWidth="1.5" />
-    </svg>
-
-    {/* Bottom coordinate tracker */}
-    <div style={{
-      position: 'absolute',
-      bottom: '8px',
-      left: '12px',
-      right: '12px',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      fontSize: '0.65rem',
-      fontFamily: 'var(--font-mono)',
-      color: '#94A3B8',
-      background: 'rgba(15, 23, 42, 0.75)',
-      padding: '3px 8px',
-      borderRadius: '4px',
-    }}>
-      <span>COORD: (0.482, 0.712, -0.041)</span>
-      <span style={{ color: '#10B981', fontWeight: 600 }}>CONF: 99.4%</span>
-    </div>
-  </div>
 );
 
 /* -- OTP digit input -- */
@@ -270,8 +107,8 @@ function OtpInput({ value, onChange, disabled }) {
           onPaste={handlePaste}
           onFocus={e => e.target.select()}
           style={{
-            width: '44px',
-            height: '52px',
+            width: '46px',
+            height: '54px',
             textAlign: 'center',
             fontSize: '1.35rem',
             fontWeight: 700,
@@ -284,6 +121,7 @@ function OtpInput({ value, onChange, disabled }) {
             transition: 'border-color 0.15s, box-shadow 0.15s',
             caretColor: 'transparent',
             boxSizing: 'border-box',
+            boxShadow: d.trim() ? '0 0 0 3px rgba(107, 76, 255, 0.14)' : 'var(--shadow-xs)',
           }}
           aria-label={`Digit ${i + 1}`}
         />
@@ -312,9 +150,9 @@ function useCountdown(seconds, active) {
   return remaining;
 }
 
-/* -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
+/* -*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-
    Main Auth component
--*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- */
+-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*- */
 export default function Auth({ defaultTab = 'login' }) {
   const [screen, setScreen] = useState(
     defaultTab === 'register' ? 'register' : 'login'
@@ -444,7 +282,7 @@ export default function Auth({ defaultTab = 'login' }) {
 
   /* -- OTP verify -> create account only after code is confirmed -- */
   const handleVerifyOtp = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     clearMessages();
 
     if (otpValue.length !== 6) {
@@ -555,17 +393,37 @@ export default function Auth({ defaultTab = 'login' }) {
         background: 'var(--bg-page)',
         display: 'flex',
         flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden',
       }}
     >
+      {/* Ambient pastel background glows */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: dark
+            ? 'radial-gradient(circle at 18% 20%, rgba(124, 92, 255, 0.16), transparent 50%), radial-gradient(circle at 82% 78%, rgba(45, 212, 191, 0.08), transparent 45%)'
+            : 'radial-gradient(circle at 18% 22%, rgba(167, 139, 250, 0.22), transparent 52%), radial-gradient(circle at 85% 75%, rgba(254, 215, 170, 0.30), transparent 50%)',
+          pointerEvents: 'none',
+        }}
+      />
+
       {/* -- Top navigation bar -- */}
       <header
+        className="glass-surface"
         style={{
-          padding: '0.85rem clamp(1.25rem, 5vw, 2.5rem)',
+          position: 'relative',
+          zIndex: 10,
+          padding: '0.85rem clamp(1.25rem, 5vw, 3rem)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          borderTop: 'none',
+          borderLeft: 'none',
+          borderRight: 'none',
           borderBottom: '1px solid var(--border)',
-          background: 'var(--bg-card)',
           flexShrink: 0,
         }}
       >
@@ -578,13 +436,13 @@ export default function Auth({ defaultTab = 'login' }) {
             textDecoration: 'none',
           }}
         >
-          <BrandLogo size={30} />
+          <BrandLogo size={32} />
           <span
             style={{
               fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: '1.05rem',
-              letterSpacing: '-0.025em',
+              fontWeight: 800,
+              fontSize: '1.12rem',
+              letterSpacing: '-0.03em',
               color: 'var(--text-main)',
             }}
           >
@@ -603,22 +461,22 @@ export default function Auth({ defaultTab = 'login' }) {
           </button>
 
           {screen === 'otp' ? null : screen === 'login' ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--text-muted)' }} className="hide-sm">Don't have an account?</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem' }}>
+              <span style={{ color: 'var(--text-muted)' }} className="hide-sm">Don&apos;t have an account?</span>
               <button
                 onClick={() => switchScreen('register')}
-                className="btn btn-outline btn-sm"
+                className="btn btn-ink btn-sm"
                 style={{ fontWeight: 600 }}
               >
                 Sign Up
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem' }}>
               <span style={{ color: 'var(--text-muted)' }} className="hide-sm">Already have an account?</span>
               <button
                 onClick={() => switchScreen('login')}
-                className="btn btn-ghost btn-sm"
+                className="btn btn-outline btn-sm"
                 style={{ fontWeight: 600 }}
               >
                 Sign In
@@ -635,18 +493,20 @@ export default function Auth({ defaultTab = 'login' }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: 'clamp(1.5rem, 4vw, 3rem) 1.25rem',
+          padding: 'clamp(1.5rem, 4vw, 2.75rem) 1.25rem',
           boxSizing: 'border-box',
+          position: 'relative',
+          zIndex: 5,
         }}
       >
         <div
           className="auth-container-card"
           style={{
             width: '100%',
-            maxWidth: screen === 'otp' ? '460px' : '980px',
+            maxWidth: screen === 'otp' ? '470px' : '1040px',
             background: 'var(--bg-card)',
             border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-xl)',
+            borderRadius: '30px',
             boxShadow: 'var(--shadow-lg)',
             display: 'grid',
             gridTemplateColumns: screen === 'otp' ? '1fr' : '1.05fr 1fr',
@@ -655,75 +515,81 @@ export default function Auth({ defaultTab = 'login' }) {
           }}
         >
           {/* =================================================================
-              LEFT PANEL: Visual Tracking HUD & Zero Server Streaming Guarantee
+              LEFT PANEL: 3D Visual Showcase & Zero Server Streaming Guarantee
              ================================================================= */}
           {screen !== 'otp' && (
             <div
               className="auth-preview-panel"
               style={{
-                background: 'var(--bg-surface)',
+                background: dark
+                  ? 'linear-gradient(155deg, #1B1830 0%, #151324 55%, #121A26 100%)'
+                  : 'linear-gradient(155deg, #F4F0FF 0%, #FFF7ED 55%, #ECFDF5 100%)',
                 borderRight: '1px solid var(--border)',
-                padding: '2.5rem',
+                padding: '2.25rem',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
               <div>
                 {/* Visual Eyebrow */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
-                  <span className="badge badge-primary">
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-primary)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <span className="pill-badge" style={{ padding: '.32rem .8rem', fontSize: '.74rem' }}>
+                    <span className="status-dot online" />
                     On-Device Neural Engine
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>
-                    v1.0.4 WebAssembly
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                    MediaPipe 3D
                   </span>
                 </div>
 
                 <h3
                   style={{
-                    fontSize: '1.35rem',
-                    fontWeight: 700,
-                    letterSpacing: '-0.02em',
-                    marginBottom: '0.5rem',
+                    fontSize: '1.45rem',
+                    fontWeight: 800,
+                    letterSpacing: '-0.025em',
+                    marginBottom: '0.45rem',
                     color: 'var(--text-main)',
                   }}
                 >
-                  Real-time ASL spatial recognition
+                  Real-time ASL spatial <span className="gradient-text">recognition</span>
                 </h3>
 
                 <p
                   style={{
                     color: 'var(--text-muted)',
-                    fontSize: '0.875rem',
-                    lineHeight: 1.6,
-                    marginBottom: '1.5rem',
+                    fontSize: '0.86rem',
+                    lineHeight: 1.55,
+                    marginBottom: '0.5rem',
                   }}
                 >
-                  MediaPipe extracts 21 skeletal landmarks per hand directly in-browser. Zero video frames leave your device.
+                  21 skeletal landmarks per hand computed locally in your browser. Zero video frames leave your device.
                 </p>
 
-                {/* Hand Tracking Graphic */}
-                <HandTrackingGraphic />
+                {/* Compact 3D Hand & Spatial Objects Showcase */}
+                <div style={{ margin: '0.25rem 0' }}>
+                  <Hero3DScene dark={dark} compact />
+                </div>
 
                 {/* Trust Guarantee Box */}
                 <div
+                  className="glass-surface"
                   style={{
-                    padding: '1rem',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border)',
+                    padding: '0.95rem 1.05rem',
+                    borderRadius: 'var(--radius-lg)',
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: '0.75rem',
+                    boxShadow: 'var(--shadow-sm)',
                   }}
                 >
                   <div
                     style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: '6px',
+                      width: 34,
+                      height: 34,
+                      borderRadius: '11px',
                       background: 'var(--color-primary-light)',
                       color: 'var(--color-primary)',
                       display: 'flex',
@@ -732,16 +598,16 @@ export default function Auth({ defaultTab = 'login' }) {
                       flexShrink: 0,
                     }}
                   >
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
                   </div>
                   <div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.15rem' }}>
-                      Zero Server Streaming
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.15rem' }}>
+                      Zero Server Streaming Guarantee
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                      Camera feed is computed strictly in your browser using client-side WebGL acceleration. No recordings or video streams are ever transmitted or saved.
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                      Camera feed is processed strictly client-side via WebGL &amp; WebAssembly. No video recordings are ever transmitted.
                     </div>
                   </div>
                 </div>
@@ -750,18 +616,19 @@ export default function Auth({ defaultTab = 'login' }) {
               {/* Bottom Micro Bullets */}
               <div
                 style={{
-                  marginTop: '1.5rem',
-                  paddingTop: '1rem',
+                  marginTop: '1.25rem',
+                  paddingTop: '0.95rem',
                   borderTop: '1px solid var(--border)',
                   display: 'flex',
                   justifyContent: 'space-between',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-light)',
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
                 }}
               >
                 <span>✓ 2,000+ WLASL Words</span>
-                <span>✓ Client-Side Encrypted</span>
-                <span>✓ 0ms Server Relay</span>
+                <span>✓ Client-Side Private</span>
+                <span>✓ 0ms Video Relay</span>
               </div>
             </div>
           )}
@@ -771,7 +638,7 @@ export default function Auth({ defaultTab = 'login' }) {
              ================================================================= */}
           <div
             style={{
-              padding: screen === 'otp' ? '2.5rem 2rem' : '2.5rem clamp(1.5rem, 3vw, 2.5rem)',
+              padding: screen === 'otp' ? '2.5rem 2.25rem' : '2.4rem clamp(1.5rem, 3vw, 2.6rem)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'center',
@@ -792,10 +659,10 @@ export default function Auth({ defaultTab = 'login' }) {
                     border: 'none',
                     cursor: 'pointer',
                     color: 'var(--text-muted)',
-                    fontSize: '.8125rem',
+                    fontSize: '.82rem',
                     marginBottom: '1.25rem',
                     padding: 0,
-                    fontWeight: 500,
+                    fontWeight: 600,
                   }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -806,26 +673,26 @@ export default function Auth({ defaultTab = 'login' }) {
 
                 <div
                   style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: '12px',
-                    background: dark ? '#0D2149' : '#EFF6FF',
+                    width: 56,
+                    height: 56,
+                    borderRadius: '18px',
+                    background: 'var(--color-primary-light)',
                     color: 'var(--color-primary)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     margin: '0 auto 1.25rem',
-                    border: '1px solid #BFDBFE',
+                    boxShadow: 'var(--shadow-sm)',
                   }}
                 >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                     <polyline points="22,6 12,13 2,6"/>
                   </svg>
                 </div>
 
                 <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                  <h2 style={{ fontSize: '1.35rem', marginBottom: '.35rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
+                  <h2 style={{ fontSize: '1.45rem', marginBottom: '.35rem', fontWeight: 800, letterSpacing: '-0.025em' }}>
                     Verify your email
                   </h2>
                   <p style={{ color: 'var(--text-muted)', fontSize: '.875rem', lineHeight: 1.5 }}>
@@ -850,7 +717,7 @@ export default function Auth({ defaultTab = 'login' }) {
                     disabled={loading || otpValue.length < 6}
                     style={{
                       width: '100%',
-                      height: '44px',
+                      height: '46px',
                       fontSize: '.9375rem',
                       fontWeight: 600,
                     }}
@@ -868,7 +735,7 @@ export default function Auth({ defaultTab = 'login' }) {
 
                 <div style={{ textAlign: 'center', marginTop: '1.25rem' }}>
                   <p style={{ fontSize: '.8125rem', color: 'var(--text-muted)', marginBottom: '.35rem' }}>
-                    Didn't receive the verification code?
+                    Didn&apos;t receive the verification code?
                   </p>
 
                   {countdown > 0 ? (
@@ -886,8 +753,8 @@ export default function Auth({ defaultTab = 'login' }) {
                         border: 'none',
                         cursor: 'pointer',
                         color: 'var(--color-primary)',
-                        fontWeight: 600,
-                        fontSize: '.8125rem',
+                        fontWeight: 700,
+                        fontSize: '.825rem',
                       }}
                     >
                       {resendCount > 0 ? 'Resend new code' : 'Resend code now'}
@@ -904,32 +771,23 @@ export default function Auth({ defaultTab = 'login' }) {
               <div>
                 {/* Header & Eyebrow */}
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <div
-                    style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      color: 'var(--color-primary)',
-                      marginBottom: '0.35rem',
-                    }}
-                  >
-                    {screen === 'login' ? 'WORKSPACE AUTHENTICATION' : 'CREATE ACCOUNT'}
-                  </div>
+                  <span className="badge badge-primary" style={{ marginBottom: '0.55rem' }}>
+                    {screen === 'login' ? 'Workspace Authentication' : 'Create Account'}
+                  </span>
 
                   <h2
                     style={{
-                      fontSize: '1.45rem',
-                      fontWeight: 700,
-                      letterSpacing: '-0.025em',
+                      fontSize: '1.55rem',
+                      fontWeight: 800,
+                      letterSpacing: '-0.03em',
                       color: 'var(--text-main)',
-                      marginBottom: '0.35rem',
+                      marginBottom: '0.3rem',
                     }}
                   >
-                    {screen === 'login' ? 'Log in to your account' : 'Start translating now'}
+                    {screen === 'login' ? 'Welcome back' : 'Start translating now'}
                   </h2>
 
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem' }}>
                     {screen === 'login'
                       ? 'Access on-device sign language translation & saved history.'
                       : 'Join GestureBridge — 100% free, private on-device recognition.'}
@@ -941,8 +799,8 @@ export default function Auth({ defaultTab = 'login' }) {
                   style={{
                     display: 'flex',
                     background: 'var(--bg-surface)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '3px',
+                    borderRadius: 'var(--radius-full)',
+                    padding: '4px',
                     marginBottom: '1.25rem',
                     border: '1px solid var(--border)',
                   }}
@@ -952,15 +810,15 @@ export default function Auth({ defaultTab = 'login' }) {
                     onClick={() => switchScreen('login')}
                     style={{
                       flex: 1,
-                      padding: '0.45rem',
-                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.5rem',
+                      borderRadius: 'var(--radius-full)',
                       border: 'none',
                       cursor: 'pointer',
                       fontWeight: 600,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.82rem',
                       background: screen === 'login' ? 'var(--bg-card)' : 'transparent',
                       color: screen === 'login' ? 'var(--color-primary)' : 'var(--text-muted)',
-                      boxShadow: screen === 'login' ? 'var(--shadow-sm)' : 'none',
+                      boxShadow: screen === 'login' ? 'var(--shadow-xs)' : 'none',
                       transition: 'all var(--transition)',
                     }}
                   >
@@ -971,15 +829,15 @@ export default function Auth({ defaultTab = 'login' }) {
                     onClick={() => switchScreen('register')}
                     style={{
                       flex: 1,
-                      padding: '0.45rem',
-                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.5rem',
+                      borderRadius: 'var(--radius-full)',
                       border: 'none',
                       cursor: 'pointer',
                       fontWeight: 600,
-                      fontSize: '0.8125rem',
+                      fontSize: '0.82rem',
                       background: screen === 'register' ? 'var(--bg-card)' : 'transparent',
                       color: screen === 'register' ? 'var(--color-primary)' : 'var(--text-muted)',
-                      boxShadow: screen === 'register' ? 'var(--shadow-sm)' : 'none',
+                      boxShadow: screen === 'register' ? 'var(--shadow-xs)' : 'none',
                       transition: 'all var(--transition)',
                     }}
                   >
@@ -997,9 +855,9 @@ export default function Auth({ defaultTab = 'login' }) {
                   className="btn btn-outline"
                   style={{
                     width: '100%',
-                    height: '42px',
+                    height: '44px',
                     gap: '0.65rem',
-                    marginBottom: '0.85rem',
+                    marginBottom: '0.9rem',
                     justifyContent: 'center',
                     fontWeight: 600,
                     fontSize: '0.875rem',
@@ -1019,7 +877,7 @@ export default function Auth({ defaultTab = 'login' }) {
                   }}
                 >
                   <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                     or email
                   </span>
                   <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
@@ -1068,7 +926,7 @@ export default function Auth({ defaultTab = 'login' }) {
                           onClick={() => setShowPwd(v => !v)}
                           style={{
                             position: 'absolute',
-                            right: '0.75rem',
+                            right: '0.85rem',
                             top: '50%',
                             transform: 'translateY(-50%)',
                             background: 'none',
@@ -1099,7 +957,7 @@ export default function Auth({ defaultTab = 'login' }) {
                       disabled={loading}
                       style={{
                         width: '100%',
-                        height: '42px',
+                        height: '46px',
                         fontSize: '0.9375rem',
                         fontWeight: 600,
                         marginTop: '0.25rem',
@@ -1190,7 +1048,7 @@ export default function Auth({ defaultTab = 'login' }) {
                       disabled={loading}
                       style={{
                         width: '100%',
-                        height: '42px',
+                        height: '46px',
                         fontSize: '0.9375rem',
                         fontWeight: 600,
                         marginTop: '0.35rem',
@@ -1223,7 +1081,7 @@ export default function Auth({ defaultTab = 'login' }) {
                     className="btn btn-subtle"
                     style={{
                       width: '100%',
-                      height: '38px',
+                      height: '42px',
                       gap: '.5rem',
                       justifyContent: 'center',
                       fontWeight: 600,
@@ -1248,7 +1106,7 @@ export default function Auth({ defaultTab = 'login' }) {
                   <p
                     style={{
                       textAlign: 'center',
-                      marginTop: '.5rem',
+                      marginTop: '.55rem',
                       fontSize: '.72rem',
                       color: 'var(--text-light)',
                     }}
@@ -1270,7 +1128,7 @@ export default function Auth({ defaultTab = 'login' }) {
           }
           .auth-container-card {
             grid-template-columns: 1fr !important;
-            max-width: 460px !important;
+            max-width: 470px !important;
           }
           .hide-sm {
             display: none !important;

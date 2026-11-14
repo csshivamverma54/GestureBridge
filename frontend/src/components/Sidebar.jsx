@@ -1,7 +1,7 @@
 /**
  * Sidebar — main navigation panel.
- * Uses inline SVG icons for a professional look.
- * Collapses to a hamburger on mobile.
+ * Redesigned with warm-cream / violet claymorphism aesthetic while preserving
+ * all navigation links, user info, theme toggle, and sign-out behavior.
  */
 
 import React from 'react';
@@ -13,7 +13,7 @@ import BrandLogo from './BrandLogo';
 /* ── SVG icon components ─────────────────────────────────── */
 const Icon = ({ d, size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"
+    stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round"
     style={{ flexShrink: 0 }}
   >
     {Array.isArray(d)
@@ -57,7 +57,7 @@ export default function Sidebar({ open, onClose }) {
       {/* Mobile backdrop */}
       {open && (
         <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 40 }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15, 14, 23, 0.45)', backdropFilter: 'blur(4px)', zIndex: 40 }}
           onClick={onClose}
         />
       )}
@@ -71,8 +71,9 @@ export default function Sidebar({ open, onClose }) {
           borderRight: '1px solid var(--border)',
           display: 'flex', flexDirection: 'column',
           zIndex: 50,
-          transition: 'transform 200ms cubic-bezier(.4,0,.2,1)',
+          transition: 'transform 220ms cubic-bezier(.22,1,.36,1)',
           overflowY: 'auto',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
         {/* Logo / brand */}
@@ -83,61 +84,68 @@ export default function Sidebar({ open, onClose }) {
           display: 'flex', alignItems: 'center', gap: '.65rem',
           flexShrink: 0,
         }}>
-          {/* Recreated Brand Logo */}
-          <BrandLogo size={32} />
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '.975rem', letterSpacing: '-.02em', color: 'var(--text-main)' }}>
-              GestureBridge
-            </span>
-          </div>
+          <BrandLogo size={34} />
+          <span style={{
+            fontFamily: 'var(--font-display)',
+            fontWeight: 800,
+            fontSize: '1.08rem',
+            letterSpacing: '-.03em',
+            color: 'var(--text-main)',
+          }}>
+            GestureBridge
+          </span>
         </div>
 
-        {/* Engine status indicator */}
-        <div style={{ padding: '.65rem 1rem .35rem' }}>
+        {/* Engine status pill */}
+        <div style={{ padding: '.85rem 1rem .4rem' }}>
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '.45rem',
-            padding: '.35rem .6rem',
-            borderRadius: 'var(--radius-sm)',
+            display: 'flex', alignItems: 'center', gap: '.5rem',
+            padding: '.45rem .8rem',
+            borderRadius: 'var(--radius-full)',
             background: 'var(--bg-surface)',
             border: '1px solid var(--border)',
-            fontSize: '.72rem',
+            fontSize: '.74rem',
             fontWeight: 600,
-            color: 'var(--text-muted)',
+            color: 'var(--text-main)',
           }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-success)', flexShrink: 0 }} />
+            <span className="status-dot online" />
             <span>Engine Active · On-Device</span>
           </div>
         </div>
 
-        {/* User block */}
+        {/* User card */}
         <div style={{
-          padding: '.75rem 1rem',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', gap: '.65rem',
+          margin: '.5rem 1rem .25rem',
+          padding: '.75rem .85rem',
+          borderRadius: 'var(--radius-lg)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: '.7rem',
           flexShrink: 0,
         }}>
           <div style={{
-            width: 34, height: 34, borderRadius: 'var(--radius-md)',
-            background: 'var(--color-primary)',
+            width: 38, height: 38, borderRadius: 'var(--radius-md)',
+            background: 'var(--gradient-brand)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#fff', fontWeight: 700, fontSize: '.825rem', flexShrink: 0,
-            boxShadow: 'var(--shadow-xs)',
+            color: '#fff', fontWeight: 800, fontSize: '.9rem', flexShrink: 0,
+            boxShadow: '0 6px 14px -4px rgba(107, 76, 255, 0.45)',
+            fontFamily: 'var(--font-display)',
           }}>
             {user?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
           <div style={{ overflow: 'hidden', minWidth: 0 }}>
-            <div style={{ fontWeight: 600, fontSize: '.85rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontWeight: 700, fontSize: '.86rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user?.name || 'User'}
             </div>
-            <div style={{ fontSize: '.725rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <div style={{ fontSize: '.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user?.email || ''}
             </div>
           </div>
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, padding: '.75rem .75rem 0' }}>
-          <div className="section-label" style={{ padding: '.35rem .6rem .45rem', fontSize: '.68rem', letterSpacing: '.08em' }}>Workspace</div>
+        <nav style={{ flex: 1, padding: '.75rem .85rem 0' }}>
+          <div className="section-label">Workspace</div>
           {NAV_ITEMS.map((item) => (
             <NavLink
               key={item.path}
@@ -152,11 +160,11 @@ export default function Sidebar({ open, onClose }) {
         </nav>
 
         {/* Bottom actions */}
-        <div style={{ padding: '.75rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '.25rem' }}>
+        <div style={{ padding: '.85rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '.25rem' }}>
           <button
             onClick={toggleTheme}
             className="nav-link"
-            style={{ width: '100%', textAlign: 'left' }}
+            style={{ width: '100%', textAlign: 'left', background: 'transparent' }}
           >
             <Icon d={theme === 'light' ? Icons.moon : Icons.sun} size={16} />
             {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
@@ -164,7 +172,7 @@ export default function Sidebar({ open, onClose }) {
           <button
             onClick={handleLogout}
             className="nav-link"
-            style={{ width: '100%', textAlign: 'left', color: 'var(--color-error)' }}
+            style={{ width: '100%', textAlign: 'left', color: 'var(--color-error)', background: 'transparent' }}
           >
             <Icon d={Icons.logout} size={16} />
             Sign Out

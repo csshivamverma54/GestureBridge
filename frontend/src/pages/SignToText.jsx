@@ -1187,23 +1187,21 @@ export default function SignToText() {
 
   return (
     <AppShell>
-      {/* ── Page Header with Stitch Telemetry Badges ── */}
+      {/* ── Page Header with Warm 3D Telemetry Badges ── */}
       <div className="page-header" style={{ marginBottom: '1.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.55rem', flexWrap: 'wrap' }}>
           <span className="badge badge-primary">
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-primary)', display: 'inline-block' }} />
+            <span className="status-dot online" style={{ width: 6, height: 6 }} />
             21-Keypoint Landmarks
           </span>
           <span className="badge badge-success">Zero Server Relay</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>
-            BiLSTM Temporal Inference
-          </span>
+          <span className="telemetry-pill">BiLSTM Temporal Inference</span>
         </div>
 
-        <h1 style={{ fontSize: 'clamp(1.4rem, 2.5vw, 1.85rem)', fontWeight: 800, letterSpacing: '-0.025em', marginBottom: '0.35rem' }}>
-          Sign to Text Translation
+        <h1 style={{ fontSize: 'clamp(1.5rem, 2.6vw, 2rem)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.35rem' }}>
+          Sign to Text <span className="gradient-text">Translation</span>
         </h1>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0, maxWidth: '680px', lineHeight: 1.5 }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', margin: 0, maxWidth: '680px', lineHeight: 1.55 }}>
           Point your webcam at the signer. MediaPipe extracts 21 skeletal landmarks per hand and classifies gestures into spoken {activeSpoken} in real time.
         </p>
       </div>
@@ -1219,16 +1217,18 @@ export default function SignToText() {
           marginBottom: '1.5rem',
         }}
       >
-        {/* Mode selector tabs (Segmented Control) */}
+        {/* Mode selector tabs (Pill Segmented Control) */}
         <div
           style={{
             display: 'flex',
-            gap: '4px',
-            background: 'var(--bg-surface)',
-            borderRadius: 'var(--radius-md)',
-            padding: '4px',
+            gap: '6px',
+            background: 'var(--bg-card)',
+            borderRadius: 'var(--radius-xl)',
+            padding: '5px',
             border: '1px solid var(--border)',
+            boxShadow: 'var(--shadow-xs)',
             width: 'fit-content',
+            flexWrap: 'wrap',
           }}
         >
           {[
@@ -1241,15 +1241,15 @@ export default function SignToText() {
                 key={m.value}
                 onClick={() => updateSettings({ recognitionMode: m.value })}
                 style={{
-                  padding: '0.5rem 1.25rem',
-                  borderRadius: 'var(--radius-sm)',
+                  padding: '0.55rem 1.35rem',
+                  borderRadius: 'var(--radius-lg)',
                   border: 'none',
-                  background: active ? 'var(--bg-card)' : 'transparent',
+                  background: active ? 'var(--color-primary-light)' : 'transparent',
                   color: active ? 'var(--color-primary)' : 'var(--text-muted)',
                   fontWeight: active ? 700 : 500,
                   fontSize: '0.85rem',
                   cursor: 'pointer',
-                  boxShadow: active ? 'var(--shadow-sm)' : 'none',
+                  boxShadow: active ? 'var(--shadow-xs)' : 'none',
                   transition: 'all var(--transition)',
                   display: 'flex',
                   flexDirection: 'column',
@@ -1258,7 +1258,7 @@ export default function SignToText() {
                 }}
               >
                 <span>{m.label}</span>
-                <span style={{ fontSize: '0.7rem', fontWeight: 400, color: active ? 'var(--color-primary)' : 'var(--text-light)', opacity: active ? 0.9 : 1 }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 500, color: active ? 'var(--color-primary)' : 'var(--text-light)', opacity: active ? 0.9 : 1 }}>
                   {m.desc}
                 </span>
               </button>
@@ -1268,15 +1268,14 @@ export default function SignToText() {
 
         {/* Dual Language Selector Controls */}
         <div
+          className="card"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '1rem',
             flexWrap: 'wrap',
-            background: 'var(--bg-card)',
-            padding: '0.55rem 0.95rem',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--border)',
+            padding: '0.6rem 1.05rem',
+            borderRadius: 'var(--radius-xl)',
           }}
         >
           {/* Spoken translation & voice language */}
@@ -1288,7 +1287,7 @@ export default function SignToText() {
               value={activeSpoken}
               onChange={(e) => updateSettings({ spokenLanguage: e.target.value })}
               className="form-select"
-              style={{ fontSize: '0.82rem', padding: '0.28rem 1.75rem 0.28rem 0.6rem', width: 'auto', minWidth: 145 }}
+              style={{ fontSize: '0.82rem', padding: '0.32rem 1.85rem 0.32rem 0.7rem', width: 'auto', minWidth: 145 }}
             >
               {SUPPORTED_SPOKEN_LANGUAGES.map((l) => (
                 <option key={l.value} value={l.value}>
@@ -1307,7 +1306,7 @@ export default function SignToText() {
               value={activeSign}
               onChange={(e) => updateSettings({ signLanguage: e.target.value })}
               className="form-select"
-              style={{ fontSize: '0.82rem', padding: '0.28rem 1.75rem 0.28rem 0.6rem', width: 'auto', minWidth: 155 }}
+              style={{ fontSize: '0.82rem', padding: '0.32rem 1.85rem 0.32rem 0.7rem', width: 'auto', minWidth: 155 }}
             >
               {SUPPORTED_SIGN_LANGUAGES.map((s) => (
                 <option key={s.value} value={s.value}>
@@ -1317,7 +1316,7 @@ export default function SignToText() {
             </select>
           </div>
 
-          <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontFamily: 'var(--font-mono)' }}>
+          <span className="telemetry-pill" style={{ fontSize: '0.7rem', padding: '0.22rem 0.65rem' }}>
             TTS: {ttsLocale}
           </span>
         </div>
@@ -1327,13 +1326,13 @@ export default function SignToText() {
 
       {/* CDN load progress bar */}
       {!mpReady && !error && (
-        <div style={{ marginBottom: '1.25rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+        <div className="card" style={{ marginBottom: '1.25rem', padding: '1rem 1.25rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.45rem', fontWeight: 600 }}>
             <span>⟳ {loadLabels[loadStep] || 'Initialising MediaPipe & Neural Engine…'}</span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{loadPct}%</span>
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--color-primary)' }}>{loadPct}%</span>
           </div>
-          <div style={{ height: 4, background: 'var(--border)', borderRadius: 'var(--radius-xs)' }}>
-            <div style={{ height: '100%', width: `${loadPct}%`, background: 'var(--color-primary)', borderRadius: 'var(--radius-xs)', transition: 'width 0.4s ease' }} />
+          <div className="confidence-bar" style={{ height: 6 }}>
+            <div className="confidence-bar-fill" style={{ width: `${loadPct}%` }} />
           </div>
         </div>
       )}
@@ -1347,15 +1346,16 @@ export default function SignToText() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
           {/* Video Viewport Card */}
-          <div className="card" style={{ padding: '1.25rem' }}>
+          <div className="card" style={{ padding: '1.35rem' }}>
             <div
               style={{
                 position: 'relative',
                 borderRadius: 'var(--radius-lg)',
                 overflow: 'hidden',
-                background: '#0B1120',
+                background: 'radial-gradient(circle at 50% 45%, #1E1B33 0%, #0D0C14 100%)',
                 aspectRatio: '4/3',
                 border: '1px solid var(--border)',
+                boxShadow: 'inset 0 0 40px rgba(107, 76, 255, 0.14)',
               }}
             >
               <video
@@ -1372,25 +1372,26 @@ export default function SignToText() {
               />
 
               {!camActive && (
-                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.85rem' }}>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', padding: '1.5rem', textAlign: 'center' }}>
                   <div
                     style={{
-                      width: 56,
-                      height: 56,
-                      borderRadius: '12px',
-                      background: 'rgba(255,255,255,0.06)',
+                      width: 68,
+                      height: 68,
+                      borderRadius: '22px',
+                      background: 'linear-gradient(145deg, rgba(132, 104, 255, 0.25), rgba(255, 255, 255, 0.06))',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255,255,255,0.16)',
+                      boxShadow: '0 16px 32px rgba(0, 0, 0, 0.3)',
                     }}
                   >
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.75">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#C4B5FD" strokeWidth="1.85">
                       <path d="M23 7l-7 5 7 5V7z" />
                       <rect x="1" y="5" width="15" height="14" rx="2" />
                     </svg>
                   </div>
-                  <p style={{ color: '#94A3B8', fontSize: '0.9rem', margin: 0, fontWeight: 500 }}>
+                  <p style={{ color: '#E9E5FF', fontSize: '0.94rem', margin: 0, fontWeight: 600 }}>
                     {mpReady ? 'Tap "Start Camera" to begin on-device translation' : 'Loading on-device MediaPipe models…'}
                   </p>
                 </div>
@@ -1401,22 +1402,22 @@ export default function SignToText() {
                 <div
                   style={{
                     position: 'absolute',
-                    top: '0.75rem',
-                    left: '0.75rem',
+                    top: '0.85rem',
+                    left: '0.85rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.4rem',
-                    background: 'rgba(11, 17, 32, 0.85)',
-                    padding: '0.3rem 0.65rem',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.72rem',
+                    gap: '0.45rem',
+                    background: 'rgba(21, 20, 33, 0.84)',
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: '0.73rem',
                     color: '#fff',
-                    backdropFilter: 'blur(6px)',
-                    border: '1px solid rgba(255,255,255,0.12)',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255,255,255,0.14)',
                     fontFamily: 'var(--font-mono)',
                   }}
                 >
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: motionColor, boxShadow: motionState === 'signing' ? `0 0 6px ${motionColor}` : 'none' }} />
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: motionColor, boxShadow: motionState === 'signing' ? `0 0 8px ${motionColor}` : 'none' }} />
                   {motionLabel}
                   {handsVisible ? ' · 21 Pts' : ''}
                   {fsMode ? ' · Fingerspelling' : ''}
@@ -1428,17 +1429,17 @@ export default function SignToText() {
                 <div
                   style={{
                     position: 'absolute',
-                    top: '0.75rem',
-                    right: '0.75rem',
-                    background: 'rgba(11, 17, 32, 0.85)',
-                    padding: '0.3rem 0.65rem',
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.72rem',
-                    color: dominant === 'calibrating' ? '#F59E0B' : '#10B981',
-                    backdropFilter: 'blur(6px)',
-                    border: '1px solid rgba(255,255,255,0.12)',
+                    top: '0.85rem',
+                    right: '0.85rem',
+                    background: 'rgba(21, 20, 33, 0.84)',
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: '0.73rem',
+                    color: dominant === 'calibrating' ? '#FBBF24' : '#34D399',
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255,255,255,0.14)',
                     fontFamily: 'var(--font-mono)',
-                    fontWeight: 600,
+                    fontWeight: 700,
                   }}
                 >
                   {dominant === 'calibrating' ? 'Calibrating…' : `${dominant === 'right' ? 'R' : 'L'}-Dominant`}
@@ -1450,20 +1451,20 @@ export default function SignToText() {
                 <div
                   style={{
                     position: 'absolute',
-                    bottom: '0.85rem',
+                    bottom: '0.9rem',
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    background: 'var(--color-primary)',
-                    padding: '0.45rem 1.25rem',
-                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--gradient-brand)',
+                    padding: '0.5rem 1.4rem',
+                    borderRadius: 'var(--radius-full)',
                     color: '#fff',
-                    fontSize: '1.05rem',
-                    fontWeight: 700,
-                    backdropFilter: 'blur(6px)',
+                    fontSize: '1.08rem',
+                    fontWeight: 800,
+                    backdropFilter: 'blur(8px)',
                     whiteSpace: 'nowrap',
-                    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.4)',
+                    boxShadow: '0 10px 24px rgba(107, 76, 255, 0.45)',
                     fontFamily: 'var(--font-display)',
-                    letterSpacing: '-0.01em',
+                    letterSpacing: '-0.015em',
                   }}
                 >
                   {fsMode ? `✦ ${prediction}` : prediction}
@@ -1475,16 +1476,17 @@ export default function SignToText() {
                 <div
                   style={{
                     position: 'absolute',
-                    bottom: '3.2rem',
+                    bottom: '3.4rem',
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    background: 'rgba(124, 58, 237, 0.88)',
-                    padding: '0.25rem 0.85rem',
-                    borderRadius: 'var(--radius-sm)',
-                    color: '#fff',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    backdropFilter: 'blur(6px)',
+                    background: 'rgba(24, 24, 35, 0.88)',
+                    padding: '0.3rem 0.9rem',
+                    borderRadius: 'var(--radius-full)',
+                    color: '#FDE68A',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    backdropFilter: 'blur(8px)',
+                    border: '1px solid rgba(255,255,255,0.15)',
                     whiteSpace: 'nowrap',
                     fontFamily: 'var(--font-mono)',
                   }}
@@ -1495,32 +1497,32 @@ export default function SignToText() {
             </div>
 
             {/* Camera Controls & Telemetry Row */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 {!camActive ? (
                   <button
-                    className="btn btn-primary"
+                    className="btn btn-ink"
                     onClick={startCamera}
                     disabled={starting || !mpReady}
-                    style={{ height: '40px', padding: '0 1.5rem', fontWeight: 600 }}
+                    style={{ height: '44px', padding: '0 1.65rem', fontWeight: 600 }}
                   >
                     {starting ? <><Spinner size="sm" /> Starting Camera…</> : mpReady ? 'Start Camera' : 'Loading Engine…'}
                   </button>
                 ) : (
                   <>
-                    <button className="btn btn-danger" onClick={stopCamera} style={{ height: '40px', padding: '0 1.25rem', fontWeight: 600 }}>
+                    <button className="btn btn-danger" onClick={stopCamera} style={{ height: '44px', padding: '0 1.4rem', fontWeight: 600 }}>
                       Stop Camera
                     </button>
                     {fsBuffer && (
                       <button className="btn btn-subtle btn-sm" onClick={flushFsBuffer} title="Commit fingerspelled word">
-                        Commit "{fsBuffer}"
+                        Commit &quot;{fsBuffer}&quot;
                       </button>
                     )}
                   </>
                 )}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                 <span>🔒 Video processed 100% on-device</span>
                 {skipRate > 0 && (
                   <span style={{ color: 'var(--color-warning)', fontFamily: 'var(--font-mono)' }}>
@@ -1533,17 +1535,17 @@ export default function SignToText() {
 
           {/* Detected Signs Card (Continuous Sign Mode) */}
           {recognitionMode === 'word' && (
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <div className="card" style={{ padding: '1.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem', gap: '.5rem', flexWrap: 'wrap' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>
+                  <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 800 }}>
                     Detected Signs
                   </h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     Temporal accumulation before sentence assembly
                   </span>
                 </div>
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', gap: '0.45rem' }}>
                   <button className="btn btn-ghost btn-sm" onClick={handleUndoGloss} disabled={!glossSequence.length}>
                     Undo
                   </button>
@@ -1555,10 +1557,10 @@ export default function SignToText() {
 
               <div
                 style={{
-                  minHeight: 52,
-                  padding: '0.75rem 1rem',
+                  minHeight: 56,
+                  padding: '0.8rem 1rem',
                   background: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-md)',
+                  borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border)',
                   display: 'flex',
                   flexWrap: 'wrap',
@@ -1571,35 +1573,36 @@ export default function SignToText() {
                     <span
                       key={i}
                       style={{
-                        padding: '0.25rem 0.65rem',
-                        background: 'var(--color-primary-light)',
-                        border: '1px solid #BFDBFE',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.85rem',
+                        padding: '0.3rem 0.8rem',
+                        background: 'var(--bg-card)',
+                        border: '1px solid rgba(107, 76, 255, 0.28)',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: '0.84rem',
                         fontWeight: 700,
                         color: 'var(--color-primary)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.03em',
+                        boxShadow: 'var(--shadow-xs)',
                       }}
                     >
                       {w}
                     </span>
                   ))
                 ) : (
-                  <span style={{ color: 'var(--text-light)', fontSize: '0.875rem' }}>
+                  <span style={{ color: 'var(--text-light)', fontSize: '0.88rem' }}>
                     Signed words will accumulate here…
                   </span>
                 )}
                 {fsBuffer && (
                   <span
                     style={{
-                      padding: '0.25rem 0.65rem',
-                      background: '#F5F3FF',
-                      border: '1px solid #DDD6FE',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: '0.85rem',
+                      padding: '0.3rem 0.8rem',
+                      background: 'var(--color-primary-light)',
+                      border: '1px solid rgba(107, 76, 255, 0.35)',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: '0.84rem',
                       fontWeight: 700,
-                      color: '#7C3AED',
+                      color: 'var(--color-primary)',
                       letterSpacing: '0.06em',
                       fontFamily: 'var(--font-mono)',
                     }}
@@ -1613,18 +1616,18 @@ export default function SignToText() {
 
           {/* Translation Synthesizer Card */}
           {recognitionMode === 'word' && (
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <div className="card" style={{ padding: '1.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '.5rem' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>
+                  <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 800 }}>
                     Live Translation
                   </h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     Auto-synthesizes {activeSpoken} sentence upon hand pause
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
                   <button className="btn btn-ghost btn-sm" onClick={handleUndoSentence} disabled={!sentence.length}>
                     Undo
                   </button>
@@ -1659,10 +1662,10 @@ export default function SignToText() {
 
               <div
                 style={{
-                  minHeight: 88,
+                  minHeight: 92,
                   padding: '1.15rem',
                   background: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-md)',
+                  borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border)',
                   display: 'flex',
                   flexDirection: 'column',
@@ -1670,7 +1673,7 @@ export default function SignToText() {
                 }}
               >
                 {sentence.length === 0 ? (
-                  <span style={{ color: 'var(--text-light)', fontSize: '0.95rem' }}>
+                  <span style={{ color: 'var(--text-light)', fontSize: '0.94rem' }}>
                     Translated {activeSpoken} will render here when you pause gestures.
                   </span>
                 ) : (
@@ -1680,24 +1683,24 @@ export default function SignToText() {
                     return (
                       <div key={i} style={{ borderBottom: i < sentence.length - 1 ? '1px solid var(--border)' : 'none', paddingBottom: i < sentence.length - 1 ? '0.75rem' : 0 }}>
                         {displayText && (
-                          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
+                          <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.4, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
                             {displayText}
                             {isImproved && (
-                              <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', fontWeight: 600, color: '#7C3AED', background: '#F5F3FF', border: '1px solid #DDD6FE', padding: '2px 6px', borderRadius: '4px', verticalAlign: 'middle' }}>
+                              <span className="badge badge-primary" style={{ marginLeft: '0.5rem', fontSize: '0.68rem', padding: '2px 8px', verticalAlign: 'middle' }}>
                                 ✨ AI Polished
                               </span>
                             )}
                           </div>
                         )}
 
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.03em', marginTop: displayText ? '0.2rem' : 0 }}>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '0.03em', marginTop: displayText ? '0.25rem' : 0 }}>
                           RAW GLOSS: {rawGloss}
                         </div>
 
                         {(englishSentences[i] || rawGloss) && (
                           <button
-                            className="btn btn-ghost btn-sm"
-                            style={{ marginTop: '0.35rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', opacity: improvingIdx === i ? 0.6 : 1 }}
+                            className="btn btn-outline btn-sm"
+                            style={{ marginTop: '0.45rem', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', opacity: improvingIdx === i ? 0.6 : 1 }}
                             onClick={() => handleImprove(i)}
                             disabled={improvingIdx === i}
                             title="Polish syntax using IBM Watsonx AI"
@@ -1715,17 +1718,17 @@ export default function SignToText() {
 
           {/* Committed Words Card (Fingerspelling Mode) */}
           {recognitionMode === 'letter' && (
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <div className="card" style={{ padding: '1.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem', flexWrap: 'wrap', gap: '.5rem' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#7C3AED' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 800, color: 'var(--color-primary)' }}>
                     Fingerspelled Words
                   </h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     Words assembled from individual A-Z gestures
                   </span>
                 </div>
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', gap: '0.45rem' }}>
                   <button className="btn btn-ghost btn-sm" onClick={handleLetterUndoWord} disabled={!letterWords.length}>
                     Undo
                   </button>
@@ -1737,10 +1740,10 @@ export default function SignToText() {
 
               <div
                 style={{
-                  minHeight: 52,
-                  padding: '0.75rem 1rem',
+                  minHeight: 56,
+                  padding: '0.8rem 1rem',
                   background: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-md)',
+                  borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border)',
                   display: 'flex',
                   flexWrap: 'wrap',
@@ -1753,33 +1756,34 @@ export default function SignToText() {
                     <span
                       key={i}
                       style={{
-                        padding: '0.25rem 0.65rem',
-                        background: '#F5F3FF',
-                        border: '1px solid #DDD6FE',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.85rem',
+                        padding: '0.3rem 0.8rem',
+                        background: 'var(--bg-card)',
+                        border: '1px solid rgba(107, 76, 255, 0.28)',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: '0.84rem',
                         fontWeight: 700,
-                        color: '#7C3AED',
+                        color: 'var(--color-primary)',
                         textTransform: 'lowercase',
                         fontFamily: 'var(--font-mono)',
+                        boxShadow: 'var(--shadow-xs)',
                       }}
                     >
                       {w}
                     </span>
                   ))
                 ) : (
-                  <span style={{ color: 'var(--text-light)', fontSize: '0.875rem' }}>
+                  <span style={{ color: 'var(--text-light)', fontSize: '0.88rem' }}>
                     Committed words will accumulate here…
                   </span>
                 )}
                 {letterWord && (
                   <span
                     style={{
-                      padding: '0.25rem 0.65rem',
+                      padding: '0.3rem 0.8rem',
                       background: 'var(--color-primary-light)',
-                      border: '1px solid #BFDBFE',
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: '0.85rem',
+                      border: '1px solid rgba(107, 76, 255, 0.35)',
+                      borderRadius: 'var(--radius-full)',
+                      fontSize: '0.84rem',
                       fontWeight: 700,
                       color: 'var(--color-primary)',
                       letterSpacing: '0.06em',
@@ -1795,18 +1799,18 @@ export default function SignToText() {
 
           {/* Fingerspelling Translation Synthesizer Card */}
           {recognitionMode === 'letter' && (
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <div className="card" style={{ padding: '1.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '.5rem' }}>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#7C3AED' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 800, color: 'var(--color-primary)' }}>
                     Fingerspelled Sentence
                   </h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                     Synthesized into fluent {activeSpoken} using grammar prediction
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
                   <button className="btn btn-ghost btn-sm" onClick={handleLetterClearAll} disabled={!letterSentence && !letterWords.length && !letterWord}>
                     Clear All
                   </button>
@@ -1819,7 +1823,7 @@ export default function SignToText() {
                       onClick={() => speakText(letterSentence || letterWords.join(' ') || letterWord, ttsLocale)}
                       disabled={!letterSentence && !letterWords.length && !letterWord}
                       title="Speak fingerspelling result aloud via Text-to-Speech"
-                      style={{ gap: '0.35rem', background: '#7C3AED', borderColor: '#7C3AED' }}
+                      style={{ gap: '0.35rem' }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
@@ -1833,10 +1837,10 @@ export default function SignToText() {
 
               <div
                 style={{
-                  minHeight: 88,
+                  minHeight: 92,
                   padding: '1.15rem',
                   background: 'var(--bg-surface)',
-                  borderRadius: 'var(--radius-md)',
+                  borderRadius: 'var(--radius-lg)',
                   border: '1px solid var(--border)',
                   display: 'flex',
                   flexDirection: 'column',
@@ -1845,9 +1849,9 @@ export default function SignToText() {
               >
                 {letterSentence ? (
                   <div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.4, fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
                       {letterSentence}
-                      <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', fontWeight: 600, color: '#7C3AED', background: '#F5F3FF', border: '1px solid #DDD6FE', padding: '2px 6px', borderRadius: '4px', verticalAlign: 'middle' }}>
+                      <span className="badge badge-primary" style={{ marginLeft: '0.5rem', fontSize: '0.68rem', padding: '2px 8px', verticalAlign: 'middle' }}>
                         ASL Sentence
                       </span>
                     </div>
@@ -1867,7 +1871,7 @@ export default function SignToText() {
                     </div>
                   </div>
                 ) : (
-                  <span style={{ color: 'var(--text-light)', fontSize: '0.95rem' }}>
+                  <span style={{ color: 'var(--text-light)', fontSize: '0.94rem' }}>
                     Synthesized sentence will appear here after words are committed.
                   </span>
                 )}
@@ -1883,18 +1887,18 @@ export default function SignToText() {
 
           {/* Current Reading Card */}
           {recognitionMode === 'word' && (
-            <div className="card" style={{ padding: '1.25rem', textAlign: 'center' }}>
-              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+            <div className="card" style={{ padding: '1.35rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.55rem' }}>
                 Active Gesture Detection
               </div>
 
               <div
                 style={{
-                  fontSize: '2.5rem',
+                  fontSize: '2.6rem',
                   fontWeight: 800,
                   letterSpacing: '-0.03em',
-                  color: prediction ? (fsMode ? '#7C3AED' : 'var(--color-primary)') : 'var(--text-light)',
-                  minHeight: '3rem',
+                  color: prediction ? 'var(--color-primary)' : 'var(--text-light)',
+                  minHeight: '3.2rem',
                   fontFamily: 'var(--font-display)',
                   lineHeight: 1.2,
                 }}
@@ -1903,7 +1907,7 @@ export default function SignToText() {
               </div>
 
               {fsMode && (
-                <div style={{ fontSize: '0.72rem', color: '#7C3AED', fontWeight: 600, marginTop: '0.2rem' }}>
+                <div style={{ fontSize: '0.74rem', color: 'var(--color-primary)', fontWeight: 700, marginTop: '0.2rem' }}>
                   Fingerspelling mode active
                 </div>
               )}
@@ -1911,7 +1915,7 @@ export default function SignToText() {
               {/* Confidence Meter */}
               {confidence > 0 && (
                 <div style={{ marginTop: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.3rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.35rem' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Confidence</span>
                     <span style={{ fontWeight: 700, color: confidence >= effectiveThreshold ? 'var(--color-success)' : 'var(--color-warning)', fontFamily: 'var(--font-mono)' }}>
                       {(confidence * 100).toFixed(1)}%
@@ -1920,7 +1924,7 @@ export default function SignToText() {
                   <div className="confidence-bar">
                     <div className="confidence-bar-fill" style={{ width: `${confidence * 100}%` }} />
                   </div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-light)', marginTop: '0.2rem', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-light)', marginTop: '0.25rem', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
                     Gate Threshold: {(effectiveThreshold * 100).toFixed(0)}%
                   </div>
                 </div>
@@ -1928,12 +1932,12 @@ export default function SignToText() {
 
               {/* Stability Verification Dots */}
               {camActive && (
-                <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                <div style={{ marginTop: '1rem', paddingTop: '0.9rem', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.45rem' }}>
                     <span>Stability Filter</span>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{stableDots}/{STABLE_FRAMES}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{stableDots}/{STABLE_FRAMES}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', gap: '0.45rem', justifyContent: 'center' }}>
                     {Array.from({ length: STABLE_FRAMES }).map((_, i) => (
                       <div
                         key={i}
@@ -1941,7 +1945,8 @@ export default function SignToText() {
                           width: 12,
                           height: 12,
                           borderRadius: '50%',
-                          background: i < stableDots ? 'var(--color-primary)' : 'var(--border)',
+                          background: i < stableDots ? 'var(--color-primary)' : 'var(--bg-surface-high)',
+                          boxShadow: i < stableDots ? '0 0 8px rgba(107, 76, 255, 0.45)' : 'none',
                           transition: 'background 0.15s ease',
                         }}
                       />
@@ -1952,18 +1957,18 @@ export default function SignToText() {
 
               {/* Rest Pause Progress */}
               {camActive && (
-                <div style={{ marginTop: '0.85rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+                <div style={{ marginTop: '0.9rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.73rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
                     <span>Sentence Pause</span>
                     <span style={{ fontFamily: 'var(--font-mono)' }}>{restFrameCount.current}/{REST_FRAMES}</span>
                   </div>
-                  <div style={{ height: 4, background: 'var(--border)', borderRadius: 'var(--radius-xs)' }}>
+                  <div style={{ height: 5, background: 'var(--bg-surface-high)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
                     <div
                       style={{
                         height: '100%',
                         width: `${Math.min((restFrameCount.current / REST_FRAMES) * 100, 100)}%`,
-                        background: restFrameCount.current >= REST_FRAMES ? 'var(--color-success)' : 'var(--color-warning)',
-                        borderRadius: 'var(--radius-xs)',
+                        background: restFrameCount.current >= REST_FRAMES ? 'var(--color-success)' : 'var(--color-secondary)',
+                        borderRadius: 'var(--radius-full)',
                         transition: 'width 0.2s ease',
                       }}
                     />
@@ -1975,13 +1980,13 @@ export default function SignToText() {
 
           {/* Top 5 Predictions Card */}
           {recognitionMode === 'word' && top5.length > 0 && (
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+            <div className="card" style={{ padding: '1.35rem' }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.8rem' }}>
                 Top 5 Probability Distribution
               </div>
               {top5.map((t, i) => (
-                <div key={i} style={{ marginBottom: i < top5.length - 1 ? '0.65rem' : 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.83rem', marginBottom: '0.25rem' }}>
+                <div key={i} style={{ marginBottom: i < top5.length - 1 ? '0.68rem' : 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', marginBottom: '0.28rem' }}>
                     <span style={{ fontWeight: i === 0 ? 700 : 500, color: i === 0 ? 'var(--color-primary)' : 'var(--text-main)' }}>
                       {i + 1}. {t.word}
                     </span>
@@ -1989,7 +1994,7 @@ export default function SignToText() {
                       {(t.confidence * 100).toFixed(1)}%
                     </span>
                   </div>
-                  <div className="confidence-bar" style={{ height: 4 }}>
+                  <div className="confidence-bar" style={{ height: 5 }}>
                     <div className="confidence-bar-fill" style={{ width: `${t.confidence * 100}%` }} />
                   </div>
                 </div>
@@ -1999,15 +2004,15 @@ export default function SignToText() {
 
           {/* ASL Fingerspelling Builder (Letter Mode) */}
           {recognitionMode === 'letter' && (
-            <div className="card" style={{ padding: '1.25rem', border: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <div className="card" style={{ padding: '1.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', gap: '.4rem', flexWrap: 'wrap' }}>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#7C3AED' }}>
+                  <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--color-primary)' }}>
                     ASL Letter Builder
                   </h4>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Finger-spell individual letters</span>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Finger-spell individual letters</span>
                 </div>
-                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                <div style={{ display: 'flex', gap: '0.35rem' }}>
                   <button className="btn btn-ghost btn-sm" onClick={handleLetterClearAll} disabled={!letterWord && !letterWords.length && !letterSentence}>
                     Clear
                   </button>
@@ -2028,40 +2033,41 @@ export default function SignToText() {
               </div>
 
               {/* Big Letter Glyph */}
-              <div style={{ textAlign: 'center', padding: '0.75rem 0' }}>
-                <div style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '0.05em', color: letterPrediction && letterPrediction !== '…' ? '#7C3AED' : 'var(--text-light)', minHeight: '3.5rem', fontFamily: 'var(--font-mono)' }}>
+              <div style={{ textAlign: 'center', padding: '0.85rem 0' }}>
+                <div style={{ fontSize: '3.25rem', fontWeight: 900, letterSpacing: '0.05em', color: letterPrediction && letterPrediction !== '…' ? 'var(--color-primary)' : 'var(--text-light)', minHeight: '3.75rem', fontFamily: 'var(--font-mono)' }}>
                   {letterPrediction || '—'}
                 </div>
                 {letterConf > 0 && (
-                  <div style={{ marginTop: '0.4rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '0.2rem' }}>
+                  <div style={{ marginTop: '0.45rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', marginBottom: '0.25rem' }}>
                       <span style={{ color: 'var(--text-muted)' }}>Confidence</span>
                       <span style={{ fontWeight: 700, color: letterConf >= LETTER_CONF_THRESH ? 'var(--color-success)' : 'var(--color-warning)', fontFamily: 'var(--font-mono)' }}>
                         {(letterConf * 100).toFixed(1)}%
                       </span>
                     </div>
-                    <div className="confidence-bar" style={{ height: 4 }}>
-                      <div className="confidence-bar-fill" style={{ width: `${letterConf * 100}%`, background: '#7C3AED' }} />
+                    <div className="confidence-bar" style={{ height: 5 }}>
+                      <div className="confidence-bar-fill" style={{ width: `${letterConf * 100}%` }} />
                     </div>
                   </div>
                 )}
 
                 {/* Stability Verification Dots */}
                 {camActive && (
-                  <div style={{ marginTop: '0.75rem', paddingTop: '0.65rem', borderTop: '1px solid var(--border)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
+                  <div style={{ marginTop: '0.85rem', paddingTop: '0.7rem', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>
                       <span>Stability Filter</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{letterStableDots}/{LETTER_STABLE_FRAMES}</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{letterStableDots}/{LETTER_STABLE_FRAMES}</span>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
                       {Array.from({ length: LETTER_STABLE_FRAMES }).map((_, i) => (
                         <div
                           key={i}
                           style={{
-                            width: 10,
-                            height: 10,
+                            width: 11,
+                            height: 11,
                             borderRadius: '50%',
-                            background: i < letterStableDots ? '#7C3AED' : 'var(--border)',
+                            background: i < letterStableDots ? 'var(--color-primary)' : 'var(--bg-surface-high)',
+                            boxShadow: i < letterStableDots ? '0 0 8px rgba(107, 76, 255, 0.45)' : 'none',
                             transition: 'background 0.15s ease',
                           }}
                         />
@@ -2072,22 +2078,22 @@ export default function SignToText() {
 
                 {/* Top Predictions */}
                 {letterTop5.length > 0 && (
-                  <div style={{ marginTop: '0.85rem', paddingTop: '0.65rem', borderTop: '1px solid var(--border)', textAlign: 'left' }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>
+                  <div style={{ marginTop: '0.9rem', paddingTop: '0.7rem', borderTop: '1px solid var(--border)', textAlign: 'left' }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '0.45rem' }}>
                       Top Letter Probabilities
                     </div>
                     {letterTop5.slice(0, 3).map((t, i) => (
-                      <div key={i} style={{ marginBottom: i < 2 ? '0.35rem' : 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', marginBottom: '0.15rem' }}>
-                          <span style={{ fontWeight: i === 0 ? 700 : 500, color: i === 0 ? '#7C3AED' : 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
+                      <div key={i} style={{ marginBottom: i < 2 ? '0.4rem' : 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.79rem', marginBottom: '0.2rem' }}>
+                          <span style={{ fontWeight: i === 0 ? 700 : 500, color: i === 0 ? 'var(--color-primary)' : 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>
                             {t.letter}
                           </span>
-                          <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem', fontFamily: 'var(--font-mono)' }}>
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.73rem', fontFamily: 'var(--font-mono)' }}>
                             {(t.confidence * 100).toFixed(0)}%
                           </span>
                         </div>
-                        <div className="confidence-bar" style={{ height: 3 }}>
-                          <div className="confidence-bar-fill" style={{ width: `${t.confidence * 100}%`, background: i === 0 ? '#7C3AED' : 'var(--border)' }} />
+                        <div className="confidence-bar" style={{ height: 4 }}>
+                          <div className="confidence-bar-fill" style={{ width: `${t.confidence * 100}%`, background: i === 0 ? 'var(--gradient-brand)' : 'var(--bg-surface-high)' }} />
                         </div>
                       </div>
                     ))}
@@ -2096,37 +2102,37 @@ export default function SignToText() {
               </div>
 
               {/* Building Word */}
-              <div style={{ marginTop: '0.85rem', padding: '0.75rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.25rem' }}>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Assembling Word</span>
-                  <button className="btn btn-ghost btn-sm" style={{ padding: '0 0.35rem', fontSize: '0.72rem' }} onClick={handleLetterClearWord} disabled={!letterWord}>
+              <div style={{ marginTop: '0.85rem', padding: '0.85rem', background: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.3rem' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700 }}>Assembling Word</span>
+                  <button className="btn btn-ghost btn-sm" style={{ padding: '0.15rem 0.55rem', fontSize: '0.72rem' }} onClick={handleLetterClearWord} disabled={!letterWord}>
                     Clear
                   </button>
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '1.25rem', letterSpacing: '0.1em', color: letterWord ? 'var(--text-main)' : 'var(--text-light)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '1.3rem', letterSpacing: '0.1em', color: letterWord ? 'var(--text-main)' : 'var(--text-light)' }}>
                   {letterWord || '…'}
                 </div>
                 {letterWord && (
                   <button
                     className="btn btn-primary btn-sm"
-                    style={{ marginTop: '0.65rem', width: '100%', fontSize: '0.8125rem', background: '#7C3AED', borderColor: '#7C3AED' }}
+                    style={{ marginTop: '0.7rem', width: '100%', fontSize: '0.82rem' }}
                     onClick={handleLetterCommitWord}
                   >
-                    Commit word "{letterWord.toLowerCase()}"
+                    Commit word &quot;{letterWord.toLowerCase()}&quot;
                   </button>
                 )}
               </div>
 
               {/* Suggestions */}
               {letterSuggestions.length > 0 && (
-                <div style={{ marginTop: '0.75rem' }}>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>Auto-Complete Suggestions</div>
-                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                <div style={{ marginTop: '0.85rem' }}>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '0.4rem', fontWeight: 600 }}>Auto-Complete Suggestions</div>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                     {letterSuggestions.map((s) => (
                       <button
                         key={s}
                         className="btn btn-outline btn-sm"
-                        style={{ fontSize: '0.75rem', borderColor: '#7C3AED', color: '#7C3AED' }}
+                        style={{ fontSize: '0.76rem', borderColor: 'var(--color-primary)', color: 'var(--color-primary)' }}
                         onClick={() => handleApplySuggestion(s)}
                       >
                         {s}
@@ -2139,25 +2145,25 @@ export default function SignToText() {
           )}
 
           {/* Quick Tips & Telemetry Card */}
-          <div className="card" style={{ padding: '1.25rem' }}>
-            <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.75rem' }}>
+          <div className="card" style={{ padding: '1.35rem' }}>
+            <h4 style={{ fontSize: '0.98rem', fontWeight: 800, marginBottom: '0.8rem' }}>
               Translation Best Practices
             </h4>
-            <ul style={{ paddingLeft: '1.1rem', fontSize: '0.83rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.45rem', margin: 0 }}>
+            <ul style={{ paddingLeft: '1.1rem', fontSize: '0.84rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.5rem', margin: 0 }}>
               <li>Position your <strong>torso and both hands</strong> clearly in frame.</li>
               <li>Keep ambient lighting bright and avoid reflective backlighting.</li>
               <li>Pause hands briefly at waist level to complete a sentence.</li>
-              <li>Use <strong>Speak</strong> to read translated English aloud.</li>
+              <li>Use <strong>Speak</strong> to read translated {activeSpoken} aloud.</li>
             </ul>
 
-            <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)', fontSize: '0.72rem', color: 'var(--text-light)', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid var(--border)', fontSize: '0.74rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Inference Target</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>WebGL (Zero Relay)</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-main)' }}>WebGL (Zero Relay)</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span>Feature Vector</span>
-                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>218 Dimensions</span>
+                <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-main)' }}>218 Dimensions</span>
               </div>
             </div>
           </div>
