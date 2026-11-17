@@ -16,12 +16,16 @@ from routes.otp import otp_bp, init_otp_db
 _DEBUG = os.getenv("FLASK_DEBUG", "0") == "1"
 _PORT  = int(os.getenv("PORT", 5000))
 
+# CORS allowed origins.
+# Always include localhost for dev AND the hardcoded Render frontend URL so
+# the app works even if FRONTEND_ORIGIN env var is stale/missing in the dashboard.
 _FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").rstrip("/")
-_CORS_ORIGINS = [
+_CORS_ORIGINS = list({   # set de-duplicates if env var matches the hardcoded value
     "http://localhost:3000",
     "http://localhost:5000",
+    "https://gesturebridge1.onrender.com",   # always allow production frontend
     _FRONTEND_ORIGIN,
-]
+})
 
 _BASE_DIR = Path(__file__).parent
 _DIST_DIR = _BASE_DIR / "static" / "dist"

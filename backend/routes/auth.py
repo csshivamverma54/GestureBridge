@@ -24,7 +24,40 @@ _SCOPES = [
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 
-# Return the OAuth2 client config dict built from environment variables
+# Hardcoded production values — used as fallback when the Render dashboard
+# env vars are stale (e.g. still set to localhost from a previous deploy).
+_PROD_REDIRECT_URI    = 'https://gesturebridge.onrender.com/auth/google/callback'
+_PROD_FRONTEND_ORIGIN = 'https://gesturebridge1.onrender.com'
+
+
+def _redirect_uri() -> str:
+    """
+    Return the OAuth redirect URI.
+    Use the env var when it looks like a production URL; fall back to the
+    hardcoded production value when the env var still points to localhost.
+    """
+    val = os.getenv('GOOGLE_REDIRECT_URI', '')
+    if val and 'localhost' not in val:
+        return val
+    # Detect whether we are running on Render by checking the PORT env var
+    # (Render always injects PORT; local dev uses the default 5000 which we set).
+    on_render = bool(os.getenv('RENDER'))   # Render injects RENDER=true
+    if on_render:
+        return _PROD_REDIRECT_URI
+    return val or 'http://localhost:5000/auth/google/callback'
+
+
+def _frontend_origin() -> str:
+    """Return the React frontend origin, same fallback logic as _redirect_uri."""
+    val = os.getenv('FRONTEND_ORIGIN', '')
+    if val and 'localhost' not in val:
+        return val
+    on_render = bool(os.getenv('RENDER'))
+    if on_render:
+        return _PROD_FRONTEND_ORIGIN
+    return val or 'http://localhost:3000'
+
+
 def _client_config():
     return {
         "web": {
@@ -32,20 +65,11 @@ def _client_config():
             "client_secret": os.getenv('GOOGLE_CLIENT_SECRET', ''),
             "auth_uri":      "https://accounts.google.com/o/oauth2/auth",
             "token_uri":     "https://oauth2.googleapis.com/token",
-            "redirect_uris": [os.getenv(
-                'GOOGLE_REDIRECT_URI',
-                'http://localhost:5000/auth/google/callback'
-            )],
+            "redirect_uris": [_redirect_uri()],
         }
     }
 
 
-# Return the configured Google OAuth redirect URI
-def _redirect_uri():
-    return os.getenv('GOOGLE_REDIRECT_URI', 'http://localhost:5000/auth/google/callback')
-
-
-# Inject MongoDB instance shared from app.py
 def init_app(db):
     global mongo
     mongo = db

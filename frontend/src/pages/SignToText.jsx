@@ -455,11 +455,22 @@ function nmm2label(nmm) {
 }
 
 /* -- Script loader - */
-function loadScript(src) {
+function loadScript(src, checkGlobal) {
   return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-    const s = document.createElement('script'); s.src = src;
-    s.onload = resolve; s.onerror = () => reject(new Error(`Failed to load: ${src}`));
+    if (checkGlobal && window[checkGlobal]) { resolve(); return; }
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      if (checkGlobal && window[checkGlobal]) { resolve(); return; }
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error(`Failed to load: ${src}`)), { once: true });
+      setTimeout(() => { if (!checkGlobal || window[checkGlobal]) resolve(); }, 150);
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = src;
+    s.crossOrigin = 'anonymous';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Failed to load: ${src}`));
     document.head.appendChild(s);
   });
 }
@@ -594,9 +605,9 @@ export default function SignToText() {
   const [loadStep, setLoadStep] = useState(0); // 0=idle 1=holistic 2=camera 3=drawing 4=done
   useEffect(() => {
     setLoadStep(1);
-    loadScript(MP_HOLISTIC_CDN)
-      .then(() => { setLoadStep(2); return loadScript(MP_CAMERA_CDN); })
-      .then(() => { setLoadStep(3); return loadScript(MP_DRAWING_CDN); })
+    loadScript(MP_HOLISTIC_CDN, 'Holistic')
+      .then(() => { setLoadStep(2); return loadScript(MP_CAMERA_CDN, 'Camera'); })
+      .then(() => { setLoadStep(3); return loadScript(MP_DRAWING_CDN, 'drawConnectors'); })
       .then(() => { setLoadStep(4); setMpReady(true); })
       .catch(e => setError(e.message));
   }, []);
@@ -627,7 +638,7 @@ export default function SignToText() {
     const baseColor = dominantRef.current ? '#F59E0B' : '#14B8A6';
     drawHand(dominantRef.current ? results.rightHandLandmarks : results.leftHandLandmarks, domColor);
     drawHand(dominantRef.current ? results.leftHandLandmarks  : results.rightHandLandmarks, baseColor);
-    if (results.poseLandmarks[16]) {
+    if (results.poseLandmarks && results.poseLandmarks[16]) {
       const rw = results.poseLandmarks[16];
       ctx.beginPath(); ctx.arc(rw.x * canvas.width, rw.y * canvas.height, 7, 0, 2 * Math.PI);
       ctx.fillStyle = 'rgba(234,179,8,.7)'; ctx.fill();
@@ -638,8 +649,7 @@ export default function SignToText() {
   const startCamera = useCallback(async () => {
     setError(''); setStarting(true);
     try {
-      await navigator.mediaDevices.getUserMedia({ video: true });
-      if (!window.Holistic || !window.Camera) throw new Error('MediaPipe not loaded yet.');
+      if (!window.Holistic || !window.Camera) throw new Error('MediaPipe not loaded yet. Please wait a few seconds and try again.');
 
       holisticRef.current = new window.Holistic({
         locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629/${f}`,
@@ -995,6 +1005,7 @@ export default function SignToText() {
 
      setCamActive(true);
 } catch (err) {
+  teardown();
   setError(
     err.name === 'NotAllowedError'
       ? 'Camera access denied. Please allow camera permissions.'
@@ -1008,8 +1019,17 @@ export default function SignToText() {
   /* -- Teardown - */
   function teardown() {
     clearInterval(captureTimerRef.current); captureTimerRef.current = null;
-    try { cameraRef.current.stop(); }    catch {}
-    try { holisticRef.current.close(); } catch {}
+    try { if (cameraRef.current) cameraRef.current.stop(); }    catch {}
+    try { if (holisticRef.current) holisticRef.current.close(); } catch {}
+    if (videoRef.current && videoRef.current.srcObject) {
+      try {
+        const stream = videoRef.current.srcObject;
+        if (stream && stream.getTracks) {
+          stream.getTracks().forEach(track => track.stop());
+        }
+      } catch {}
+      videoRef.current.srcObject = null;
+    }
     cameraRef.current  = null; holisticRef.current = null;
     frameBuffer.current     = []; prevWristRef.current  = null;
     prevVelRef.current      = null; headStateRef.current = { yaw: 0, pitch: 0, roll: 0 };
@@ -1361,6 +1381,7 @@ export default function SignToText() {
               <video
                 ref={videoRef}
                 style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', display: 'block' }}
+                autoPlay
                 muted
                 playsInline
               />

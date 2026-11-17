@@ -24,12 +24,9 @@ backend/.env.example
 *.env
 
 # -- ML artefacts (large binary files � not tracked in git) -----------
-backend/ml/gesture_model.pt
-backend/ml/normalizer.npz
+# (gesture_model.pt, labels.json, model_meta.json, normalizer.npz are tracked for word mode inference)
 backend/ml/hand_landmarker.task
 backend/ml/training_history.json
-backend/ml/model_meta.json
-backend/ml/labels.json
 backend/ml/processed/
 backend/ml/plots/
 backend/ml/__pycache__/
